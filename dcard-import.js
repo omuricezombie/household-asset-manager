@@ -33,6 +33,9 @@
     const has=(arr)=>arr.some(k=>m.includes(k.toLowerCase()));
     if(has(['ファミリーマート','ローソン','セブン','マクドナルド','オフィスグリコ','松屋','吉野家','すき家','モスバーガー','ケンタッキー','スターバックス','ドトール','自販機'])) return '食費';
     if(has(['book☆walker','book walker','bookwalker','コミック','ebookjapan'])) return '漫画・本';
+    if(has(['放送大学','模試','受験料','受講料','検定料'])) return '教育費';
+    if(has(['chatgpt','openai','u-next','unext','netflix','dアニメ','lemino','spotify','youtube premium','amazon prime','prime video'])) return 'サブスク';
+    if(has(['ドコモご利用料金','nttファイナンス','東京電力','東京ガス','水道料金'])) return '通信・光熱費';
     if(has(['suicaチャージ','モバイルsuica'])) return '交通費';
     if(has(['コインランドリー'])) return '洗濯';
     return '未分類';
@@ -50,10 +53,12 @@
   async function normalizeCsv(text,filename=''){
     const rows=parseCsv(text);const hi=headerIndex(rows);if(!hi)throw new Error('dカードCSVのヘッダーを確認できませんでした。');
     const idx={};hi.header.forEach((h,i)=>idx[h]=i);
-    const raw=[];let statementAmount=null;
+    const raw=[],excludedRows=[];let statementAmount=null,inCashAdvanceSection=false;
     for(let i=hi.row+1;i<rows.length;i++){
       if(blankRow(rows[i]))continue;
-      const r=rows[i];
+      const r=rows[i],joined=r.map(normText).join(' ');
+      if(joined.includes('キャッシングご返済明細')){inCashAdvanceSection=true;excludedRows.push({sourceLine:i+1,reason:'キャッシング返済明細'});continue;}
+      if(inCashAdvanceSection){excludedRows.push({sourceLine:i+1,reason:'キャッシング返済明細'});continue;}
       const obj={
         sourceLine:i+1,
         date:parseDate(r[idx['ご利用年月日']]),
@@ -80,7 +85,7 @@
       r.rowFingerprint=await fingerprint(r);
       const n=(occurrence.get(r.rowFingerprint)||0)+1;occurrence.set(r.rowFingerprint,n);r.occurrence=n;r.sourceRowKey=`dcard:${r.rowFingerprint}:${n}`;
     }
-    return {rows:raw,statementAmount,paymentDate:detectPaymentDate(filename),headerRow:hi.row+1};
+    return {rows:raw,excludedRows,statementAmount,paymentDate:detectPaymentDate(filename),headerRow:hi.row+1};
   }
 
   async function prepareFile(file,rules=[]){
