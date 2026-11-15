@@ -57,7 +57,7 @@ async function renderRentDefaults(){const ac=(await DB.getAll('accounts')).filte
 async function renderAdvanceCardTransactions(){
   const rows=(await A.monthTransactions(selectedMonth)).filter(x=>x.kind==='expense'&&x.sourceType==='dcard_csv').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('advanceCardList').innerHTML=rows.length?rows.map(x=>`<div class="status-row"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'カード利用')}</strong><div class="status-meta">${esc(x.date)} / ${formatYen(x.amount)}${n(x.advanceShare)>0?` / 立替 ${formatYen(x.advanceShare)}`:''}</div></div><button data-card-advance="${x.id}">${n(x.advanceShare)>0?'変更':'立替設定'}</button></div>`).join(''):'<p class="muted">この月のdカードCSV明細はありません。</p>';
-  $('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
+  $$('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
 }
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
