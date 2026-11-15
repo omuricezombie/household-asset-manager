@@ -9,6 +9,9 @@ const mealOptions=[['','未分類'],['breakfast','朝'],['lunch','昼'],['dinner
 let selectedMonth=DB.currentMonth();
 let preparedCsv=null;
 let toastTimer=null;
+let currentScreen='home';
+let currentPanel=null;
+let historyReady=false;
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatYen(v){return A.formatYen(v);}
@@ -17,12 +20,47 @@ function monthLabel(m){const [y,mo]=m.split('-');return `${y}年${Number(mo)}月
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function selectOptions(values,current=''){return values.map(v=>{const [value,label]=Array.isArray(v)?v:[v,v];return `<option value="${esc(value)}" ${String(value)===String(current)?'selected':''}>${esc(label)}</option>`}).join('');}
 
-function showScreen(name){
-  $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
-  $$('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
+function showScreen(name,{push=true,panel=null}={}){
+  currentScreen=name;
+  currentPanel=name==='input'?panel:null;
+  $('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
+  $('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
+  $('.input-panel').forEach(x=>x.classList.add('hidden'));
+  if(currentPanel){
+    const p=$(`input-${currentPanel}`);
+    if(p)p.classList.remove('hidden');
+  }
+  if(currentPanel==='cash')$('cashAmount').focus();
+  if(currentPanel==='advance')renderAdvanceCardTransactions();
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
+  if(push&&historyReady) history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
 }
-function openInputPanel(name){showScreen('input');$$('.input-panel').forEach(x=>x.classList.add('hidden'));const p=$(`input-${name}`);if(p)p.classList.remove('hidden');if(name==='cash')$('cashAmount').focus();if(name==='advance')renderAdvanceCardTransactions();}
+function openInputPanel(name,{push=true}={}){
+  const panel=$(`input-${name}`)?name:null;
+  showScreen('input',{push,panel});
+}
+function setupNavigationHistory(){
+  history.replaceState({hamNav:'exit-guard'},'',location.href);
+  history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
+  historyReady=true;
+  window.addEventListener('popstate',e=>{
+    const st=e.state;
+    if(st?.hamNav==='screen'){
+      showScreen(st.screen||'home',{push:false,panel:st.panel||null});
+      return;
+    }
+    if(st?.hamNav==='exit-guard'){
+      const exit=confirm('家計・資産管理を終了しますか？');
+      if(exit){
+        historyReady=false;
+        history.back();
+      }else{
+        showScreen('home',{push:false});
+        history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
+      }
+    }
+  });
+}
 function fillCategorySelect(el,current='未分類'){el.innerHTML=selectOptions(categories,current);}
 function fillMealSelect(el,current=''){el.innerHTML=selectOptions(mealOptions,current);}
 
@@ -125,7 +163,7 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
-  $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{showScreen(b.dataset.go);if(b.dataset.subview)openInputPanel(b.dataset.subview);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>b.closest('.input-panel').classList.add('hidden'));
+  $('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
   $('globalMonth').onchange=async()=>{selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
   $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;$('advanceTotal').oninput=updateAdvanceCalc;$('advanceOwn').oninput=updateAdvanceCalc;
   $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
@@ -138,7 +176,7 @@ function bind(){
 
 async function init(){
   try{
-    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();await renderAll();
+    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
   }catch(e){console.error(e);document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
