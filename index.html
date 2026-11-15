@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>家計・資産管理</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>家計・資産管理</h1>
+      <p class="sub">v0.2.0 candidate</p>
+    </div>
+    <label class="month-picker">対象月
+      <input id="globalMonth" type="month">
+    </label>
+  </header>
+
+  <main id="appMain">
+    <section class="screen active" data-screen="home">
+      <div id="homeAlerts"></div>
+      <div class="card">
+        <div class="section-title-row"><h2>今月</h2><button class="text-btn" data-go="history">詳細</button></div>
+        <div id="homeMonthlySummary" class="metric-grid"></div>
+      </div>
+      <div class="card">
+        <div class="section-title-row"><h2>資産</h2><button class="text-btn" data-go="monthend">更新</button></div>
+        <div id="homeAssetSummary" class="metric-grid"></div>
+      </div>
+      <div class="card">
+        <h2>今月の気づき</h2>
+        <div id="homeInsights" class="insight-list"></div>
+      </div>
+      <div class="card">
+        <h2>次の支払</h2>
+        <div id="homePayments"></div>
+      </div>
+      <div class="quick-actions">
+        <button class="primary" data-quick="cash">＋ 現金支出</button>
+        <button data-quick="income">＋ 収入</button>
+        <button data-go="input" data-subview="csv">dカードCSV</button>
+        <button data-go="monthend">月末更新</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="input">
+      <div class="card">
+        <h2>クイック入力</h2>
+        <div class="button-grid two">
+          <button class="primary" data-input-panel="cash">現金支出</button>
+          <button data-input-panel="income">収入</button>
+          <button data-input-panel="rent">家賃</button>
+          <button data-input-panel="advance">立替・返金</button>
+        </div>
+      </div>
+
+      <div id="input-cash" class="card input-panel hidden">
+        <div class="section-title-row"><h2>現金支出</h2><button class="text-btn" data-close-panel>閉じる</button></div>
+        <label>金額<input id="cashAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>
+        <div id="cashPresets" class="chip-row"></div>
+        <details>
+          <summary>詳細</summary>
+          <label>日付<input id="cashDate" type="date"></label>
+          <label>店舗・メモ<input id="cashMerchant" type="text" autocomplete="off"></label>
+          <label>カテゴリ<select id="cashCategory"></select></label>
+          <label id="cashMealWrap" class="hidden">食事区分<select id="cashMealType"></select></label>
+          <label class="checkbox-row"><input id="cashTemporary" type="checkbox"> 臨時支出として扱う</label>
+        </details>
+        <button id="cashSave" class="primary sticky-action">保存</button>
+      </div>
+
+      <div id="input-income" class="card input-panel hidden">
+        <div class="section-title-row"><h2>収入</h2><button class="text-btn" data-close-panel>閉じる</button></div>
+        <label>金額<input id="incomeAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1"></label>
+        <label>種別<select id="incomeType"><option>給与</option><option>賞与</option><option>配当</option><option>利息</option><option>その他</option></select></label>
+        <label>日付<input id="incomeDate" type="date"></label>
+        <button id="incomeSave" class="primary sticky-action">保存</button>
+      </div>
+
+      <div id="input-rent" class="card input-panel hidden">
+        <div class="section-title-row"><h2>家賃</h2><button class="text-btn" data-close-panel>閉じる</button></div>
+        <label>金額<input id="rentAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1"></label>
+        <label>振込日<input id="rentDate" type="date"></label>
+        <label>支払元口座<select id="rentAccount"></select></label>
+        <button id="rentSave" class="primary sticky-action">振込済みとして登録</button>
+      </div>
+
+      <div id="input-advance" class="card input-panel hidden">
+        <div class="section-title-row"><h2>立替・返金</h2><button class="text-btn" data-close-panel>閉じる</button></div>
+        <div class="segmented"><button class="active" data-advance-mode="new">立替を登録</button><button data-advance-mode="repay">返金を登録</button></div>
+        <div id="advanceNew">
+          <label>支払総額<input id="advanceTotal" type="number" inputmode="numeric" min="0" step="1"></label>
+          <label>自分負担<input id="advanceOwn" type="number" inputmode="numeric" min="0" step="1"></label>
+          <label>家族負担（立替）<input id="advanceOther" type="number" inputmode="numeric" min="0" step="1" readonly></label>
+          <label>日付<input id="advanceDate" type="date"></label>
+          <label>支払手段<select id="advancePayment"><option value="dbarai">d払い</option><option value="id">iD</option><option value="dcard">dカード</option><option value="cash">現金</option><option value="other">その他</option></select></label>
+          <label>店舗・メモ<input id="advanceMerchant" type="text"></label>
+          <button id="advanceSave" class="primary sticky-action">登録</button>
+        </div>
+        <div id="advanceRepay" class="hidden">
+          <div id="advanceOutstanding"></div>
+        </div>
+      </div>
+
+      <div id="input-csv" class="card input-panel">
+        <div class="section-title-row"><h2>dカードCSV</h2></div>
+        <p class="muted">CSVは端末内で解析し、外部へ送信しません。</p>
+        <input id="dcardFile" type="file" accept=".csv,text/csv">
+        <div id="csvPreview" class="hidden"></div>
+        <div id="csvReview" class="hidden"></div>
+        <div id="csvMeals" class="hidden"></div>
+        <button id="csvImportButton" class="primary hidden">新規明細を登録</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="monthend">
+      <div class="card">
+        <div class="section-title-row"><h2>月末更新</h2><span id="monthEndProgress" class="badge"></span></div>
+        <p class="muted">前月値を引き継ぎ、変わったものだけ更新できます。</p>
+        <div id="monthEndAccounts"></div>
+        <button id="addAccountButton">＋ 資産項目を追加</button>
+      </div>
+      <div class="card">
+        <h2>ポイント</h2>
+        <div id="monthEndPoints"></div>
+      </div>
+      <div class="card">
+        <h2>確認項目</h2>
+        <div id="monthEndChecklist"></div>
+        <button id="completeMonthButton" class="primary">この月の更新を完了</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="history">
+      <div class="card">
+        <h2>月次推移</h2>
+        <div class="table-wrap"><table><thead><tr><th>月</th><th>収入</th><th>支出</th><th>貯蓄</th><th>総資産</th></tr></thead><tbody id="historyMonthly"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>カテゴリ比較</h2>
+        <div id="historyCategories"></div>
+      </div>
+      <div class="card">
+        <h2>店舗</h2>
+        <div id="historyMerchants"></div>
+      </div>
+      <div class="card">
+        <h2>食費（朝・昼・夜）</h2>
+        <div id="historyMeals"></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="data">
+      <div class="card">
+        <h2>バックアップ</h2>
+        <button id="backupExport" class="primary">JSONバックアップを保存</button>
+        <label class="file-label">JSONバックアップを復元<input id="backupImport" type="file" accept="application/json,.json"></label>
+        <div id="storageInfo" class="muted"></div>
+      </div>
+      <div class="card">
+        <h2>dカードCSV取込履歴</h2>
+        <div id="importHistory"></div>
+      </div>
+      <div class="card">
+        <h2>開発情報</h2>
+        <div id="appInfo"></div>
+      </div>
+      <div class="card danger-zone">
+        <h2>データ削除</h2>
+        <button id="clearAll" class="danger">v0.2データを全削除</button>
+        <p class="muted">v0.1.0の旧DBは削除しません。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="メイン">
+    <button class="active" data-nav="home">ホーム</button>
+    <button data-nav="input">入力</button>
+    <button data-nav="monthend">月末更新</button>
+    <button data-nav="history">履歴・分析</button>
+    <button data-nav="data">データ</button>
+  </nav>
+
+  <dialog id="accountDialog">
+    <form method="dialog" class="dialog-card">
+      <h2>資産項目を追加</h2>
+      <label>表示名<input id="accountName" type="text" required></label>
+      <label>種別<select id="accountCategory"><option value="bank">銀行</option><option value="cash">現金</option><option value="stock">株式</option><option value="dc">DC</option><option value="other">その他資産</option></select></label>
+      <div class="dialog-actions"><button value="cancel">キャンセル</button><button id="accountCreate" value="default" class="primary">追加</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="db.js"></script>
+  <script src="dcard-import.js"></script>
+  <script src="analysis.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

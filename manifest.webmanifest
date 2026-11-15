@@ -1,0 +1,15 @@
+{
+  "name": "家計・資産管理",
+  "short_name": "家計資産",
+  "description": "少ない入力で月次家計・資産・支払予定を管理する個人用ツール",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "lang": "ja",
+  "icons": [
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}
