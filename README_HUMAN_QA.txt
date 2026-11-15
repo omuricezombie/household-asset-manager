@@ -1,4 +1,4 @@
-家計・資産管理ツール v0.2.7 candidate
+家計・資産管理ツール v0.2.8 candidate
 =====================================
 
 状態
@@ -123,3 +123,15 @@ AI QAで未確認
 - Service Worker登録時 updateViaCache:'none'
 - precache時も cache:'reload' で旧HTTPキャッシュを回避
 - v0.2.6のCSV正常除外表示修正をそのまま維持
+
+
+[v0.2.8確認]
+- index.htmlの主要CSS/JS参照を版付きURLへ変更
+- styles.css?v=028
+- db.js?v=028
+- dcard-import.js?v=028
+- analysis.js?v=028
+- app.js?v=028
+- 旧Service Workerが同名旧ファイルを持っていても新版URLはキャッシュミスとなり、ネットワークから取得する
+- v0.2.7のnetwork-first/updateViaCache:noneも維持
+- v0.2.6のCSV表示修正も維持
