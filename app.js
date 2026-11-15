@@ -23,9 +23,9 @@ function selectOptions(values,current=''){return values.map(v=>{const [value,lab
 function showScreen(name,{push=true,panel=null}={}){
   currentScreen=name;
   currentPanel=name==='input'?panel:null;
-  $('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
-  $('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
-  $('.input-panel').forEach(x=>x.classList.add('hidden'));
+  $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
+  $$('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
+  $$('.input-panel').forEach(x=>x.classList.add('hidden'));
   if(currentPanel){
     const p=$(`input-${currentPanel}`);
     if(p)p.classList.remove('hidden');
@@ -163,7 +163,7 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
-  $('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
+  $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
   $('globalMonth').onchange=async()=>{selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
   $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;$('advanceTotal').oninput=updateAdvanceCalc;$('advanceOwn').oninput=updateAdvanceCalc;
   $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
