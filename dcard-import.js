@@ -25,7 +25,8 @@
   function blankRow(r){return !r.some(x=>String(x||'').trim());}
   function normText(v){return String(v??'').normalize('NFKC').replace(/\u3000/g,' ').replace(/\s+/g,' ').trim();}
   function parseMoney(v){const s=normText(v).replace(/,/g,'').replace(/[￥¥円]/g,'');if(!s)return null;const n=Number(s);return Number.isFinite(n)?n:null;}
-  function parseDate(v){const s=normText(v);const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);if(!m)return null;return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;}
+  function parseDate(v){const s=normText(v);const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[ T]+\d{1,2}:\d{2}(?::\d{2})?)?$/);if(!m)return null;return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;}
+  function parseTime(v){const s=normText(v);const m=s.match(/(?:^|[ T])(\d{1,2}):(\d{2})(?::\d{2})?$/);if(!m)return null;const h=Number(m[1]),mi=Number(m[2]);if(h>23||mi>59)return null;return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;}
   function inferPaymentMethod(raw){const s=normText(raw);if(/^d払いB?\//i.test(s))return 'dbarai';if(/\/iD(?:\s|$)/i.test(s)||/／ｉＤ/.test(String(raw)))return 'id';return 'dcard';}
   function normalizeMerchant(raw){let s=normText(raw);s=s.replace(/^d払いB?\//i,'');s=s.replace(/\/iD(?:\s|$)/i,'');return s.trim();}
   function basicCategory(merchant){
@@ -48,11 +49,12 @@
   }
   function summaryRow(obj){return !obj.date&&!obj.merchantRaw&&obj.useAmount==null&&obj.paymentAmount!=null;}
   function detectPaymentDate(filename){const m=String(filename||'').match(/(?:^|_)(20\d{6})(?:\D|$)/);if(!m)return null;const s=m[1],y=+s.slice(0,4),mo=+s.slice(4,6),d=+s.slice(6,8);const dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return null;return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;}
-  async function fingerprint(row){return DB().sha256Text([row.date||'',row.merchantRaw||'',row.useAmount??'',row.paymentAmount??'',row.paymentType||'',row.installmentCount||'',row.note||''].join('\u241F'));}
+  async function fingerprint(row){return DB().sha256Text([row.date||'',row.time||'',row.merchantRaw||'',row.useAmount??'',row.paymentAmount??'',row.paymentType||'',row.installmentCount||'',row.note||''].join('\u241F'));}
 
   async function normalizeCsv(text,filename=''){
     const rows=parseCsv(text);const hi=headerIndex(rows);if(!hi)throw new Error('dカードCSVのヘッダーを確認できませんでした。');
     const idx={};hi.header.forEach((h,i)=>idx[h]=i);
+    const timeHeader=['利用時刻','ご利用時刻','時刻'].find(h=>idx[h]!=null);
     const raw=[],excludedRows=[];let statementAmount=null,inCashAdvanceSection=false;
     for(let i=hi.row+1;i<rows.length;i++){
       if(blankRow(rows[i]))continue;
@@ -62,6 +64,7 @@
       const obj={
         sourceLine:i+1,
         date:parseDate(r[idx['ご利用年月日']]),
+        time:parseTime(timeHeader?r[idx[timeHeader]]:r[idx['ご利用年月日']]),
         merchantRaw:normText(r[idx['利用店名']]),
         useAmount:parseMoney(r[idx['利用金額']]),
         paymentAmount:parseMoney(r[idx['支払い金額']]),
@@ -97,5 +100,5 @@
     return {...parsed,fileHash,fileName:file.name,fileSize:file.size};
   }
 
-  HAM.DCard={parseCsv,normalizeCsv,prepareFile,normText,parseMoney,parseDate,inferPaymentMethod,normalizeMerchant,basicCategory,basicMealType,detectPaymentDate};
+  HAM.DCard={parseCsv,normalizeCsv,prepareFile,normText,parseMoney,parseDate,parseTime,inferPaymentMethod,normalizeMerchant,basicCategory,basicMealType,detectPaymentDate};
 })(window);
