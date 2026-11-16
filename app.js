@@ -103,7 +103,7 @@ async function renderAdvanceCardTransactions(){
     return;
   }
   $('advanceCardList').innerHTML=groups.map((g,gi)=>`<details ${gi===0?'open':''}><summary>${esc(monthLabel(g.month))}のカード明細（${g.rows.length}件）</summary><div class="advance-card-group">${g.rows.map(x=>`<div class="status-row"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'カード利用')}</strong><div class="status-meta">${esc(x.date)} / ${esc(labels[x.paymentMethod]||'カード')} / ${formatYen(x.amount)}${n(x.advanceShare)>0?` / 立替 ${formatYen(x.advanceShare)}`:''}</div></div><button data-card-advance="${x.id}">${n(x.advanceShare)>0?'変更':'立替設定'}</button></div>`).join('')}</div></details>`).join('');
-  $('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
+  $$('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
 }
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
