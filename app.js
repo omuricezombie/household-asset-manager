@@ -121,15 +121,28 @@ async function renderAdvanceCardTransactions(){
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
   const all=await DB.getAll('transactions');if(all.some(x=>x.kind==='advance_repayment'&&x.linkedTransactionId===id))return toast('返金登録済みの立替は変更できません。');
-  const v=prompt(`支払総額 ${formatYen(t.amount)}\n自分負担額を入力してください。`,String(t.ownShare==null?t.amount:t.ownShare));if(v==null)return;
-  const raw=String(v).trim();if(raw==='')return toast('自分負担額を入力してください。');const own=Number(raw);
-  if(!Number.isFinite(own)||own<0||own>n(t.amount))return toast('自分負担額を確認してください。');
-  t.ownShare=own;t.advanceShare=n(t.amount)-own;t.advanceStatus=t.advanceShare>0?'unpaid':null;t.updatedAt=DB.now();await DB.put('transactions',t);
-  toast(t.advanceShare>0?'立替を設定しました。':'立替設定を解除しました。');await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
+  const current=n(t.advanceShare);
+  const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${n(t.amount)} を入力します。`,current>0?String(current):'');
+  if(v==null)return;
+  const raw=String(v).trim();if(raw==='')return toast('立替額（家族分）を入力してください。');const advance=Number(raw);
+  if(!Number.isFinite(advance)||advance<0||advance>n(t.amount))return toast('立替額（家族分）を確認してください。');
+  const own=n(t.amount)-advance;
+  t.ownShare=own;t.advanceShare=advance;t.advanceStatus=advance>0?'unpaid':null;t.updatedAt=DB.now();await DB.put('transactions',t);
+  toast(advance>0?`立替 ${formatYen(advance)}（自分負担 ${formatYen(own)}）を設定しました。`:'立替設定を解除しました。');
+  await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
 }
 function updateAdvanceCalc(){const total=n($('advanceTotal').value),own=n($('advanceOwn').value);$('advanceOther').value=Math.max(0,total-own)||'';}
 async function saveAdvance(){const total=n($('advanceTotal').value),own=n($('advanceOwn').value);if(total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
-async function renderOutstanding(){const rows=await A.outstandingAdvances();$('advanceOutstanding').innerHTML=rows.length?rows.map(x=>`<div class="review-row"><div class="review-main"><div><strong>${esc(x.merchantNormalized||'立替')}</strong><span class="muted">${esc(x.date)}</span></div><strong>${formatYen(x.outstanding)}</strong></div><button data-repay-id="${x.id}" data-repay-max="${x.outstanding}">現金で返金を受けた</button></div>`).join(''):'<p class="muted">未回収の立替はありません。</p>';$$('[data-repay-id]').forEach(b=>b.onclick=async()=>{const max=n(b.dataset.repayMax);const v=prompt('返金額',String(max));if(v==null)return;const amount=n(v);if(amount<=0||amount>max)return toast('返金額を確認してください。');await DB.put('transactions',{id:DB.uid('tx'),date:DB.ymd(),month:DB.monthOfDate(DB.ymd()),kind:'advance_repayment',amount,paymentMethod:'cash',linkedTransactionId:b.dataset.repayId,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});toast('返金を登録しました。');await renderOutstanding();await renderHome();});}
+async function renderOutstanding(){
+  const rows=await A.outstandingAdvances();
+  const labels={dbarai:'d払い',id:'iD',dcard:'dカード',cash:'現金',bank_transfer:'銀行振込',other:'その他'};
+  $('advanceOutstanding').innerHTML=rows.length?rows.map(x=>{
+    const source=x.sourceType==='dcard_csv'?'カード立替':'手動立替';
+    const method=labels[x.paymentMethod]||x.paymentMethod||'';
+    return `<div class="review-row"><div class="review-main"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'立替')}</strong><span class="muted">${esc(x.date)} / ${esc(source)}${method?` / ${esc(method)}`:''}</span></div><strong>${formatYen(x.outstanding)}</strong></div><button data-repay-id="${x.id}" data-repay-max="${x.outstanding}">現金で返金を受けた</button></div>`;
+  }).join(''):'<p class="muted">未回収の立替はありません。</p>';
+  $$('[data-repay-id]').forEach(b=>b.onclick=async()=>{const max=n(b.dataset.repayMax);const v=prompt('返金額',String(max));if(v==null)return;const amount=n(v);if(amount<=0||amount>max)return toast('返金額を確認してください。');await DB.put('transactions',{id:DB.uid('tx'),date:DB.ymd(),month:DB.monthOfDate(DB.ymd()),kind:'advance_repayment',amount,paymentMethod:'cash',linkedTransactionId:b.dataset.repayId,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});toast('返金を登録しました。');await renderOutstanding();await renderHome();});
+}
 
 async function handleCsvFile(file){
   try{
