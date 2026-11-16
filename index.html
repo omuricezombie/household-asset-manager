@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0211">
+  <link rel="stylesheet" href="styles.css?v=0212">
 </head>
 <body>
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.11 candidate</p>
+      <p class="sub">v0.2.12 candidate</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -92,8 +92,8 @@
         <div class="section-title-row"><h2>立替・返金</h2><button class="text-btn" data-close-panel>閉じる</button></div>
         <div class="segmented"><button class="active" data-advance-mode="new">立替を登録</button><button data-advance-mode="repay">返金を登録</button></div>
         <div id="advanceNew">
-          <h3>dカード明細から設定</h3>
-          <p class="muted">d払い・iD・dカードの立替は、CSVで取り込んだ明細に自分負担額を設定します。別の支出は作らないため二重計上しません。</p>
+          <h3>d払い・iD・dカードの立替</h3>
+          <p class="muted">CSVで取り込んだ直近3か月の明細から選び、自分負担額を設定します。カード系はここから設定し、別の支出を作らないことで二重計上を防ぎます。</p>
           <div id="advanceCardList"></div>
           <details>
             <summary>現金・銀行振込などの立替を新規登録</summary>
@@ -209,9 +209,9 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0211"></script>
-  <script src="dcard-import.js?v=0211"></script>
-  <script src="analysis.js?v=0211"></script>
-  <script src="app.js?v=0211"></script>
+  <script src="db.js?v=0212"></script>
+  <script src="dcard-import.js?v=0212"></script>
+  <script src="analysis.js?v=0212"></script>
+  <script src="app.js?v=0212"></script>
 </body>
 </html>
