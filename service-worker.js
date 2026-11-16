@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.14';
-const FILES=['./','./index.html','./styles.css?v=0214','./db.js?v=0214','./dcard-import.js?v=0214','./analysis.js?v=0214','./app.js?v=0214','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.15';
+const FILES=['./','./index.html','./styles.css?v=0215','./db.js?v=0215','./dcard-import.js?v=0215','./analysis.js?v=0215','./app.js?v=0215','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
