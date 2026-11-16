@@ -6,6 +6,34 @@
   const effExpense=t=>t.kind==='expense'?(t.ownShare==null?num(t.amount):num(t.ownShare)):0;
   const refundAmount=t=>t.kind==='refund'?num(t.amount):0;
 
+  function cashMovementAmount(t){
+    if(!t||t.paymentMethod!=='cash')return 0;
+    if(t.kind==='expense')return -num(t.amount);
+    if(['refund','income','advance_repayment'].includes(t.kind))return num(t.amount);
+    if(t.kind==='transfer'){
+      if(t.toAccountId==='cash-wallet')return num(t.amount);
+      if(t.fromAccountId==='cash-wallet')return -num(t.amount);
+    }
+    return 0;
+  }
+  async function liveCashBalance(month=DB().currentMonth(),accountId='cash-wallet'){
+    const snapshot=await DB().latestSnapshot(accountId,month);
+    if(!snapshot)return {value:null,baseValue:null,movement:0,snapshot:null,movements:[],isEstimated:false};
+    const baseValue=num(snapshot.value);
+    if(month!==DB().currentMonth())return {value:baseValue,baseValue,movement:0,snapshot,movements:[],isEstimated:false};
+    const cutoff=snapshot.updatedAt||snapshot.confirmedAt||'';
+    if(!cutoff)return {value:baseValue,baseValue,movement:0,snapshot,movements:[],isEstimated:false};
+    const all=await DB().getAll('transactions');
+    const movements=all.filter(t=>{
+      const amount=cashMovementAmount(t);
+      if(!amount)return false;
+      if(t.month&&t.month>month)return false;
+      return !!t.createdAt&&t.createdAt>cutoff;
+    }).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+    const movement=movements.reduce((s,t)=>s+cashMovementAmount(t),0);
+    return {value:baseValue+movement,baseValue,movement,snapshot,movements,isEstimated:movement!==0};
+  }
+
   async function monthTransactions(month){return (await DB().getAllByIndex('transactions','month',month)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));}
   async function summary(month){
     const tx=await monthTransactions(month);
@@ -27,7 +55,13 @@
   }
   async function assetSummary(month){
     const accounts=(await DB().getAll('accounts')).filter(x=>x.active!==false);let total=0,liquid=0;const rows=[];
-    for(const a of accounts){const s=await DB().latestSnapshot(a.id,month);const value=s?num(s.value):0;rows.push({account:a,snapshot:s,value});total+=value;if(['bank','cash'].includes(a.category))liquid+=value;}
+    for(const a of accounts){
+      const s=await DB().latestSnapshot(a.id,month);
+      const live=a.id==='cash-wallet'?await liveCashBalance(month,a.id):null;
+      const value=live&&live.value!=null?num(live.value):(s?num(s.value):0);
+      rows.push({account:a,snapshot:s,value,liveCash:live});
+      total+=value;if(['bank','cash'].includes(a.category))liquid+=value;
+    }
     return {total,liquid,rows};
   }
   async function outstandingAdvances(){
@@ -64,5 +98,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,assetSummary,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,assetSummary,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
 })(window);
