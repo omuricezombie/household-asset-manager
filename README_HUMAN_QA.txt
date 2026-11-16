@@ -1,11 +1,11 @@
-家計・資産管理ツール v0.2.15 candidate
+家計・資産管理ツール v0.2.15 stable
 =====================================
 
 状態
-- candidate
+- stable
 - schemaVersion: 2
 - v0.1.0のDBは変更・削除しません
-- Human QA未完了
+- Human QA完了
 
 主な実装
 - スマホ前提5タブUI
@@ -201,3 +201,10 @@ AI QAで未確認
 - 設定後トーストに立替額と自分負担額を表示
 - 返金一覧に「カード立替 / d払い・iD・dカード」または「手動立替 / 現金等」を表示
 - 保存ストア/schemaVersionは変更なし
+
+
+[v0.2.15 stable昇格]
+- AI QA完了
+- Human QA予定分完了
+- 初回stableとしてmainへ昇格
+- schemaVersion 2 / householdAssetManagerDB_v2 維持
