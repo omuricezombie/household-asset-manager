@@ -145,15 +145,19 @@ async function importPreparedCsv(){
 }
 
 async function renderMonthEnd(){
+  const walletLive=await A.liveCashBalance(selectedMonth);
+  const walletDirty=!!(walletLive&&walletLive.value!=null&&walletLive.movement!==0&&selectedMonth===DB.currentMonth());
+  $('walletMovementNotice').classList.toggle('hidden',!walletDirty);
+  if(walletDirty)$('walletMovementNotice').innerHTML=`<div class="alert warn"><strong>財布に現金移動があります</strong><div class="muted">現在残高 ${formatYen(walletLive.value)}（確認時 ${formatYen(walletLive.baseValue)} / 自動反映 ${A.formatSigned(walletLive.movement)}）。実際の財布残高を確認してください。</div></div>`;
   const accounts=(await DB.getAll('accounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const rows=[];
   for(const a of accounts){
     const cur=await DB.get('assetSnapshots',[selectedMonth,a.id]),prev=await DB.latestSnapshot(a.id,DB.prevMonth(selectedMonth));
-    const live=a.id==='cash-wallet'?await A.liveCashBalance(selectedMonth,a.id):null;
+    const live=a.id==='cash-wallet'?walletLive:null;
     const liveDirty=!!(live&&live.value!=null&&live.movement!==0&&selectedMonth===DB.currentMonth());
     const val=live&&live.value!=null?live.value:(cur?cur.value:(prev?prev.value:''));
     const diff=prev&&val!==''?n(val)-n(prev.value):'';
     const meta=liveDirty?`確認時 ${formatYen(live.baseValue)} / 自動反映 ${A.formatSigned(live.movement)}`:`前回 ${prev?formatYen(prev.value):'—'}`;
-    const badge=liveDirty?'要確認':(cur?.confirmed?'確認済':'未確認');
+    const badge=liveDirty?'要確認（現金移動あり）':(cur?.confirmed?'確認済':'未確認');
     const sameDisabled=!prev||liveDirty?'disabled':'';
     rows.push(`<div class="asset-row" data-asset="${a.id}"><div class="asset-head"><div><strong>${esc(a.name)}</strong><div class="status-meta">${meta}</div></div><span class="badge">${badge}</span></div><div class="asset-values"><label>今月値<input data-asset-value="${a.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-asset-confirm="${a.id}">更新・確認</button><button data-asset-same="${a.id}" ${sameDisabled}>変更なし</button></div></div>`);
   }
