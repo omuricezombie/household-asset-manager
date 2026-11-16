@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0212">
+  <link rel="stylesheet" href="styles.css?v=0213">
 </head>
 <body>
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.12 candidate</p>
+      <p class="sub">v0.2.13 candidate</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -126,7 +126,7 @@
       <div class="card">
         <div class="section-title-row"><h2>月末更新</h2><span id="monthEndProgress" class="badge"></span></div>
         <p class="muted">前月値を引き継ぎ、変わったものだけ更新できます。</p>
-        <div id="monthEndAccounts"></div>
+        <div id="walletMovementNotice" class="hidden"></div><div id="monthEndAccounts"></div>
         <button id="addAccountButton">＋ 資産項目を追加</button>
       </div>
       <div class="card">
@@ -209,9 +209,9 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0212"></script>
-  <script src="dcard-import.js?v=0212"></script>
-  <script src="analysis.js?v=0212"></script>
-  <script src="app.js?v=0212"></script>
+  <script src="db.js?v=0213"></script>
+  <script src="dcard-import.js?v=0213"></script>
+  <script src="analysis.js?v=0213"></script>
+  <script src="app.js?v=0213"></script>
 </body>
 </html>
