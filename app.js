@@ -94,9 +94,16 @@ async function saveRent(){const amount=n($('rentAmount').value);if(amount<=0)ret
 async function renderRentDefaults(){const ac=(await DB.getAll('accounts')).filter(x=>x.active!==false&&x.category==='bank');$('rentAccount').innerHTML=`<option value="">未指定</option>`+ac.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');const last=(await DB.get('settings','rentLast'))?.value;if(last){$('rentAmount').value=last.amount||'';$('rentAccount').value=last.accountId||'';}}
 
 async function renderAdvanceCardTransactions(){
-  const rows=(await A.monthTransactions(selectedMonth)).filter(x=>x.kind==='expense'&&x.sourceType==='dcard_csv').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  $('advanceCardList').innerHTML=rows.length?rows.map(x=>`<div class="status-row"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'カード利用')}</strong><div class="status-meta">${esc(x.date)} / ${formatYen(x.amount)}${n(x.advanceShare)>0?` / 立替 ${formatYen(x.advanceShare)}`:''}</div></div><button data-card-advance="${x.id}">${n(x.advanceShare)>0?'変更':'立替設定'}</button></div>`).join(''):'<p class="muted">この月のdカードCSV明細はありません。</p>';
-  $$('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
+  const all=(await DB.getAll('transactions')).filter(x=>x.kind==='expense'&&x.sourceType==='dcard_csv');
+  const months=[];let m=selectedMonth;for(let i=0;i<3;i++){months.push(m);m=DB.prevMonth(m);}
+  const labels={dbarai:'d払い',id:'iD',dcard:'dカード'};
+  const groups=months.map(month=>({month,rows:all.filter(x=>x.month===month).sort((a,b)=>(b.date||'').localeCompare(a.date||''))})).filter(g=>g.rows.length);
+  if(!groups.length){
+    $('advanceCardList').innerHTML='<p class="muted">直近3か月のdカードCSV明細はありません。CSV取込後、d払い・iD・dカードの立替をここから設定できます。</p>';
+    return;
+  }
+  $('advanceCardList').innerHTML=groups.map((g,gi)=>`<details ${gi===0?'open':''}><summary>${esc(monthLabel(g.month))}のカード明細（${g.rows.length}件）</summary><div class="advance-card-group">${g.rows.map(x=>`<div class="status-row"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'カード利用')}</strong><div class="status-meta">${esc(x.date)} / ${esc(labels[x.paymentMethod]||'カード')} / ${formatYen(x.amount)}${n(x.advanceShare)>0?` / 立替 ${formatYen(x.advanceShare)}`:''}</div></div><button data-card-advance="${x.id}">${n(x.advanceShare)>0?'変更':'立替設定'}</button></div>`).join('')}</div></details>`).join('');
+  $('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
 }
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
