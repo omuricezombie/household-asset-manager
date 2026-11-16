@@ -116,7 +116,7 @@ async function renderAdvanceCardTransactions(){
     : '<p class="muted">直近3か月に立替設定できるカード明細はありません。</p>';
 
   $('advanceCardList').innerHTML=configuredHtml+candidateHtml;
-  $('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
+  $$('[data-card-advance]').forEach(b=>b.onclick=()=>setCardAdvance(b.dataset.cardAdvance));
 }
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
