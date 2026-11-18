@@ -1,0 +1,16 @@
+# Personal household data and local working files; never commit production data.
+*.csv
+*.CSV
+household_asset_backup*.json
+*backup*.json
+*バックアップ*.json
+/private-data/
+/local-data/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+.DS_Store
+Thumbs.db

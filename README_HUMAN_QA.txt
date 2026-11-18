@@ -1,6 +1,42 @@
 家計・資産管理ツール v0.2.15 stable
 =====================================
 
+管理情報整理（2026-11-18、アプリ変更なし）
+- 現行正式版はv0.2.15 stable。初回stableのため直前stableはありません。
+- 固定基準：tag / Release v0.2.15、commit 9a19ebcb6f75777d595c95a58749b15f0bac9729。
+- 以下の「推奨順」「確認」は開発時の確認手順・変更履歴を含みます。
+  各項目が単独で新たな実施結果を表すわけではありません。
+
+stable採用時の実施結果（既存Notion記録、2026-11-16〜17）
+- AI QA：構文、DOM/参照、版付き静的参照、DB/schemaVersion維持、
+  CSV重複防止、財布自動追従、カード立替→返金、保存/復元ロジック PASS。
+- Human QA予定分：PWA起動/スマホ表示、IndexedDB保存/再起動後保持、
+  月末資産更新、ポイント追加、未加工dカードCSV解析/登録/同一CSV再取込防止、
+  カテゴリ/食費分類、財布現金自動追従、カード立替→返金、
+  Android/PWA戻る/終了確認、JSON保存/値変更後の復元 PASS。
+- Pages：main commit 9a19ebc のデプロイ成功を確認済み。
+- PWA更新対策：network-first、updateViaCache:none、版付き静的参照を
+  既存AI QAで確認。すべてのOS/ブラウザ/更新経路の実機保証ではありません。
+- 長期運用・容量上限、過去candidateへの保存データrollback互換は未確認。
+- 初期版の「AI QAで未確認」欄は当時AIが実機確認できなかった範囲です。
+  後日のHuman QA PASSと区別して参照してください。
+
+今回の整理で行う確認
+- ドキュメントと実装/既存QAの照合、差分/秘密情報/新規commitメール監査、
+  main/candidate/tag維持、Pages設定/デプロイ状態、アプリ一式の変更なし確認。
+- 実データでの再テスト、復元操作、実機Human QAは実施しません。
+- 詳細結果と作業ブランチ/PR状態はNotionの今回整理記録を参照。
+
+固定URL・保存の注意
+- https://omuricezombie.github.io/household-asset-manager/
+- Pages配信元はmain / root。URLは既に確定済みです。
+- IndexedDB householdAssetManagerDB_v2 / schemaVersion 2 を維持。
+- JSON復元は現在のv0.2データを置き換えます。事前に現状も保存してください。
+- 更新確認目的のサイトデータ削除やPWA再インストールは行いません。
+
+以下は既存の実装概要・確認手順・版別履歴（保存）
+------------------------------------------------
+
 状態
 - stable
 - schemaVersion: 2
