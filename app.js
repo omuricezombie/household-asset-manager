@@ -13,6 +13,8 @@ let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
 let monthEndWriteQueue=Promise.resolve();
+let assetBreakdownMode='compact';
+let assetBreakdownRequestId=0;
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
 let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
@@ -29,6 +31,7 @@ async function showScreen(name,{push=true,panel=null}={}){
     if(!push&&historyReady)history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
     return false;
   }
+  if(name!=='home'){assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();}
   currentScreen=name;
   currentPanel=name==='input'?panel:null;
   $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
@@ -102,6 +105,22 @@ function metric(label,value,delta='',tone='',breakdown=''){
   const attrs=breakdown?` type="button" class="metric metric-tappable" data-asset-breakdown="${esc(breakdown)}" aria-label="${esc(label)}の内訳を表示"`:' class="metric"';
   return `<${tag}${attrs}><div class="label">${esc(label)}</div><div class="value">${typeof value==='number'?formatYen(value):esc(value)}</div>${delta?`<div class="delta ${tone}">${esc(delta)}</div>`:''}</${tag}>`;
 }
+function closeInlineBreakdown(){
+  $('assetBreakdownInline').classList.add('hidden');
+  $('assetBreakdownInlineRows').innerHTML='';
+}
+function selectBreakdownMode(mode){
+  if(!['compact','dialog'].includes(mode))return;
+  assetBreakdownMode=mode;
+  assetBreakdownRequestId++;
+  closeInlineBreakdown();
+  if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();
+  $('[data-breakdown-mode]').forEach(button=>{
+    const selected=button.dataset.breakdownMode===mode;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  });
+}
 function breakdownRow(label,value,note='',unit='yen'){
   const amount=unit==='pt'?n(value).toLocaleString('ja-JP')+' pt':formatYen(value);
   return `<div class="breakdown-row"><div><strong>${esc(label)}</strong>${note?`<div class="muted">${esc(note)}</div>`:''}</div><strong class="breakdown-amount">${esc(amount)}</strong></div>`;
@@ -110,11 +129,23 @@ async function openAssetBreakdown(kind){
   const month=selectedMonth;
   const names={wallet:'財布現金',points:'ポイント合計',total:'総資産',liquid:'流動資産',reserved:'支払確保済'};
   if(!names[kind])return;
+  const requestId=++assetBreakdownRequestId;
+  const compact=assetBreakdownMode==='compact';
   const dialog=$('assetBreakdownDialog');
-  $('assetBreakdownTitle').textContent=names[kind]+'の内訳';
-  $('assetBreakdownMonth').textContent=monthLabel(month);
-  $('assetBreakdownRows').innerHTML='<p class="muted">読み込み中...</p>';
-  if(!dialog.open)dialog.showModal();
+  const title=names[kind]+'の内訳';
+  if(compact){
+    if(dialog.open)dialog.close();
+    $('assetBreakdownInlineTitle').textContent=title;
+    $('assetBreakdownInlineMonth').textContent=monthLabel(month);
+    $('assetBreakdownInlineRows').innerHTML='<p class="muted">読み込み中...</p>';
+    $('assetBreakdownInline').classList.remove('hidden');
+  }else{
+    closeInlineBreakdown();
+    $('assetBreakdownTitle').textContent=title;
+    $('assetBreakdownMonth').textContent=monthLabel(month);
+    $('assetBreakdownRows').innerHTML='<p class="muted">読み込み中...</p>';
+    if(!dialog.open)dialog.showModal();
+  }
   try{
     let rows=[],total=0,unit='yen',foot='';
     if(kind==='points'){
@@ -145,13 +176,16 @@ async function openAssetBreakdown(kind){
         foot=kind==='liquid'?'銀行・現金の残高合計です。株式・DC・ポイントは含みません。':'登録された資産残高の合計です。ポイントは含みません。';
       }
     }
-    if(!dialog.open||selectedMonth!==month)return;
+    if(requestId!==assetBreakdownRequestId||selectedMonth!==month)return;
+    if(compact?$('assetBreakdownInline').classList.contains('hidden'):!dialog.open)return;
     const sum=unit==='pt'?total.toLocaleString('ja-JP')+' pt':formatYen(total);
-    $('assetBreakdownRows').innerHTML=(rows.length?rows.join(''):'<p class="muted">内訳は登録されていません。</p>')+
-      `<div class="breakdown-total"><strong>合計</strong><strong>${esc(sum)}</strong></div><p class="muted">${esc(foot)}</p>`;
+    const body=(rows.length?rows.join(''):'<p class="muted">内訳は登録されていません。</p>')+
+      `<div class="breakdown-total"><strong>合計</strong><strong>${esc(sum)}</strong></div>`+
+      (compact?'':`<p class="muted">${esc(foot)}</p>`);
+    $(compact?'assetBreakdownInlineRows':'assetBreakdownRows').innerHTML=body;
   }catch(e){
     console.error(e);
-    if(dialog.open)$('assetBreakdownRows').innerHTML='<p class="muted">内訳を読み込めませんでした。再度お試しください。</p>';
+    if(requestId===assetBreakdownRequestId)$((compact?'assetBreakdownInlineRows':'assetBreakdownRows')).innerHTML='<p class="muted">内訳を読み込めませんでした。再度お試しください。</p>';
   }
 }
 async function renderHomeAlerts(){
@@ -384,10 +418,13 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
   $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
+  $('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode));
+  $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
+  selectBreakdownMode('compact');
   $('assetBreakdownClose').onclick=()=>$('assetBreakdownDialog').close();
   $('assetBreakdownDialog').onclick=e=>{if(e.target===$('assetBreakdownDialog'))$('assetBreakdownDialog').close();};
   $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
-  $('globalMonth').onchange=async()=>{if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
+  $('globalMonth').onchange=async()=>{assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
   $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;$('advanceTotal').oninput=updateAdvanceCalc;$('advanceOwn').oninput=updateAdvanceCalc;
   $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
   $('cashCategory').onchange=()=>{$('cashMealWrap').classList.toggle('hidden',$('cashCategory').value!=='食費');};
