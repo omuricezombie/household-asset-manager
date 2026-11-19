@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.15';
-const FILES=['./','./index.html','./styles.css?v=0215','./db.js?v=0215','./dcard-import.js?v=0215','./analysis.js?v=0215','./app.js?v=0215','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.16';
+const FILES=['./','./index.html','./styles.css?v=0216','./db.js?v=0216','./dcard-import.js?v=0216','./analysis.js?v=0216','./app.js?v=0216','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
@@ -12,7 +12,7 @@ self.addEventListener('install',e=>{
 self.addEventListener('activate',e=>{
   e.waitUntil(
     caches.keys()
-      .then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+      .then(keys=>Promise.all(keys.filter(k=>k.startsWith('household-asset-manager-')&&k!==CACHE).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
 });

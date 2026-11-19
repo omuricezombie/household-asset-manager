@@ -41,3 +41,12 @@ dialog{border:0;background:transparent;padding:0;width:min(92vw,420px)}dialog::b
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:50;max-width:90vw;background:#000;color:#fff;padding:10px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;font-size:13px}#toast.show{opacity:.9}
 details{margin-top:10px}summary{cursor:pointer;font-weight:700}
 @media(min-width:700px){main{padding:18px}.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.quick-actions{grid-template-columns:repeat(4,1fr)}.bottom-nav{left:50%;right:auto;width:760px;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0}.summary-strip{grid-template-columns:repeat(4,1fr)}}
+
+/* Local screen lock and loading state */
+body.app-booting > .app-header,body.app-booting > main,body.app-booting > .bottom-nav,
+body.app-locked > .app-header,body.app-locked > main,body.app-locked > .bottom-nav{display:none!important}
+.lock-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:var(--bg);padding:16px}
+.lock-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(100%,390px)}
+.lock-card h2{margin-top:0}.lock-card button{width:100%}.lock-error{color:var(--danger);min-height:1.4em;font-size:13px}
+#lockEnablePanel form button,#lockDisablePanel form button{width:100%;margin-top:8px}
+#lockNowButton{margin-top:10px}

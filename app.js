@@ -12,6 +12,10 @@ let toastTimer=null;
 let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
+let monthEndWriteQueue=Promise.resolve();
+const LOCK_KEY='ham-app-lock-v1';
+const LOCK_ITERATIONS=150000;
+let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatYen(v){return A.formatYen(v);}
@@ -20,7 +24,11 @@ function monthLabel(m){const [y,mo]=m.split('-');return `${y}年${Number(mo)}月
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function selectOptions(values,current=''){return values.map(v=>{const [value,label]=Array.isArray(v)?v:[v,v];return `<option value="${esc(value)}" ${String(value)===String(current)?'selected':''}>${esc(label)}</option>`}).join('');}
 
-function showScreen(name,{push=true,panel=null}={}){
+async function showScreen(name,{push=true,panel=null}={}){
+  if(currentScreen==='monthend' && !(await flushMonthEndEdits())){
+    if(!push&&historyReady)history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
+    return false;
+  }
   currentScreen=name;
   currentPanel=name==='input'?panel:null;
   $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
@@ -30,10 +38,12 @@ function showScreen(name,{push=true,panel=null}={}){
     const p=$(`input-${currentPanel}`);
     if(p)p.classList.remove('hidden');
   }
+  if(name!=='data'&&$('lockRecoveryNotice')&&!$('lockRecoveryNotice').classList.contains('hidden'))clearVisibleRecovery();
   if(currentPanel==='cash')$('cashAmount').focus();
   if(currentPanel==='advance')renderAdvanceCardTransactions();
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
   if(push&&historyReady) history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
+  return true;
 }
 function openInputPanel(name,{push=true}={}){
   const panel=$(`input-${name}`)?name:null;
@@ -43,13 +53,17 @@ function setupNavigationHistory(){
   history.replaceState({hamNav:'exit-guard'},'',location.href);
   history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
   historyReady=true;
-  window.addEventListener('popstate',e=>{
+  window.addEventListener('popstate',async e=>{
     const st=e.state;
     if(st?.hamNav==='screen'){
       showScreen(st.screen||'home',{push:false,panel:st.panel||null});
       return;
     }
     if(st?.hamNav==='exit-guard'){
+      if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){
+        history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
+        return;
+      }
       const exit=confirm('家計・資産管理を終了しますか？');
       if(exit){
         historyReady=false;
@@ -74,7 +88,12 @@ async function renderHome(){
     metric('実質貯蓄',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
   ].join('');
   const points=await A.pointTotal(selectedMonth),adv=(await A.outstandingAdvances()).reduce((s,x)=>s+x.outstanding,0);const plans=await A.paymentPlansUpcoming();const reserved=plans.reduce((s,x)=>s+n(x.reservedAmount),0);
-  $('homeAssetSummary').innerHTML=[metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn'),metric('流動資産',cur.assets.liquid,''),metric('支払確保済',reserved,''),metric('ポイント',points.total.toLocaleString('ja-JP')+' pt',adv?`未回収立替 ${formatYen(adv)}`:'')].join('');
+  const wallet=cur.assets.rows.find(x=>x.account.id==='cash-wallet');
+  const walletValue=wallet?.liveCash?.value??(wallet?.snapshot?wallet.value:null);
+  const walletText=walletValue==null?'未登録':formatYen(walletValue);
+  const walletDetail=walletValue==null?'月末更新で残高を登録':wallet?.liveCash?.isEstimated?'現金移動を自動反映':'最終確認残高';
+  const pointText=points.rows.some(x=>x.snapshot)?points.total.toLocaleString('ja-JP')+' pt':'未登録';
+  $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':''),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn'),metric('流動資産',cur.assets.liquid,''),metric('支払確保済',reserved,'')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
   const ins=await A.insights(selectedMonth);$('homeInsights').innerHTML=ins.length?ins.map(x=>`<div class="insight ${x.tone}">${esc(x.text)}</div>`).join(''):'<p class="muted">比較データがたまると、前月比や3か月平均との差を表示します。</p>';
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
 }
@@ -176,6 +195,7 @@ async function renderMonthEnd(){
   $('walletMovementNotice').classList.toggle('hidden',!walletDirty);
   if(walletDirty)$('walletMovementNotice').innerHTML=`<div class="alert warn"><strong>財布に現金移動があります</strong><div class="muted">現在残高 ${formatYen(walletLive.value)}（確認時 ${formatYen(walletLive.baseValue)} / 自動反映 ${A.formatSigned(walletLive.movement)}）。実際の財布残高を確認してください。</div></div>`;
   const accounts=(await DB.getAll('accounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const rows=[];
+  $('monthEndBankPrompt').classList.toggle('hidden',accounts.some(x=>x.category==='bank'));
   for(const a of accounts){
     const cur=await DB.get('assetSnapshots',[selectedMonth,a.id]),prev=await DB.latestSnapshot(a.id,DB.prevMonth(selectedMonth));
     const live=a.id==='cash-wallet'?walletLive:null;
@@ -185,18 +205,113 @@ async function renderMonthEnd(){
     const meta=liveDirty?`確認時 ${formatYen(live.baseValue)} / 自動反映 ${A.formatSigned(live.movement)}`:`前回 ${prev?formatYen(prev.value):'—'}`;
     const badge=liveDirty?'要確認（現金移動あり）':(cur?.confirmed?'確認済':'未確認');
     const sameDisabled=!prev||liveDirty?'disabled':'';
-    rows.push(`<div class="asset-row" data-asset="${a.id}"><div class="asset-head"><div><strong>${esc(a.name)}</strong><div class="status-meta">${meta}</div></div><span class="badge">${badge}</span></div><div class="asset-values"><label>今月値<input data-asset-value="${a.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-asset-confirm="${a.id}">更新・確認</button><button data-asset-same="${a.id}" ${sameDisabled}>変更なし</button></div></div>`);
+    rows.push(`<div class="asset-row" data-asset="${a.id}"><div class="asset-head"><div><strong>${esc(a.name)}</strong><div class="status-meta">${meta}</div></div><span class="badge">${badge}</span></div><div class="asset-values"><label>今月値<input data-asset-value="${a.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-asset-same="${a.id}" ${sameDisabled}>変更なし</button></div></div>`);
   }
-  $('monthEndAccounts').innerHTML=rows.join('');$$('[data-asset-confirm]').forEach(b=>b.onclick=()=>saveAsset(b.dataset.assetConfirm,false));$$('[data-asset-same]').forEach(b=>b.onclick=()=>saveAsset(b.dataset.assetSame,true));
-  const points=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const prows=[];for(const p of points){const cur=await DB.get('pointSnapshots',[selectedMonth,p.id]),prev=await DB.latestPointSnapshot(p.id,DB.prevMonth(selectedMonth));const val=cur?cur.value:(prev?prev.value:'');const diff=prev&&val!==''?n(val)-n(prev.value):'';prows.push(`<div class="asset-row"><div class="asset-head"><div><strong>${esc(p.name)}</strong><div class="status-meta">前回 ${prev?n(prev.value).toLocaleString('ja-JP')+' pt':'—'}</div></div><span class="badge">${cur?.confirmed?'確認済':'未確認'}</span></div><div class="asset-values"><label>今月<input data-point-value="${p.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-point-confirm="${p.id}">更新・確認</button><button data-point-same="${p.id}" ${prev?'':'disabled'}>変更なし</button></div></div>`);}
-  $('monthEndPoints').innerHTML=prows.join('');$$('[data-point-confirm]').forEach(b=>b.onclick=()=>savePoint(b.dataset.pointConfirm,false));$$('[data-point-same]').forEach(b=>b.onclick=()=>savePoint(b.dataset.pointSame,true));await renderChecklist();
+  $('monthEndAccounts').innerHTML=rows.join('');bindMonthEndAutoSave('asset');$$('[data-asset-same]').forEach(b=>b.onclick=()=>saveAsset(b.dataset.assetSame,true));
+  const points=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const prows=[];for(const p of points){const cur=await DB.get('pointSnapshots',[selectedMonth,p.id]),prev=await DB.latestPointSnapshot(p.id,DB.prevMonth(selectedMonth));const val=cur?cur.value:(prev?prev.value:'');const diff=prev&&val!==''?n(val)-n(prev.value):'';prows.push(`<div class="asset-row"><div class="asset-head"><div><strong>${esc(p.name)}</strong><div class="status-meta">前回 ${prev?n(prev.value).toLocaleString('ja-JP')+' pt':'—'}</div></div><span class="badge">${cur?.confirmed?'確認済':'未確認'}</span></div><div class="asset-values"><label>今月<input data-point-value="${p.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-point-same="${p.id}" ${prev?'':'disabled'}>変更なし</button></div></div>`);}
+  $('monthEndPoints').innerHTML=prows.join('');bindMonthEndAutoSave('point');$$('[data-point-same]').forEach(b=>b.onclick=()=>savePoint(b.dataset.pointSame,true));await renderChecklist();
 }
-async function saveAsset(id,same){const prev=await DB.latestSnapshot(id,DB.prevMonth(selectedMonth));const input=document.querySelector(`[data-asset-value="${CSS.escape(id)}"]`);const raw=input.value.trim();if(same&&!prev)return toast('前月値がありません。');if(id==='cash-wallet'&&same&&selectedMonth===DB.currentMonth()){const live=await A.liveCashBalance(selectedMonth,id);if(live.movement!==0)return toast('現金移動が反映されています。現在残高を確認してください。');}if(!same&&raw==='')return toast('残高を入力してください。');const value=same?prev.value:n(raw);const at=DB.now();await DB.put('assetSnapshots',{month:selectedMonth,accountId:id,value,confirmed:true,confirmedAt:at,updatedAt:at});toast('資産残高を確認しました。');await renderMonthEnd();await renderHome();}
-async function savePoint(id,same){const prev=await DB.latestPointSnapshot(id,DB.prevMonth(selectedMonth));const input=document.querySelector(`[data-point-value="${CSS.escape(id)}"]`);const raw=input.value.trim();if(same&&!prev)return toast('前月値がありません。');if(!same&&raw==='')return toast('ポイント残高を入力してください。');const value=same?prev.value:n(raw);await DB.put('pointSnapshots',{month:selectedMonth,pointAccountId:id,value,confirmed:true,updatedAt:DB.now()});toast('ポイントを確認しました。');await renderMonthEnd();}
+
+function monthEndInputs(){return $$('[data-asset-value],[data-point-value]');}
+function markMonthEndDirty(input){
+  input.dataset.dirty='true';
+  const badge=input.closest('.asset-row')?.querySelector('.asset-head .badge');
+  if(badge)badge.textContent='未保存';
+}
+function markMonthEndStatus(input,status){
+  const badge=input.closest('.asset-row')?.querySelector('.asset-head .badge');
+  if(badge)badge.textContent=status;
+}
+function bindMonthEndAutoSave(type){
+  const attr=type==='asset'?'data-asset-value':'data-point-value';
+  $$('['+attr+']').forEach(input=>{
+    input.dataset.dirty='false';
+    input.oninput=()=>markMonthEndDirty(input);
+    input.onchange=()=>{if(input.dataset.dirty==='true')void persistMonthEndInput(input);};
+    input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}};
+  });
+}
+function persistMonthEndInput(input,same=false){
+  if(!input)return Promise.resolve(false);
+  if(input._monthEndSave){
+    return input._monthEndSave.then(ok=>{
+      if(!ok)return false;
+      if(same||input.dataset.dirty==='true')return persistMonthEndInput(input,same);
+      return true;
+    });
+  }
+  const isAsset=input.hasAttribute('data-asset-value');
+  const id=input.getAttribute(isAsset?'data-asset-value':'data-point-value');
+  const month=selectedMonth,raw=input.value.trim();
+  const task=monthEndWriteQueue.catch(()=>{}).then(async()=>{
+    try{
+      const previous=isAsset?await DB.latestSnapshot(id,DB.prevMonth(month)):await DB.latestPointSnapshot(id,DB.prevMonth(month));
+      if(same&&!previous)throw new Error('前月値がありません。');
+      if(isAsset&&same&&id==='cash-wallet'&&month===DB.currentMonth()){
+        const live=await A.liveCashBalance(month,id);
+        if(live.movement!==0)throw new Error('現金移動が反映されています。現在残高を確認してください。');
+      }
+      if(!same&&(raw===''||input.validity?.badInput))throw new Error('残高を入力してください。');
+      const value=same?Number(previous.value):Number(raw);
+      if(!Number.isSafeInteger(value)||value<0)throw new Error('0以上の整数で入力してください。');
+      const at=DB.now();
+      if(isAsset){
+        await DB.put('assetSnapshots',{month,accountId:id,value,confirmed:true,confirmedAt:at,updatedAt:at});
+      }else{
+        await DB.put('pointSnapshots',{month,pointAccountId:id,value,confirmed:true,updatedAt:at});
+      }
+      if(same)input.value=String(value);
+      if(same||input.value.trim()===raw){
+        input.dataset.dirty='false';
+        markMonthEndStatus(input,'保存済・確認済');
+      }else{
+        input.dataset.dirty='true';
+        markMonthEndStatus(input,'未保存');
+      }
+      const delta=input.closest('.asset-row')?.querySelector('input[readonly]');
+      if(delta)delta.value=previous?String(value-Number(previous.value)):'';
+      await renderChecklist();
+      return true;
+    }catch(err){
+      input.dataset.dirty='true';
+      markMonthEndStatus(input,'保存失敗');
+      toast('保存できません: '+err.message);
+      return false;
+    }
+  });
+  monthEndWriteQueue=task.catch(()=>{});
+  input._monthEndSave=task;
+  void task.finally(()=>{if(input._monthEndSave===task)input._monthEndSave=null;});
+  return task;
+}
+async function flushMonthEndEdits(){
+  for(let i=0;i<3;i++){
+    const pending=monthEndInputs().filter(input=>input.dataset.dirty==='true'||input._monthEndSave);
+    if(!pending.length)return true;
+    const completed=await Promise.all(pending.map(input=>persistMonthEndInput(input)));
+    if(completed.some(ok=>!ok)){
+      toast('未保存の項目があります。入力を確認してください。');
+      return false;
+    }
+  }
+  const clean=!monthEndInputs().some(input=>input.dataset.dirty==='true'||input._monthEndSave);
+  if(!clean)toast('保存中です。少ししてから操作してください。');
+  return clean;
+}
+async function saveAsset(id,same){
+  const input=document.querySelector(`[data-asset-value="${CSS.escape(id)}"]`);
+  const ok=await persistMonthEndInput(input,same);
+  if(ok)toast('資産残高を保存しました。');
+}
+async function savePoint(id,same){
+  const input=document.querySelector(`[data-point-value="${CSS.escape(id)}"]`);
+  const ok=await persistMonthEndInput(input,same);
+  if(ok)toast('ポイント残高を保存しました。');
+}
 function itemLabel(k){return ({dcard:'dカードCSV',bank:'銀行',cash:'現金',stock:'株式',dc:'DC',points:'ポイント',rent:'家賃',income:'主要収入'})[k]||k;}
 async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthStatus(month);const builtins=new Set(['cash-wallet','stock-total','dc-total','dpoint']);const applies=x=>builtins.has(x.id)||!x.createdAt||String(x.createdAt).slice(0,7)<=month;const ac=(await DB.getAll('accounts')).filter(x=>x.active!==false&&applies(x));for(const cat of ['bank','cash','stock','dc']){const list=ac.filter(x=>x.category===cat);if(!list.length){st.completionItems[cat]=false;continue;}const checks=[];for(const x of list){const snap=await DB.get('assetSnapshots',[month,x.id]);let ok=!!snap?.confirmed;if(ok&&x.id==='cash-wallet'&&month===DB.currentMonth()){const live=await A.liveCashBalance(month,x.id);if(live.movement!==0)ok=false;}checks.push(ok);}st.completionItems[cat]=checks.every(Boolean);}const pts=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false&&applies(x));st.completionItems.points=pts.length?(await Promise.all(pts.map(x=>DB.get('pointSnapshots',[month,x.id])))).every(x=>x?.confirmed):true;const tx=await A.monthTransactions(month);if(tx.some(x=>x.kind==='income'))st.completionItems.income=true;if(tx.some(x=>x.kind==='expense'&&x.category==='家賃'))st.completionItems.rent=true;return save?await DB.saveMonthStatus(st):({...st,completionRate:Math.round(Object.values(st.completionItems).filter(Boolean).length/Object.values(st.completionItems).length*100)});}
 async function renderChecklist(){const st=await recomputeMonthStatus(selectedMonth);$('monthEndProgress').textContent=`${st.completionRate}%`;const keys=['dcard','bank','cash','stock','dc','points','rent','income'];$('monthEndChecklist').innerHTML=keys.map(k=>`<div class="status-row"><div><strong>${itemLabel(k)}</strong>${k==='dcard'&&st.cardCsvUpdatedAt?`<div class="status-meta">最終取込 ${new Date(st.cardCsvUpdatedAt).toLocaleString('ja-JP')}</div>`:''}</div><div>${st.completionItems[k]?'<span class="badge">確認済</span>':(['dcard','rent','income'].includes(k)?`<button data-check-item="${k}">確認済みにする</button>`:'<span class="badge">未確認</span>')}</div></div>`).join('');$$('[data-check-item]').forEach(b=>b.onclick=async()=>{const s=await DB.getMonthStatus(selectedMonth);s.completionItems[b.dataset.checkItem]=true;await DB.saveMonthStatus(s);await renderChecklist();});$('completeMonthButton').disabled=st.completionRate<100;$('completeMonthButton').title=st.completionRate<100?'未確認項目があります':'';}
-async function completeMonth(){const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
+async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
 async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);}
 function renderBars(id,rows,showDelta){const max=Math.max(1,...rows.map(x=>Math.abs(x.current)));$(id).innerHTML=rows.length?`<div class="bar-list">${rows.map(x=>`<div class="bar-item"><span>${esc(x.key)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.min(100,Math.abs(x.current)/max*100)}%"></span></span><span>${formatYen(x.current)}${showDelta?`<small class="${x.delta<=0?'good':'warn'}"> ${A.formatSigned(x.delta)}</small>`:''}</span></div>`).join('')}</div>`:'<p class="muted">表示できるデータがありません。</p>';}
@@ -205,28 +320,182 @@ async function renderData(){const im=(await DB.getAll('cardImports')).sort((a,b)
 async function exportBackup(){try{const p=await DB.buildBackup();const blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`household_asset_backup_v2_${DB.ymd()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('バックアップを作成しました。');}catch(e){toast('バックアップ失敗: '+e.message);}}
 async function importBackup(file){try{const p=JSON.parse(await file.text());await DB.validateBackup(p);if(!confirm('v0.2の現在データをバックアップ内容で置き換えます。よろしいですか？'))return;await DB.restoreBackup(p);toast('復元しました。');await renderAll();}catch(e){toast('復元できません: '+e.message);}finally{$('backupImport').value='';}}
 
-async function addAccountFromDialog(e){e.preventDefault();const name=$('accountName').value.trim();if(!name)return;const cat=$('accountCategory').value;const all=await DB.getAll('accounts');await DB.put('accounts',{id:DB.uid('acct'),name,category:cat,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('accountDialog').close();$('accountName').value='';await renderMonthEnd();}
-async function addPointFromDialog(e){e.preventDefault();const name=$('pointName').value.trim();if(!name)return toast('ポイント名を入力してください。');const all=await DB.getAll('pointAccounts');if(all.some(x=>x.active!==false&&x.name===name))return toast('同じ名前のポイント項目があります。');await DB.put('pointAccounts',{id:DB.uid('point'),name,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('pointDialog').close();$('pointName').value='';toast('ポイント項目を追加しました。');await renderMonthEnd();}
+function openAccountDialog(category='bank'){$('accountCategory').value=category;$('accountDialog').showModal();}
+async function addAccountFromDialog(e){e.preventDefault();if(!(await flushMonthEndEdits()))return;const name=$('accountName').value.trim();if(!name)return;const cat=$('accountCategory').value;const all=await DB.getAll('accounts');await DB.put('accounts',{id:DB.uid('acct'),name,category:cat,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('accountDialog').close();$('accountName').value='';await renderMonthEnd();await renderHome();}
+async function addPointFromDialog(e){e.preventDefault();if(!(await flushMonthEndEdits()))return;const name=$('pointName').value.trim();if(!name)return toast('ポイント名を入力してください。');const all=await DB.getAll('pointAccounts');if(all.some(x=>x.active!==false&&x.name===name))return toast('同じ名前のポイント項目があります。');await DB.put('pointAccounts',{id:DB.uid('point'),name,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('pointDialog').close();$('pointName').value='';toast('ポイント項目を追加しました。');await renderMonthEnd();}
 async function clearAll(){if(!confirm('v0.2の家計・資産データを全削除します。v0.1旧DBは削除しません。実行しますか？'))return;if(!confirm('元に戻せません。JSONバックアップは保存しましたか？'))return;for(const s of DB.STORES)await DB.clear(s);await DB.seed();toast('v0.2データを削除しました。');await renderAll();}
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
   $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
-  $('globalMonth').onchange=async()=>{selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
+  $('globalMonth').onchange=async()=>{if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
   $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;$('advanceTotal').oninput=updateAdvanceCalc;$('advanceOwn').oninput=updateAdvanceCalc;
   $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
   $('cashCategory').onchange=()=>{$('cashMealWrap').classList.toggle('hidden',$('cashCategory').value!=='食費');};
   $('dcardFile').onchange=e=>{if(e.target.files[0])handleCsvFile(e.target.files[0]);};$('csvImportButton').onclick=importPreparedCsv;
-  $('addAccountButton').onclick=()=>$('accountDialog').showModal();$('accountDialog').addEventListener('close',()=>{});$('accountCreate').onclick=addAccountFromDialog;
+  $('addAccountButton').onclick=()=>openAccountDialog('bank');$('addBankButton').onclick=()=>openAccountDialog('bank');$('accountDialog').addEventListener('close',()=>{});$('accountCreate').onclick=addAccountFromDialog;
   $('addPointButton').onclick=()=>$('pointDialog').showModal();$('pointDialog').addEventListener('close',()=>{});$('pointCreate').onclick=addPointFromDialog;
+  window.addEventListener('beforeunload',e=>{if(currentScreen==='monthend'&&monthEndInputs().some(x=>x.dataset.dirty==='true'||x._monthEndSave)){e.preventDefault();e.returnValue='';}});
   $('completeMonthButton').onclick=completeMonth;$('backupExport').onclick=exportBackup;$('backupImport').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);};$('clearAll').onclick=clearAll;
+}
+
+
+/* Optional local screen lock; does not encrypt IndexedDB or JSON backups. */
+function lockConfig(){
+  try{const raw=localStorage.getItem(LOCK_KEY);return raw?JSON.parse(raw):null;}
+  catch(e){console.error('Lock config unreadable',e);return {invalid:true};}
+}
+function byteHex(bytes){return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function pinDigest(pin,salt,iterations=LOCK_ITERATIONS){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new Uint8Array(salt.match(/.{2}/g).map(x=>parseInt(x,16))),iterations},key,256);
+  return byteHex(new Uint8Array(bits));
+}
+function secureEquals(a,b){if(typeof a!=='string'||typeof b!=='string')return false;let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return diff===0;}
+function clearVisibleRecovery(){
+  $('lockRecoveryNotice').classList.add('hidden');
+  $('lockRecoveryCode').textContent='';
+}
+function showNewRecoveryCode(code){
+  $('lockRecoveryCode').textContent=code.match(/.{1,6}/g).join('-');
+  $('lockRecoveryNotice').classList.remove('hidden');
+}
+function updateLockSettings(){
+  const enabled=!!lockConfig();
+  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（画面閲覧防止用。保存データの暗号化ではありません）':'起動ロック：無効';
+  $('lockEnablePanel').classList.toggle('hidden',enabled);
+  $('lockDisablePanel').classList.toggle('hidden',!enabled);
+  $('lockNowButton').classList.toggle('hidden',!enabled);
+}
+function showLock(){
+  if(!lockConfig())return;
+  document.body.classList.add('app-locked');
+  $('lockOverlay').classList.remove('hidden');
+  $('lockPin').value='';
+  $('lockRecoveryInput').value='';
+  $('lockRecoveryForm').classList.add('hidden');
+  clearVisibleRecovery();
+  $('lockError').textContent='';
+  $('lockPin').focus();
+}
+function hideLock(){
+  unlockFailures=0;unlockDelayUntil=0;
+  document.body.classList.remove('app-locked');
+  $('lockOverlay').classList.add('hidden');
+  $('lockPin').value='';
+}
+async function unlockApp(e){
+  e.preventDefault();
+  if(Date.now()<unlockDelayUntil)return $('lockError').textContent='しばらくしてから再試行してください。';
+  const cfg=lockConfig();
+  if(!cfg||cfg.invalid||!cfg.salt||!cfg.hash)return $('lockError').textContent='ロック設定を読み込めません。';
+  try{
+    const candidate=await pinDigest($('lockPin').value,cfg.salt,cfg.iterations);
+    if(secureEquals(candidate,cfg.hash)){hideLock();return;}
+    unlockFailures++;
+    if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+    $('lockError').textContent='PINが違います。'+(unlockDelayUntil>Date.now()?'30秒後に再試行できます。':'');
+    $('lockPin').value='';
+  }catch(err){$('lockError').textContent='認証処理に失敗しました。';console.error(err);}
+}
+async function enableLock(e){
+  e.preventDefault();
+  const pin=$('lockNewPin').value,confirmation=$('lockConfirmPin').value;
+  if(!/^\d{6,12}$/.test(pin))return toast('PINは数字6〜12桁で入力してください。');
+  if(pin!==confirmation)return toast('確認用PINが一致しません。');
+  if(!crypto.subtle||!crypto.getRandomValues)return toast('この環境では安全なPIN設定ができません。');
+  try{
+    const salt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const hash=await pinDigest(pin,salt);
+    const recoveryCode=byteHex(crypto.getRandomValues(new Uint8Array(12)));
+    const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const recoveryHash=await pinDigest(recoveryCode,recoverySalt);
+    localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS,recoverySalt,recoveryHash}));
+    showNewRecoveryCode(recoveryCode);
+    $('lockNewPin').value='';$('lockConfirmPin').value='';
+    updateLockSettings();toast('起動ロックを有効にしました。');
+  }catch(err){toast('設定に失敗しました: '+err.message);}
+}
+async function disableLock(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg||cfg.invalid)return toast('ロック設定を確認できません。');
+  try{
+    if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
+    localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
+    clearVisibleRecovery();
+    updateLockSettings();toast('起動ロックを解除しました。');
+  }catch(err){toast('解除に失敗しました。');}
+}
+async function regenerateRecovery(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg?.salt||!cfg.hash||!cfg.iterations)return toast('ロック設定が読み込めません。');
+  if(Date.now()<unlockDelayUntil)return toast('しばらくしてから再試行してください。');
+  try{
+    const entered=$('lockRegeneratePin').value;
+    const digest=await pinDigest(entered,cfg.salt,cfg.iterations);
+    $('lockRegeneratePin').value='';
+    if(!secureEquals(digest,cfg.hash)){
+      unlockFailures++;
+      if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+      return toast('PINが違います。');
+    }
+    const recoveryCode=byteHex(crypto.getRandomValues(new Uint8Array(12)));
+    const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const recoveryHash=await pinDigest(recoveryCode,recoverySalt,cfg.iterations);
+    localStorage.setItem(LOCK_KEY,JSON.stringify({...cfg,recoverySalt,recoveryHash}));
+    unlockFailures=0;unlockDelayUntil=0;
+    showNewRecoveryCode(recoveryCode);
+    $('lockRecoveryNotice').scrollIntoView({behavior:'smooth',block:'center'});
+    toast('復旧コードを再発行しました。必ず控えてください。');
+  }catch(err){toast('復旧コードの再発行に失敗しました。');console.error(err);}
+}
+async function recoverLock(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg?.recoveryHash||!cfg.recoverySalt)return $('lockError').textContent='復旧コードが設定されていません。';
+  if(Date.now()<unlockDelayUntil)return $('lockError').textContent='しばらくしてから再試行してください。';
+  const code=$('lockRecoveryInput').value.replace(/[^0-9a-f]/gi,'').toLowerCase();
+  try{
+    if(!secureEquals(await pinDigest(code,cfg.recoverySalt,cfg.iterations),cfg.recoveryHash)){
+      unlockFailures++;
+      if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+      $('lockError').textContent='復旧コードが違います。';
+      return;
+    }
+    if(!confirm('起動ロックのみ解除します。家計データは削除されません。よろしいですか？'))return;
+    localStorage.removeItem(LOCK_KEY);
+    $('lockRecoveryInput').value='';
+    $('lockRecoveryForm').classList.add('hidden');
+    hideLock();updateLockSettings();toast('起動ロックを解除しました。必要なら新しいPINを設定してください。');
+  }catch(err){$('lockError').textContent='復旧処理に失敗しました。';console.error(err);}
+}
+function setupLock(){
+  $('lockUnlockForm').onsubmit=unlockApp;
+  $('lockEnableForm').onsubmit=enableLock;
+  $('lockDisableForm').onsubmit=disableLock;
+  $('lockNowButton').onclick=showLock;
+  $('lockRecoveryForm').onsubmit=recoverLock;
+  $('lockRegenerateForm').onsubmit=regenerateRecovery;
+  $('lockRecoveryAcknowledged').onclick=clearVisibleRecovery;
+  $('lockRecoveryToggle').onclick=()=>{const form=$('lockRecoveryForm');form.classList.toggle('hidden');if(!form.classList.contains('hidden'))$('lockRecoveryInput').focus();};
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)hiddenAt=Date.now();
+    else if(hiddenAt&&Date.now()-hiddenAt>=60000){if(lockConfig())showLock();hiddenAt=0;}
+  });
+  window.addEventListener('pagehide',()=>{hiddenAt=Date.now();});
+  window.addEventListener('pageshow',()=>{if(hiddenAt&&Date.now()-hiddenAt>=60000&&lockConfig())showLock();});
+  updateLockSettings();
+  if(lockConfig())showLock();
 }
 
 async function init(){
   try{
-    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();
+    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();setupLock();document.body.classList.remove('app-booting');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
-  }catch(e){console.error(e);document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
+  }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
 init();
 })(window);
