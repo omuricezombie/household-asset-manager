@@ -50,3 +50,14 @@ body.app-locked > .app-header,body.app-locked > main,body.app-locked > .bottom-n
 .lock-card h2{margin-top:0}.lock-card button{width:100%}.lock-error{color:var(--danger);min-height:1.4em;font-size:13px}
 #lockEnablePanel form button,#lockDisablePanel form button{width:100%;margin-top:8px}
 #lockNowButton{margin-top:10px}
+
+/* Tap-to-inspect asset cards */
+button.metric-tappable{width:100%;display:block;text-align:left;border:1px solid transparent;color:var(--text);font:inherit;cursor:pointer}
+button.metric-tappable:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+button.metric-tappable:active{border-color:var(--line);transform:none}
+.breakdown-rows{display:grid;gap:0;max-height:min(58vh,480px);overflow:auto}
+.breakdown-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.breakdown-row>div{min-width:0;overflow-wrap:anywhere}
+.breakdown-amount{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.breakdown-total{display:flex;justify-content:space-between;gap:12px;padding:14px 0 4px;font-size:16px}
+#assetBreakdownDialog .dialog-card h2{margin-bottom:0}
