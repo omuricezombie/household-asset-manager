@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0217c3">
+  <link rel="stylesheet" href="styles.css?v=0217c4">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.17-candidate.3</p>
+      <p class="sub">v0.2.17-candidate.4</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -70,7 +70,7 @@
 
       <div id="input-cash" class="card input-panel hidden">
         <div class="section-title-row"><h2>現金支出</h2><button class="text-btn" data-close-panel>閉じる</button></div>
-        <label>金額<input id="cashAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1"></label>
+        <label>金額<input id="cashAmount" class="big-input" type="text" inputmode="numeric" min="0" step="1"></label>
         <div id="cashPresets" class="chip-row"></div>
         <details>
           <summary>詳細</summary>
@@ -85,7 +85,7 @@
 
       <div id="input-income" class="card input-panel hidden">
         <div class="section-title-row"><h2>収入</h2><button class="text-btn" data-close-panel>閉じる</button></div>
-        <label>金額<input id="incomeAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1"></label>
+        <label>金額<input id="incomeAmount" class="big-input" type="text" inputmode="numeric" min="0" step="1"></label>
         <label>種別<select id="incomeType"><option>給与</option><option>賞与</option><option>配当</option><option>利息</option><option>その他</option></select></label>
         <label>日付<input id="incomeDate" type="date"></label>
         <button id="incomeSave" class="primary sticky-action">保存</button>
@@ -93,7 +93,7 @@
 
       <div id="input-rent" class="card input-panel hidden">
         <div class="section-title-row"><h2>家賃</h2><button class="text-btn" data-close-panel>閉じる</button></div>
-        <label>金額<input id="rentAmount" class="big-input" type="number" inputmode="numeric" min="0" step="1"></label>
+        <label>金額<input id="rentAmount" class="big-input" type="text" inputmode="numeric" min="0" step="1"></label>
         <label>振込日<input id="rentDate" type="date"></label>
         <label>支払元口座<select id="rentAccount"></select></label>
         <button id="rentSave" class="primary sticky-action">振込済みとして登録</button>
@@ -108,9 +108,9 @@
           <div id="advanceCardList"></div>
           <details>
             <summary>現金・銀行振込などの立替を新規登録</summary>
-            <label>支払総額<input id="advanceTotal" type="number" inputmode="numeric" min="0" step="1"></label>
-            <label>自分負担額<input id="advanceOwn" type="number" inputmode="numeric" min="0" step="1"></label>
-            <label>立替額（家族分）<input id="advanceOther" type="number" inputmode="numeric" min="0" step="1" readonly></label><p class="muted">支払総額はあなたが支払った総額です。立替額（家族分）は「支払総額 − 自分負担額」で自動計算し、家族からの返金待ちとして管理します。</p>
+            <label>支払総額<input id="advanceTotal" type="text" inputmode="numeric" min="0" step="1"></label>
+            <label>自分負担額<input id="advanceOwn" type="text" inputmode="numeric" min="0" step="1"></label>
+            <label>立替額（家族分）<input id="advanceOther" type="text" inputmode="numeric" min="0" step="1" readonly></label><p class="muted">支払総額はあなたが支払った総額です。立替額（家族分）は「支払総額 − 自分負担額」で自動計算し、家族からの返金待ちとして管理します。</p>
             <label>日付<input id="advanceDate" type="date"></label>
             <label>支払手段<select id="advancePayment"><option value="cash">現金</option><option value="bank_transfer">銀行振込</option><option value="other">その他</option></select></label>
             <label>店舗・メモ<input id="advanceMerchant" type="text"></label>
@@ -276,9 +276,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0217c3"></script>
-  <script src="dcard-import.js?v=0217c3"></script>
-  <script src="analysis.js?v=0217c3"></script>
-  <script src="app.js?v=0217c3"></script>
+  <script src="db.js?v=0217c4"></script>
+  <script src="dcard-import.js?v=0217c4"></script>
+  <script src="analysis.js?v=0217c4"></script>
+  <script src="app.js?v=0217c4"></script>
 </body>
 </html>
