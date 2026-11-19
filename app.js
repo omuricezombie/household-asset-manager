@@ -53,16 +53,15 @@ function setupNavigationHistory(){
   history.replaceState({hamNav:'exit-guard'},'',location.href);
   history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
   historyReady=true;
-  window.addEventListener('popstate',e=>{
+  window.addEventListener('popstate',async e=>{
     const st=e.state;
     if(st?.hamNav==='screen'){
       showScreen(st.screen||'home',{push:false,panel:st.panel||null});
       return;
     }
     if(st?.hamNav==='exit-guard'){
-      if(currentScreen==='monthend'&&monthEndInputs().some(input=>input.dataset.dirty==='true'||input._monthEndSave)){
+      if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){
         history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
-        toast('未保存の残高があります。入力欄を確定してから戻ってください。');
         return;
       }
       const exit=confirm('家計・資産管理を終了しますか？');
