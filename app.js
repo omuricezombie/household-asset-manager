@@ -42,8 +42,9 @@ function formatAmountInput(input){
   }
 }
 function setupAmountInput(input,onEdit){
+  input.addEventListener('compositionstart',()=>{input.isComposing=true;});
   input.addEventListener('input',()=>{formatAmountInput(input);if(onEdit)onEdit();});
-  input.addEventListener('compositionend',()=>{formatAmountInput(input);if(onEdit)onEdit();});
+  input.addEventListener('compositionend',()=>{input.isComposing=false;formatAmountInput(input);if(onEdit)onEdit();});
 }
 
 const categories=['未分類','食費','日用品','交通費','医療','教育費','サブスク','交際費','通信・光熱費','漫画・本','リフレッシュ費','洗濯','貸本','家賃','その他'];
@@ -286,17 +287,17 @@ async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
   const all=await DB.getAll('transactions');if(all.some(x=>x.kind==='advance_repayment'&&x.linkedTransactionId===id))return toast('返金登録済みの立替は変更できません。');
   const current=n(t.advanceShare);
-  const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${n(t.amount)} を入力します。`,current>0?String(current):'');
+  const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${formatAmount(n(t.amount))} を入力します。`,current>0?formatAmount(current):'');
   if(v==null)return;
-  const raw=String(v).trim();if(raw==='')return toast('立替額（家族分）を入力してください。');const advance=Number(raw);
-  if(!Number.isFinite(advance)||advance<0||advance>n(t.amount))return toast('立替額（家族分）を確認してください。');
+  const raw=String(v).trim();if(raw==='')return toast('立替額（家族分）を入力してください。');const advance=parseAmount(raw);
+  if(!Number.isSafeInteger(advance)||advance<0||advance>n(t.amount))return toast('立替額（家族分）を確認してください。');
   const own=n(t.amount)-advance;
   t.ownShare=own;t.advanceShare=advance;t.advanceStatus=advance>0?'unpaid':null;t.updatedAt=DB.now();await DB.put('transactions',t);
   toast(advance>0?`立替 ${formatYen(advance)}（自分負担 ${formatYen(own)}）を設定しました。`:'立替設定を解除しました。');
   await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
 }
-function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)?formatAmount(Math.max(0,total-own)):'';}
-async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
+function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)&&total>own?formatAmount(total-own):'';}
+async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
 async function renderOutstanding(){
   const rows=await A.outstandingAdvances();
   const labels={dbarai:'d払い',id:'iD',dcard:'dカード',cash:'現金',bank_transfer:'銀行振込',other:'その他'};
@@ -371,8 +372,9 @@ function bindMonthEndAutoSave(type){
   const attr=type==='asset'?'data-asset-value':'data-point-value';
   $$('['+attr+']').forEach(input=>{
     input.dataset.dirty='false';
+    input.oncompositionstart=()=>{input.isComposing=true;};
     input.oninput=()=>{formatAmountInput(input);markMonthEndDirty(input);};
-    input.oncompositionend=()=>{formatAmountInput(input);markMonthEndDirty(input);};
+    input.oncompositionend=()=>{input.isComposing=false;formatAmountInput(input);markMonthEndDirty(input);};
     input.onchange=()=>{if(input.dataset.dirty==='true')void persistMonthEndInput(input);};
     input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}};
   });
