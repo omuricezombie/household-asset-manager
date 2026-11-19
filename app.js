@@ -15,6 +15,7 @@ let historyReady=false;
 let monthEndWriteQueue=Promise.resolve();
 let assetBreakdownMode='compact';
 let assetBreakdownRequestId=0;
+const BREAKDOWN_MODE_KEY='ham-asset-breakdown-mode-v1';
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
 let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
@@ -109,9 +110,21 @@ function closeInlineBreakdown(){
   $('assetBreakdownInline').classList.add('hidden');
   $('assetBreakdownInlineRows').innerHTML='';
 }
-function selectBreakdownMode(mode){
+function readBreakdownMode(){
+  try{
+    const saved=localStorage.getItem(BREAKDOWN_MODE_KEY);
+    return saved==='dialog'?'dialog':'compact';
+  }catch(e){console.warn('内訳表示設定を読み込めませんでした。',e);return 'compact';}
+}
+function saveBreakdownMode(mode){
+  try{localStorage.setItem(BREAKDOWN_MODE_KEY,mode);}
+  catch(e){console.warn('内訳表示設定を保存できませんでした。',e);}
+}
+function selectBreakdownMode(mode,{remember=false}={}){
+
   if(!['compact','dialog'].includes(mode))return;
   assetBreakdownMode=mode;
+  if(remember)saveBreakdownMode(mode);
   assetBreakdownRequestId++;
   closeInlineBreakdown();
   if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();
@@ -418,9 +431,9 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
   $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
-  $$('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode));
+  $('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode,{remember:true}));
   $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
-  selectBreakdownMode('compact');
+  selectBreakdownMode(readBreakdownMode());
   $('assetBreakdownClose').onclick=()=>$('assetBreakdownDialog').close();
   $('assetBreakdownDialog').onclick=e=>{if(e.target===$('assetBreakdownDialog'))$('assetBreakdownDialog').close();};
   $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
