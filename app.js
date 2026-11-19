@@ -4,6 +4,49 @@ const HAM=global.HAM, DB=HAM.DB, A=HAM.Analysis, DC=HAM.DCard;
 const $=id=>document.getElementById(id);
 const $$=sel=>[...document.querySelectorAll(sel)];
 const n=v=>Number(v)||0;
+/* Money is shown with separators; IndexedDB continues to store integer numbers. */
+function formatAmount(value){
+  if(value==null||value==='')return '';
+  const raw=String(value);
+  return /^\d+$/.test(raw)?raw.replace(/\B(?=(\d{3})+(?!\d))/g,','):raw;
+}
+function formatSignedAmount(value){
+  return value<0?'-'+formatAmount(Math.abs(value)):formatAmount(value);
+}
+function parseAmount(value){
+  const raw=String(value??'').trim();
+  if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(raw))return NaN;
+  const result=Number(raw.replace(/,/g,''));
+  return Number.isSafeInteger(result)&&result>=0?result:NaN;
+}
+function formatAmountInput(input){
+  if(!input||input.isComposing)return;
+  const raw=input.value;
+  if(!/^[\d,]*$/.test(raw)||!raw)return;
+  const formatted=formatAmount(raw.replace(/,/g,''));
+  if(formatted===raw)return;
+  const start=input.selectionStart,end=input.selectionEnd;
+  const before=pos=>(raw.slice(0,pos).match(/\d/g)||[]).length;
+  const locate=count=>{
+    if(!count)return 0;
+    let n=0;
+    for(let i=0;i<formatted.length;i++){
+      if(/\d/.test(formatted[i]))n++;
+      if(n===count)return i+1;
+    }
+    return formatted.length;
+  };
+  input.value=formatted;
+  if(start!=null&&end!=null&&typeof input.setSelectionRange==='function'){
+    input.setSelectionRange(locate(before(start)),locate(before(end)));
+  }
+}
+function setupAmountInput(input,onEdit){
+  input.addEventListener('compositionstart',()=>{input.isComposing=true;});
+  input.addEventListener('input',()=>{formatAmountInput(input);if(onEdit)onEdit();});
+  input.addEventListener('compositionend',()=>{input.isComposing=false;formatAmountInput(input);if(onEdit)onEdit();});
+}
+
 const categories=['未分類','食費','日用品','交通費','医療','教育費','サブスク','交際費','通信・光熱費','漫画・本','リフレッシュ費','洗濯','貸本','家賃','その他'];
 const mealOptions=[['','未分類'],['breakfast','朝'],['lunch','昼'],['dinner','夜'],['snack','間食・飲料'],['other','その他']];
 let selectedMonth=DB.currentMonth();
@@ -13,6 +56,9 @@ let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
 let monthEndWriteQueue=Promise.resolve();
+let assetBreakdownMode='compact';
+let assetBreakdownRequestId=0;
+const BREAKDOWN_MODE_KEY='ham-asset-breakdown-mode-v1';
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
 let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
@@ -29,6 +75,7 @@ async function showScreen(name,{push=true,panel=null}={}){
     if(!push&&historyReady)history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
     return false;
   }
+  if(name!=='home'){assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();}
   currentScreen=name;
   currentPanel=name==='input'?panel:null;
   $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
@@ -93,11 +140,110 @@ async function renderHome(){
   const walletText=walletValue==null?'未登録':formatYen(walletValue);
   const walletDetail=walletValue==null?'月末更新で残高を登録':wallet?.liveCash?.isEstimated?'現金移動を自動反映':'最終確認残高';
   const pointText=points.rows.some(x=>x.snapshot)?points.total.toLocaleString('ja-JP')+' pt':'未登録';
-  $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':''),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn'),metric('流動資産',cur.assets.liquid,''),metric('支払確保済',reserved,'')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
+  $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn','total'),metric('流動資産',cur.assets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
   const ins=await A.insights(selectedMonth);$('homeInsights').innerHTML=ins.length?ins.map(x=>`<div class="insight ${x.tone}">${esc(x.text)}</div>`).join(''):'<p class="muted">比較データがたまると、前月比や3か月平均との差を表示します。</p>';
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
 }
-function metric(label,value,delta='',tone=''){return `<div class="metric"><div class="label">${esc(label)}</div><div class="value">${typeof value==='number'?formatYen(value):esc(value)}</div>${delta?`<div class="delta ${tone}">${esc(delta)}</div>`:''}</div>`;}
+function metric(label,value,delta='',tone='',breakdown=''){
+  const tag=breakdown?'button':'div';
+  const attrs=breakdown?` type="button" class="metric metric-tappable" data-asset-breakdown="${esc(breakdown)}" aria-label="${esc(label)}の内訳を表示"`:' class="metric"';
+  return `<${tag}${attrs}><div class="label">${esc(label)}</div><div class="value">${typeof value==='number'?formatYen(value):esc(value)}</div>${delta?`<div class="delta ${tone}">${esc(delta)}</div>`:''}</${tag}>`;
+}
+function closeInlineBreakdown(){
+  $('assetBreakdownInline').classList.add('hidden');
+  $('assetBreakdownInlineRows').innerHTML='';
+}
+function readBreakdownMode(){
+  try{
+    const saved=localStorage.getItem(BREAKDOWN_MODE_KEY);
+    return saved==='dialog'?'dialog':'compact';
+  }catch(e){console.warn('内訳表示設定を読み込めませんでした。',e);return 'compact';}
+}
+function saveBreakdownMode(mode){
+  try{localStorage.setItem(BREAKDOWN_MODE_KEY,mode);}
+  catch(e){console.warn('内訳表示設定を保存できませんでした。',e);}
+}
+function selectBreakdownMode(mode,{remember=false}={}){
+
+  if(!['compact','dialog'].includes(mode))return;
+  assetBreakdownMode=mode;
+  if(remember)saveBreakdownMode(mode);
+  assetBreakdownRequestId++;
+  closeInlineBreakdown();
+  if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();
+  $$('[data-breakdown-mode]').forEach(button=>{
+    const selected=button.dataset.breakdownMode===mode;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  });
+}
+function breakdownRow(label,value,note='',unit='yen'){
+  const amount=unit==='pt'?n(value).toLocaleString('ja-JP')+' pt':formatYen(value);
+  return `<div class="breakdown-row"><div><strong>${esc(label)}</strong>${note?`<div class="muted">${esc(note)}</div>`:''}</div><strong class="breakdown-amount">${esc(amount)}</strong></div>`;
+}
+async function openAssetBreakdown(kind){
+  const month=selectedMonth;
+  const names={wallet:'財布現金',points:'ポイント合計',total:'総資産',liquid:'流動資産',reserved:'支払確保済'};
+  if(!names[kind])return;
+  const requestId=++assetBreakdownRequestId;
+  const compact=assetBreakdownMode==='compact';
+  const dialog=$('assetBreakdownDialog');
+  const title=names[kind]+'の内訳';
+  if(compact){
+    if(dialog.open)dialog.close();
+    $('assetBreakdownInlineTitle').textContent=title;
+    $('assetBreakdownInlineMonth').textContent=monthLabel(month);
+    $('assetBreakdownInlineRows').innerHTML='<p class="muted">読み込み中...</p>';
+    $('assetBreakdownInline').classList.remove('hidden');
+  }else{
+    closeInlineBreakdown();
+    $('assetBreakdownTitle').textContent=title;
+    $('assetBreakdownMonth').textContent=monthLabel(month);
+    $('assetBreakdownRows').innerHTML='<p class="muted">読み込み中...</p>';
+    if(!dialog.open)dialog.showModal();
+  }
+  try{
+    let rows=[],total=0,unit='yen',foot='';
+    if(kind==='points'){
+      const data=await A.pointTotal(month);
+      total=data.total;unit='pt';
+      rows=data.rows.map(r=>breakdownRow(r.account.name,r.value,r.snapshot?'':'残高未登録','pt'));
+      foot='各ポイントの登録残高を合計しています。';
+    }else if(kind==='reserved'){
+      const plans=await A.paymentPlansUpcoming();
+      total=plans.reduce((sum,p)=>sum+n(p.reservedAmount),0);
+      rows=plans.filter(p=>n(p.reservedAmount)!==0).map(p=>breakdownRow(p.name,n(p.reservedAmount),p.dueDate||'支払日未設定'));
+      foot='支払予定に登録された確保済み金額です。';
+    }else{
+      const data=await A.assetSummary(month);
+      if(kind==='wallet'){
+        const wallet=data.rows.find(r=>r.account.id==='cash-wallet');
+        const live=wallet?.liveCash;
+        total=wallet?.value||0;
+        if(wallet?.snapshot){
+          rows=[breakdownRow('最終確認残高',live?.baseValue??wallet.snapshot.value)];
+          if(live?.movement)rows.push(breakdownRow('確認後の現金増減',live.movement,'入力済み現金取引を反映'));
+        }else rows=[`<p class="muted">財布現金の残高は未登録です。</p>`];
+        foot='現在の表示残高は登録された残高と現金取引から計算しています。';
+      }else{
+        const source=kind==='liquid'?data.rows.filter(r=>['bank','cash'].includes(r.account.category)):data.rows;
+        total=kind==='liquid'?data.liquid:data.total;
+        rows=source.map(r=>breakdownRow(r.account.name,r.value,r.snapshot?'':'残高未登録'));
+        foot=kind==='liquid'?'銀行・現金の残高合計です。株式・DC・ポイントは含みません。':'登録された資産残高の合計です。ポイントは含みません。';
+      }
+    }
+    if(requestId!==assetBreakdownRequestId||selectedMonth!==month)return;
+    if(compact?$('assetBreakdownInline').classList.contains('hidden'):!dialog.open)return;
+    const sum=unit==='pt'?total.toLocaleString('ja-JP')+' pt':formatYen(total);
+    const body=(rows.length?rows.join(''):'<p class="muted">内訳は登録されていません。</p>')+
+      `<div class="breakdown-total"><strong>合計</strong><strong>${esc(sum)}</strong></div>`+
+      (compact?'':`<p class="muted">${esc(foot)}</p>`);
+    $(compact?'assetBreakdownInlineRows':'assetBreakdownRows').innerHTML=body;
+  }catch(e){
+    console.error(e);
+    if(requestId===assetBreakdownRequestId)$((compact?'assetBreakdownInlineRows':'assetBreakdownRows')).innerHTML='<p class="muted">内訳を読み込めませんでした。再度お試しください。</p>';
+  }
+}
 async function renderHomeAlerts(){
   const alerts=[];const today=new Date(),day=today.getDate(),reminder=(await DB.get('settings','reminderDay'))?.value||10;const pm=DB.prevMonth(DB.currentMonth());
   if(day>=reminder){const st=await recomputeMonthStatus(pm,false);if(st.completionRate<100){const missing=Object.entries(st.completionItems).filter(([,v])=>!v).map(([k])=>itemLabel(k));alerts.push(`<div class="alert warn"><strong>${monthLabel(pm)}分の更新が残っています</strong><div class="muted">未確認：${esc(missing.join(' / '))}</div><button data-reminder-month="${pm}">月末更新を開く</button></div>`);}}
@@ -107,10 +253,10 @@ async function renderHomeAlerts(){
 }
 
 async function renderCashPresets(){const p=(await DB.get('settings','cashPresets'))?.value||[];$('cashPresets').innerHTML=p.map((x,i)=>`<button type="button" data-preset="${i}">${esc(x.label)}</button>`).join('');$$('[data-preset]').forEach(b=>b.onclick=()=>{$$('[data-preset]').forEach(x=>x.classList.remove('active'));b.classList.add('active');const x=p[+b.dataset.preset];$('cashCategory').value=x.category;$('cashMealWrap').classList.toggle('hidden',x.category!=='食費');$('cashMerchant').value=x.label==='その他'?'':x.label;});}
-async function saveCash(){const amount=n($('cashAmount').value);if(amount<=0)return toast('金額を入力してください。');const category=$('cashCategory').value||'未分類';const date=$('cashDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount,paymentMethod:'cash',merchantRaw:$('cashMerchant').value.trim(),merchantNormalized:$('cashMerchant').value.trim(),category,mealType:category==='食費'?($('cashMealType').value||null):null,isTemporaryExpense:$('cashTemporary').checked,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('cashAmount').value='';$('cashMerchant').value='';$('cashTemporary').checked=false;$$('[data-preset]').forEach(x=>x.classList.remove('active'));toast('現金支出を保存しました。');await renderHome();}
-async function saveIncome(){const amount=n($('incomeAmount').value);if(amount<=0)return toast('金額を入力してください。');const date=$('incomeDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'income',amount,paymentMethod:'bank_transfer',category:$('incomeType').value,subCategory:$('incomeType').value,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});const st=await DB.getMonthStatus(DB.monthOfDate(date));st.completionItems.income=true;await DB.saveMonthStatus(st);$('incomeAmount').value='';toast('収入を保存しました。');}
-async function saveRent(){const amount=n($('rentAmount').value);if(amount<=0)return toast('家賃を入力してください。');const date=$('rentDate').value||dateForSelected();const accountId=$('rentAccount').value;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount,paymentMethod:'bank_transfer',category:'家賃',merchantRaw:'家賃',merchantNormalized:'家賃',isTemporaryExpense:false,sourceType:'manual',accountId,createdAt:DB.now(),updatedAt:DB.now()});await DB.put('settings',{key:'rentLast',value:{amount,accountId}});await DB.put('paymentPlans',{id:`rent:${DB.monthOfDate(date)}`,name:'家賃',dueDate:date,amount,type:'rent',status:'paid',paymentSource:accountId,paidAt:date,createdAt:DB.now(),updatedAt:DB.now()});const st=await DB.getMonthStatus(DB.monthOfDate(date));st.completionItems.rent=true;await DB.saveMonthStatus(st);toast('家賃を登録しました。');}
-async function renderRentDefaults(){const ac=(await DB.getAll('accounts')).filter(x=>x.active!==false&&x.category==='bank');$('rentAccount').innerHTML=`<option value="">未指定</option>`+ac.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');const last=(await DB.get('settings','rentLast'))?.value;if(last){$('rentAmount').value=last.amount||'';$('rentAccount').value=last.accountId||'';}}
+async function saveCash(){const amount=parseAmount($('cashAmount').value);if(!Number.isSafeInteger(amount)||amount<=0)return toast('金額を入力してください。');const category=$('cashCategory').value||'未分類';const date=$('cashDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount,paymentMethod:'cash',merchantRaw:$('cashMerchant').value.trim(),merchantNormalized:$('cashMerchant').value.trim(),category,mealType:category==='食費'?($('cashMealType').value||null):null,isTemporaryExpense:$('cashTemporary').checked,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('cashAmount').value='';$('cashMerchant').value='';$('cashTemporary').checked=false;$$('[data-preset]').forEach(x=>x.classList.remove('active'));toast('現金支出を保存しました。');await renderHome();}
+async function saveIncome(){const amount=parseAmount($('incomeAmount').value);if(!Number.isSafeInteger(amount)||amount<=0)return toast('金額を入力してください。');const date=$('incomeDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'income',amount,paymentMethod:'bank_transfer',category:$('incomeType').value,subCategory:$('incomeType').value,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});const st=await DB.getMonthStatus(DB.monthOfDate(date));st.completionItems.income=true;await DB.saveMonthStatus(st);$('incomeAmount').value='';toast('収入を保存しました。');}
+async function saveRent(){const amount=parseAmount($('rentAmount').value);if(!Number.isSafeInteger(amount)||amount<=0)return toast('家賃を入力してください。');const date=$('rentDate').value||dateForSelected();const accountId=$('rentAccount').value;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount,paymentMethod:'bank_transfer',category:'家賃',merchantRaw:'家賃',merchantNormalized:'家賃',isTemporaryExpense:false,sourceType:'manual',accountId,createdAt:DB.now(),updatedAt:DB.now()});await DB.put('settings',{key:'rentLast',value:{amount,accountId}});await DB.put('paymentPlans',{id:`rent:${DB.monthOfDate(date)}`,name:'家賃',dueDate:date,amount,type:'rent',status:'paid',paymentSource:accountId,paidAt:date,createdAt:DB.now(),updatedAt:DB.now()});const st=await DB.getMonthStatus(DB.monthOfDate(date));st.completionItems.rent=true;await DB.saveMonthStatus(st);toast('家賃を登録しました。');}
+async function renderRentDefaults(){const ac=(await DB.getAll('accounts')).filter(x=>x.active!==false&&x.category==='bank');$('rentAccount').innerHTML=`<option value="">未指定</option>`+ac.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');const last=(await DB.get('settings','rentLast'))?.value;if(last){$('rentAmount').value=last.amount?formatAmount(last.amount):'';$('rentAccount').value=last.accountId||'';}}
 
 async function renderAdvanceCardTransactions(){
   const all=(await DB.getAll('transactions')).filter(x=>x.kind==='expense'&&x.sourceType==='dcard_csv');
@@ -141,17 +287,17 @@ async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
   const all=await DB.getAll('transactions');if(all.some(x=>x.kind==='advance_repayment'&&x.linkedTransactionId===id))return toast('返金登録済みの立替は変更できません。');
   const current=n(t.advanceShare);
-  const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${n(t.amount)} を入力します。`,current>0?String(current):'');
+  const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${formatAmount(n(t.amount))} を入力します。`,current>0?formatAmount(current):'');
   if(v==null)return;
-  const raw=String(v).trim();if(raw==='')return toast('立替額（家族分）を入力してください。');const advance=Number(raw);
-  if(!Number.isFinite(advance)||advance<0||advance>n(t.amount))return toast('立替額（家族分）を確認してください。');
+  const raw=String(v).trim();if(raw==='')return toast('立替額（家族分）を入力してください。');const advance=parseAmount(raw);
+  if(!Number.isSafeInteger(advance)||advance<0||advance>n(t.amount))return toast('立替額（家族分）を確認してください。');
   const own=n(t.amount)-advance;
   t.ownShare=own;t.advanceShare=advance;t.advanceStatus=advance>0?'unpaid':null;t.updatedAt=DB.now();await DB.put('transactions',t);
   toast(advance>0?`立替 ${formatYen(advance)}（自分負担 ${formatYen(own)}）を設定しました。`:'立替設定を解除しました。');
   await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
 }
-function updateAdvanceCalc(){const total=n($('advanceTotal').value),own=n($('advanceOwn').value);$('advanceOther').value=Math.max(0,total-own)||'';}
-async function saveAdvance(){const total=n($('advanceTotal').value),own=n($('advanceOwn').value);if(total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
+function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)&&total>own?formatAmount(total-own):'';}
+async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
 async function renderOutstanding(){
   const rows=await A.outstandingAdvances();
   const labels={dbarai:'d払い',id:'iD',dcard:'dカード',cash:'現金',bank_transfer:'銀行振込',other:'その他'};
@@ -160,7 +306,7 @@ async function renderOutstanding(){
     const method=labels[x.paymentMethod]||x.paymentMethod||'';
     return `<div class="review-row"><div class="review-main"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'立替')}</strong><span class="muted">${esc(x.date)} / ${esc(source)}${method?` / ${esc(method)}`:''}</span></div><strong>${formatYen(x.outstanding)}</strong></div><button data-repay-id="${x.id}" data-repay-max="${x.outstanding}">現金で返金を受けた</button></div>`;
   }).join(''):'<p class="muted">未回収の立替はありません。</p>';
-  $$('[data-repay-id]').forEach(b=>b.onclick=async()=>{const max=n(b.dataset.repayMax);const v=prompt('返金額',String(max));if(v==null)return;const amount=n(v);if(amount<=0||amount>max)return toast('返金額を確認してください。');await DB.put('transactions',{id:DB.uid('tx'),date:DB.ymd(),month:DB.monthOfDate(DB.ymd()),kind:'advance_repayment',amount,paymentMethod:'cash',linkedTransactionId:b.dataset.repayId,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});toast('返金を登録しました。');await renderOutstanding();await renderHome();});
+  $$('[data-repay-id]').forEach(b=>b.onclick=async()=>{const max=n(b.dataset.repayMax);const v=prompt('返金額',formatAmount(max));if(v==null)return;const amount=parseAmount(v);if(!Number.isSafeInteger(amount)||amount<=0||amount>max)return toast('返金額を確認してください。');await DB.put('transactions',{id:DB.uid('tx'),date:DB.ymd(),month:DB.monthOfDate(DB.ymd()),kind:'advance_repayment',amount,paymentMethod:'cash',linkedTransactionId:b.dataset.repayId,sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});toast('返金を登録しました。');await renderOutstanding();await renderHome();});
 }
 
 async function handleCsvFile(file){
@@ -205,10 +351,10 @@ async function renderMonthEnd(){
     const meta=liveDirty?`確認時 ${formatYen(live.baseValue)} / 自動反映 ${A.formatSigned(live.movement)}`:`前回 ${prev?formatYen(prev.value):'—'}`;
     const badge=liveDirty?'要確認（現金移動あり）':(cur?.confirmed?'確認済':'未確認');
     const sameDisabled=!prev||liveDirty?'disabled':'';
-    rows.push(`<div class="asset-row" data-asset="${a.id}"><div class="asset-head"><div><strong>${esc(a.name)}</strong><div class="status-meta">${meta}</div></div><span class="badge">${badge}</span></div><div class="asset-values"><label>今月値<input data-asset-value="${a.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-asset-same="${a.id}" ${sameDisabled}>変更なし</button></div></div>`);
+    rows.push(`<div class="asset-row" data-asset="${a.id}"><div class="asset-head"><div><strong>${esc(a.name)}</strong><div class="status-meta">${meta}</div></div><span class="badge">${badge}</span></div><div class="asset-values"><label>今月値<input data-asset-value="${a.id}" type="text" inputmode="numeric" autocomplete="off" value="${formatAmount(val)}"></label><label>差額<input type="text" value="${diff===''?'':formatSignedAmount(diff)}" readonly></label></div><div class="inline-actions"><button data-asset-same="${a.id}" ${sameDisabled}>変更なし</button></div></div>`);
   }
   $('monthEndAccounts').innerHTML=rows.join('');bindMonthEndAutoSave('asset');$$('[data-asset-same]').forEach(b=>b.onclick=()=>saveAsset(b.dataset.assetSame,true));
-  const points=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const prows=[];for(const p of points){const cur=await DB.get('pointSnapshots',[selectedMonth,p.id]),prev=await DB.latestPointSnapshot(p.id,DB.prevMonth(selectedMonth));const val=cur?cur.value:(prev?prev.value:'');const diff=prev&&val!==''?n(val)-n(prev.value):'';prows.push(`<div class="asset-row"><div class="asset-head"><div><strong>${esc(p.name)}</strong><div class="status-meta">前回 ${prev?n(prev.value).toLocaleString('ja-JP')+' pt':'—'}</div></div><span class="badge">${cur?.confirmed?'確認済':'未確認'}</span></div><div class="asset-values"><label>今月<input data-point-value="${p.id}" type="number" inputmode="numeric" value="${val}"></label><label>差額<input value="${diff}" readonly></label></div><div class="inline-actions"><button data-point-same="${p.id}" ${prev?'':'disabled'}>変更なし</button></div></div>`);}
+  const points=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false).sort((a,b)=>n(a.sortOrder)-n(b.sortOrder));const prows=[];for(const p of points){const cur=await DB.get('pointSnapshots',[selectedMonth,p.id]),prev=await DB.latestPointSnapshot(p.id,DB.prevMonth(selectedMonth));const val=cur?cur.value:(prev?prev.value:'');const diff=prev&&val!==''?n(val)-n(prev.value):'';prows.push(`<div class="asset-row"><div class="asset-head"><div><strong>${esc(p.name)}</strong><div class="status-meta">前回 ${prev?n(prev.value).toLocaleString('ja-JP')+' pt':'—'}</div></div><span class="badge">${cur?.confirmed?'確認済':'未確認'}</span></div><div class="asset-values"><label>今月<input data-point-value="${p.id}" type="text" inputmode="numeric" autocomplete="off" value="${formatAmount(val)}"></label><label>差額<input type="text" value="${diff===''?'':formatSignedAmount(diff)}" readonly></label></div><div class="inline-actions"><button data-point-same="${p.id}" ${prev?'':'disabled'}>変更なし</button></div></div>`);}
   $('monthEndPoints').innerHTML=prows.join('');bindMonthEndAutoSave('point');$$('[data-point-same]').forEach(b=>b.onclick=()=>savePoint(b.dataset.pointSame,true));await renderChecklist();
 }
 
@@ -226,7 +372,9 @@ function bindMonthEndAutoSave(type){
   const attr=type==='asset'?'data-asset-value':'data-point-value';
   $$('['+attr+']').forEach(input=>{
     input.dataset.dirty='false';
-    input.oninput=()=>markMonthEndDirty(input);
+    input.oncompositionstart=()=>{input.isComposing=true;};
+    input.oninput=()=>{formatAmountInput(input);markMonthEndDirty(input);};
+    input.oncompositionend=()=>{input.isComposing=false;formatAmountInput(input);markMonthEndDirty(input);};
     input.onchange=()=>{if(input.dataset.dirty==='true')void persistMonthEndInput(input);};
     input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}};
   });
@@ -251,8 +399,8 @@ function persistMonthEndInput(input,same=false){
         const live=await A.liveCashBalance(month,id);
         if(live.movement!==0)throw new Error('現金移動が反映されています。現在残高を確認してください。');
       }
-      if(!same&&(raw===''||input.validity?.badInput))throw new Error('残高を入力してください。');
-      const value=same?Number(previous.value):Number(raw);
+      if(!same&&raw==='')throw new Error('残高を入力してください。');
+      const value=same?Number(previous.value):parseAmount(raw);
       if(!Number.isSafeInteger(value)||value<0)throw new Error('0以上の整数で入力してください。');
       const at=DB.now();
       if(isAsset){
@@ -260,7 +408,7 @@ function persistMonthEndInput(input,same=false){
       }else{
         await DB.put('pointSnapshots',{month,pointAccountId:id,value,confirmed:true,updatedAt:at});
       }
-      if(same)input.value=String(value);
+      if(same)input.value=formatAmount(value);
       if(same||input.value.trim()===raw){
         input.dataset.dirty='false';
         markMonthEndStatus(input,'保存済・確認済');
@@ -269,7 +417,7 @@ function persistMonthEndInput(input,same=false){
         markMonthEndStatus(input,'未保存');
       }
       const delta=input.closest('.asset-row')?.querySelector('input[readonly]');
-      if(delta)delta.value=previous?String(value-Number(previous.value)):'';
+      if(delta)delta.value=previous?formatSignedAmount(value-Number(previous.value)):'';
       await renderChecklist();
       return true;
     }catch(err){
@@ -327,9 +475,18 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
+  $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
+  $$('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode,{remember:true}));
+  $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
+  selectBreakdownMode(readBreakdownMode());
+  $('assetBreakdownClose').onclick=()=>$('assetBreakdownDialog').close();
+  $('assetBreakdownDialog').onclick=e=>{if(e.target===$('assetBreakdownDialog'))$('assetBreakdownDialog').close();};
   $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
-  $('globalMonth').onchange=async()=>{if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
-  $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;$('advanceTotal').oninput=updateAdvanceCalc;$('advanceOwn').oninput=updateAdvanceCalc;
+  $('globalMonth').onchange=async()=>{assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
+  for(const id of ['cashAmount','incomeAmount','rentAmount'])setupAmountInput($(id));
+  setupAmountInput($('advanceTotal'),updateAdvanceCalc);
+  setupAmountInput($('advanceOwn'),updateAdvanceCalc);
+  $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;
   $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
   $('cashCategory').onchange=()=>{$('cashMealWrap').classList.toggle('hidden',$('cashCategory').value!=='食費');};
   $('dcardFile').onchange=e=>{if(e.target.files[0])handleCsvFile(e.target.files[0]);};$('csvImportButton').onclick=importPreparedCsv;
