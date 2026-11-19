@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0215">
+  <link rel="stylesheet" href="styles.css?v=0216c1">
 </head>
-<body>
+<body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.15 stable</p>
+      <p class="sub">v0.2.16 candidate.1</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -126,7 +126,9 @@
       <div class="card">
         <div class="section-title-row"><h2>月末更新</h2><span id="monthEndProgress" class="badge"></span></div>
         <p class="muted">前月値を引き継ぎ、変わったものだけ更新できます。</p>
-        <div id="walletMovementNotice" class="hidden"></div><div id="monthEndAccounts"></div>
+        <div id="walletMovementNotice" class="hidden"></div>
+        <div id="monthEndBankPrompt" class="alert hidden"><strong>銀行口座が未登録です</strong><p class="muted">銀行残高を管理するには、最初に口座名だけ登録してください。口座番号は不要です。</p><button type="button" id="addBankButton" class="primary">＋ 銀行口座を追加</button></div>
+        <div id="monthEndAccounts"></div>
         <button id="addAccountButton">＋ 資産項目を追加</button>
       </div>
       <div class="card">
@@ -174,6 +176,25 @@
         <h2>開発情報</h2>
         <div id="appInfo"></div>
       </div>
+      <div class="card">
+        <h2>起動ロック（任意）</h2>
+        <p id="lockSettingsStatus" class="muted"></p>
+        <p class="muted">この端末での画面閲覧を抑止します。PINはこの端末にのみ保存し、IndexedDBやJSONバックアップは暗号化されません。PINを忘れた場合はサイトデータ全削除をせず、ロック設定のみを解除する必要があります。</p>
+        <div id="lockEnablePanel">
+          <form id="lockEnableForm">
+            <label>新しいPIN（数字6〜12桁）<input id="lockNewPin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></label>
+            <label>PIN再入力<input id="lockConfirmPin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></label>
+            <button class="primary" type="submit">起動ロックを有効にする</button>
+          </form>
+        </div>
+        <div id="lockDisablePanel" class="hidden">
+          <form id="lockDisableForm">
+            <label>現在のPIN<input id="lockDisablePin" type="password" inputmode="numeric" autocomplete="off" required></label>
+            <button type="submit">起動ロックを無効にする</button>
+          </form>
+        </div>
+        <button type="button" id="lockNowButton" class="hidden">今すぐロックする</button>
+      </div>
       <div class="card danger-zone">
         <h2>データ削除</h2>
         <button id="clearAll" class="danger">v0.2データを全削除</button>
@@ -207,11 +228,21 @@
     </form>
   </dialog>
 
+  <section id="lockOverlay" class="lock-overlay hidden" role="dialog" aria-modal="true" aria-label="起動ロック">
+    <form id="lockUnlockForm" class="lock-card">
+      <h2>家計・資産管理</h2>
+      <p class="muted">PINを入力して開く</p>
+      <label>PIN<input id="lockPin" type="password" inputmode="numeric" autocomplete="off" required></label>
+      <p id="lockError" class="lock-error" role="alert"></p>
+      <button type="submit" class="primary">ロック解除</button>
+      <p class="muted">PINを忘れた場合でも、サイトデータやIndexedDBを削除しないでください。</p>
+    </form>
+  </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0215"></script>
-  <script src="dcard-import.js?v=0215"></script>
-  <script src="analysis.js?v=0215"></script>
-  <script src="app.js?v=0215"></script>
+  <script src="db.js?v=0216c1"></script>
+  <script src="dcard-import.js?v=0216c1"></script>
+  <script src="analysis.js?v=0216c1"></script>
+  <script src="app.js?v=0216c1"></script>
 </body>
 </html>
