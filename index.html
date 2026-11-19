@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0216c1">
+  <link rel="stylesheet" href="styles.css?v=0216c2">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.16-candidate.1</p>
+      <p class="sub">v0.2.16-candidate.2</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -186,16 +186,22 @@
             <label>PIN再入力<input id="lockConfirmPin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></label>
             <button class="primary" type="submit">起動ロックを有効にする</button>
           </form>
-          <div id="lockRecoveryNotice" class="alert warn hidden">
-            <strong>復旧コード（設定直後の一度だけ表示）</strong>
-            <p class="muted">PINを忘れたときにロックだけ解除するためのコードです。必ずアプリ外の安全な場所に控えてください。家計データには保存されません。</p>
-            <p><code id="lockRecoveryCode" class="recovery-code"></code></p>
-          </div>
+        </div>
+        <div id="lockRecoveryNotice" class="alert warn hidden">
+          <strong>復旧コード（この画面で一度だけ表示）</strong>
+          <p class="muted">PINを忘れたときにロックだけ解除するコードです。安全な場所に控えてください。表示中にこの画面を離れると再表示できません。</p>
+          <p><code id="lockRecoveryCode" class="recovery-code"></code></p>
+          <button type="button" id="lockRecoveryAcknowledged">復旧コードを控えました</button>
         </div>
         <div id="lockDisablePanel" class="hidden">
           <form id="lockDisableForm">
             <label>現在のPIN<input id="lockDisablePin" type="password" inputmode="numeric" autocomplete="off" required></label>
             <button type="submit">起動ロックを無効にする</button>
+          </form>
+          <form id="lockRegenerateForm">
+            <p class="muted">復旧コードを控えていない場合は、現在のPINで新しいコードを発行できます。以前の復旧コードは無効になります。</p>
+            <label>現在のPIN<input id="lockRegeneratePin" type="password" inputmode="numeric" autocomplete="off" required></label>
+            <button type="submit">復旧コードを再発行</button>
           </form>
         </div>
         <button type="button" id="lockNowButton" class="hidden">今すぐロックする</button>
@@ -251,9 +257,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0216c1"></script>
-  <script src="dcard-import.js?v=0216c1"></script>
-  <script src="analysis.js?v=0216c1"></script>
-  <script src="app.js?v=0216c1"></script>
+  <script src="db.js?v=0216c2"></script>
+  <script src="dcard-import.js?v=0216c2"></script>
+  <script src="analysis.js?v=0216c2"></script>
+  <script src="app.js?v=0216c2"></script>
 </body>
 </html>
