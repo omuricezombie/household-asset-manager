@@ -33,6 +33,7 @@ function showScreen(name,{push=true,panel=null}={}){
     const p=$(`input-${currentPanel}`);
     if(p)p.classList.remove('hidden');
   }
+  if(name!=='data'&&$('lockRecoveryNotice')&&!$('lockRecoveryNotice').classList.contains('hidden'))clearVisibleRecovery();
   if(currentPanel==='cash')$('cashAmount').focus();
   if(currentPanel==='advance')renderAdvanceCardTransactions();
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
@@ -246,6 +247,14 @@ async function pinDigest(pin,salt,iterations=LOCK_ITERATIONS){
   return byteHex(new Uint8Array(bits));
 }
 function secureEquals(a,b){if(typeof a!=='string'||typeof b!=='string')return false;let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return diff===0;}
+function clearVisibleRecovery(){
+  $('lockRecoveryNotice').classList.add('hidden');
+  $('lockRecoveryCode').textContent='';
+}
+function showNewRecoveryCode(code){
+  $('lockRecoveryCode').textContent=code.match(/.{1,6}/g).join('-');
+  $('lockRecoveryNotice').classList.remove('hidden');
+}
 function updateLockSettings(){
   const enabled=!!lockConfig();
   $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（画面閲覧防止用。保存データの暗号化ではありません）':'起動ロック：無効';
@@ -260,6 +269,7 @@ function showLock(){
   $('lockPin').value='';
   $('lockRecoveryInput').value='';
   $('lockRecoveryForm').classList.add('hidden');
+  clearVisibleRecovery();
   $('lockError').textContent='';
   $('lockPin').focus();
 }
@@ -296,8 +306,7 @@ async function enableLock(e){
     const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
     const recoveryHash=await pinDigest(recoveryCode,recoverySalt);
     localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS,recoverySalt,recoveryHash}));
-    $('lockRecoveryCode').textContent=recoveryCode.match(/.{1,6}/g).join('-');
-    $('lockRecoveryNotice').classList.remove('hidden');
+    showNewRecoveryCode(recoveryCode);
     $('lockNewPin').value='';$('lockConfirmPin').value='';
     updateLockSettings();toast('起動ロックを有効にしました。');
   }catch(err){toast('設定に失敗しました: '+err.message);}
@@ -309,9 +318,33 @@ async function disableLock(e){
   try{
     if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
     localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
-    $('lockRecoveryNotice').classList.add('hidden');$('lockRecoveryCode').textContent='';
+    clearVisibleRecovery();
     updateLockSettings();toast('起動ロックを解除しました。');
   }catch(err){toast('解除に失敗しました。');}
+}
+async function regenerateRecovery(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg?.salt||!cfg.hash||!cfg.iterations)return toast('ロック設定が読み込めません。');
+  if(Date.now()<unlockDelayUntil)return toast('しばらくしてから再試行してください。');
+  try{
+    const entered=$('lockRegeneratePin').value;
+    const digest=await pinDigest(entered,cfg.salt,cfg.iterations);
+    $('lockRegeneratePin').value='';
+    if(!secureEquals(digest,cfg.hash)){
+      unlockFailures++;
+      if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+      return toast('PINが違います。');
+    }
+    const recoveryCode=byteHex(crypto.getRandomValues(new Uint8Array(12)));
+    const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const recoveryHash=await pinDigest(recoveryCode,recoverySalt,cfg.iterations);
+    localStorage.setItem(LOCK_KEY,JSON.stringify({...cfg,recoverySalt,recoveryHash}));
+    unlockFailures=0;unlockDelayUntil=0;
+    showNewRecoveryCode(recoveryCode);
+    $('lockRecoveryNotice').scrollIntoView({behavior:'smooth',block:'center'});
+    toast('復旧コードを再発行しました。必ず控えてください。');
+  }catch(err){toast('復旧コードの再発行に失敗しました。');console.error(err);}
 }
 async function recoverLock(e){
   e.preventDefault();
@@ -339,6 +372,8 @@ function setupLock(){
   $('lockDisableForm').onsubmit=disableLock;
   $('lockNowButton').onclick=showLock;
   $('lockRecoveryForm').onsubmit=recoverLock;
+  $('lockRegenerateForm').onsubmit=regenerateRecovery;
+  $('lockRecoveryAcknowledged').onclick=clearVisibleRecovery;
   $('lockRecoveryToggle').onclick=()=>{const form=$('lockRecoveryForm');form.classList.toggle('hidden');if(!form.classList.contains('hidden'))$('lockRecoveryInput').focus();};
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)hiddenAt=Date.now();
