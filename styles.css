@@ -61,3 +61,16 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .breakdown-amount{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 .breakdown-total{display:flex;justify-content:space-between;gap:12px;padding:14px 0 4px;font-size:16px}
 #assetBreakdownDialog .dialog-card h2{margin-bottom:0}
+
+/* Compact inline breakdown preview (candidate comparison) */
+.breakdown-mode-selector{display:flex;justify-content:flex-end;gap:4px;margin:0 0 8px}
+.breakdown-mode-selector button{font-size:11px;font-weight:600;padding:5px 9px;border-radius:9px;background:transparent;color:var(--muted)}
+.breakdown-mode-selector button.active{background:var(--bg);color:var(--text);border-color:var(--line)}
+.asset-breakdown-inline{margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:8px 12px}
+.asset-breakdown-inline .section-title-row{font-size:12px;gap:8px}
+.asset-breakdown-inline .section-title-row .muted{font-size:11px}
+.asset-breakdown-inline .section-title-row button{font-size:11px;padding:4px 6px}
+.asset-breakdown-inline .breakdown-rows{max-height:210px}
+.asset-breakdown-inline .breakdown-row{font-size:12px;padding:6px 0;gap:8px}
+.asset-breakdown-inline .breakdown-row .muted{font-size:11px}
+.asset-breakdown-inline .breakdown-total{font-size:12px;padding:8px 0 2px}
