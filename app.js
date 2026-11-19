@@ -115,7 +115,7 @@ function selectBreakdownMode(mode){
   assetBreakdownRequestId++;
   closeInlineBreakdown();
   if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();
-  $('[data-breakdown-mode]').forEach(button=>{
+  $$('[data-breakdown-mode]').forEach(button=>{
     const selected=button.dataset.breakdownMode===mode;
     button.classList.toggle('active',selected);
     button.setAttribute('aria-pressed',String(selected));
@@ -418,7 +418,7 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
   $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
-  $('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode));
+  $$('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode));
   $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
   selectBreakdownMode('compact');
   $('assetBreakdownClose').onclick=()=>$('assetBreakdownDialog').close();
