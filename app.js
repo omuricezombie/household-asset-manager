@@ -60,6 +60,11 @@ function setupNavigationHistory(){
       return;
     }
     if(st?.hamNav==='exit-guard'){
+      if(currentScreen==='monthend'&&monthEndInputs().some(input=>input.dataset.dirty==='true'||input._monthEndSave)){
+        history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
+        toast('未保存の残高があります。入力欄を確定してから戻ってください。');
+        return;
+      }
       const exit=confirm('家計・資産管理を終了しますか？');
       if(exit){
         historyReady=false;
