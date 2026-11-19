@@ -186,6 +186,11 @@
             <label>PIN再入力<input id="lockConfirmPin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></label>
             <button class="primary" type="submit">起動ロックを有効にする</button>
           </form>
+          <div id="lockRecoveryNotice" class="alert warn hidden">
+            <strong>復旧コード（設定直後の一度だけ表示）</strong>
+            <p class="muted">PINを忘れたときにロックだけ解除するためのコードです。必ずアプリ外の安全な場所に控えてください。家計データには保存されません。</p>
+            <p><code id="lockRecoveryCode" class="recovery-code"></code></p>
+          </div>
         </div>
         <div id="lockDisablePanel" class="hidden">
           <form id="lockDisableForm">
@@ -235,7 +240,13 @@
       <label>PIN<input id="lockPin" type="password" inputmode="numeric" autocomplete="off" required></label>
       <p id="lockError" class="lock-error" role="alert"></p>
       <button type="submit" class="primary">ロック解除</button>
-      <p class="muted">PINを忘れた場合でも、サイトデータやIndexedDBを削除しないでください。</p>
+      <button type="button" id="lockRecoveryToggle">復旧コードを使う</button>
+      <p class="muted">PINを忘れても、サイトデータやIndexedDBを削除しないでください。</p>
+    </form>
+    <form id="lockRecoveryForm" class="lock-card hidden">
+      <h3>復旧コードでロック解除</h3>
+      <label>設定時に控えた復旧コード<input id="lockRecoveryInput" autocomplete="off" spellcheck="false" required></label>
+      <button type="submit" class="primary">復旧コードを確認</button>
     </form>
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
