@@ -605,8 +605,18 @@ function bind(){
     const entry=preparedCsv.newRows.find(r=>r.sourceRowKey===row?.getAttribute('data-csv-merchant-row'));
     if(!entry)return;
     const next=cleanMerchantDisplayName(input.value);
+    if(next&&next.length<=120)entry.merchantNormalized=next;
+  };
+  $('csvMerchantEditList').onchange=e=>{
+    const input=e.target.closest('[data-csv-merchant-name]');
+    if(!input||!preparedCsv)return;
+    const row=input.closest('[data-csv-merchant-row]');
+    const entry=preparedCsv.newRows.find(r=>r.sourceRowKey===row?.getAttribute('data-csv-merchant-row'));
+    if(!entry)return;
+    const next=cleanMerchantDisplayName(input.value);
     if(!next||next.length>120){toast('店名を1〜120文字で入力してください。');input.value=entry.merchantNormalized;return;}
     entry.merchantNormalized=next;
+    input.value=next;
   };
   $('historyMerchantFilter').oninput=()=>void renderHistoryMerchantEdits();
   $('historyMerchantEditList').onclick=e=>{
