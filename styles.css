@@ -74,3 +74,13 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .asset-breakdown-inline .breakdown-row{font-size:12px;padding:6px 0;gap:8px}
 .asset-breakdown-inline .breakdown-row .muted{font-size:11px}
 .asset-breakdown-inline .breakdown-total{font-size:12px;padding:8px 0 2px}
+
+/* History: manual cash expense date correction */
+.cash-date-edit-row{padding:12px 0;border-bottom:1px solid var(--line)}
+.cash-date-edit-row:last-child{border-bottom:0}
+.cash-date-edit-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cash-date-edit-meta strong{overflow-wrap:anywhere}
+.cash-date-edit-meta span{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cash-date-edit-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:8px}
+.cash-date-edit-actions input{min-width:0}
+.cash-date-edit-actions button{font-size:13px;padding:11px}
