@@ -258,6 +258,8 @@ function showLock(){
   document.body.classList.add('app-locked');
   $('lockOverlay').classList.remove('hidden');
   $('lockPin').value='';
+  $('lockRecoveryInput').value='';
+  $('lockRecoveryForm').classList.add('hidden');
   $('lockError').textContent='';
   $('lockPin').focus();
 }
@@ -290,7 +292,12 @@ async function enableLock(e){
   try{
     const salt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
     const hash=await pinDigest(pin,salt);
-    localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS}));
+    const recoveryCode=byteHex(crypto.getRandomValues(new Uint8Array(12)));
+    const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const recoveryHash=await pinDigest(recoveryCode,recoverySalt);
+    localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS,recoverySalt,recoveryHash}));
+    $('lockRecoveryCode').textContent=recoveryCode.match(/.{1,6}/g).join('-');
+    $('lockRecoveryNotice').classList.remove('hidden');
     $('lockNewPin').value='';$('lockConfirmPin').value='';
     updateLockSettings();toast('起動ロックを有効にしました。');
   }catch(err){toast('設定に失敗しました: '+err.message);}
@@ -302,14 +309,37 @@ async function disableLock(e){
   try{
     if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
     localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
+    $('lockRecoveryNotice').classList.add('hidden');$('lockRecoveryCode').textContent='';
     updateLockSettings();toast('起動ロックを解除しました。');
   }catch(err){toast('解除に失敗しました。');}
+}
+async function recoverLock(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg?.recoveryHash||!cfg.recoverySalt)return $('lockError').textContent='復旧コードが設定されていません。';
+  if(Date.now()<unlockDelayUntil)return $('lockError').textContent='しばらくしてから再試行してください。';
+  const code=$('lockRecoveryInput').value.replace(/[^0-9a-f]/gi,'').toLowerCase();
+  try{
+    if(!secureEquals(await pinDigest(code,cfg.recoverySalt,cfg.iterations),cfg.recoveryHash)){
+      unlockFailures++;
+      if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+      $('lockError').textContent='復旧コードが違います。';
+      return;
+    }
+    if(!confirm('起動ロックのみ解除します。家計データは削除されません。よろしいですか？'))return;
+    localStorage.removeItem(LOCK_KEY);
+    $('lockRecoveryInput').value='';
+    $('lockRecoveryForm').classList.add('hidden');
+    hideLock();updateLockSettings();toast('起動ロックを解除しました。必要なら新しいPINを設定してください。');
+  }catch(err){$('lockError').textContent='復旧処理に失敗しました。';console.error(err);}
 }
 function setupLock(){
   $('lockUnlockForm').onsubmit=unlockApp;
   $('lockEnableForm').onsubmit=enableLock;
   $('lockDisableForm').onsubmit=disableLock;
   $('lockNowButton').onclick=showLock;
+  $('lockRecoveryForm').onsubmit=recoverLock;
+  $('lockRecoveryToggle').onclick=()=>{const form=$('lockRecoveryForm');form.classList.toggle('hidden');if(!form.classList.contains('hidden'))$('lockRecoveryInput').focus();};
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)hiddenAt=Date.now();
     else if(hiddenAt&&Date.now()-hiddenAt>=60000){if(lockConfig())showLock();hiddenAt=0;}
