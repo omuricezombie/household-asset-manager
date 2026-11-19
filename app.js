@@ -8,30 +8,30 @@ const n=v=>Number(v)||0;
 function formatAmount(value){
   if(value==null||value==='')return '';
   const raw=String(value);
-  return /^\\d+$/.test(raw)?raw.replace(/\\B(?=(\\d{3})+(?!\\d))/g,','):raw;
+  return /^\d+$/.test(raw)?raw.replace(/\B(?=(\d{3})+(?!\d))/g,','):raw;
 }
 function formatSignedAmount(value){
   return value<0?'-'+formatAmount(Math.abs(value)):formatAmount(value);
 }
 function parseAmount(value){
   const raw=String(value??'').trim();
-  if(!/^(?:\\d+|\\d{1,3}(?:,\\d{3})+)$/.test(raw))return NaN;
+  if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(raw))return NaN;
   const result=Number(raw.replace(/,/g,''));
   return Number.isSafeInteger(result)&&result>=0?result:NaN;
 }
 function formatAmountInput(input){
   if(!input||input.isComposing)return;
   const raw=input.value;
-  if(!/^[\\d,]*$/.test(raw)||!raw)return;
+  if(!/^[\d,]*$/.test(raw)||!raw)return;
   const formatted=formatAmount(raw.replace(/,/g,''));
   if(formatted===raw)return;
   const start=input.selectionStart,end=input.selectionEnd;
-  const before=pos=>(raw.slice(0,pos).match(/\\d/g)||[]).length;
+  const before=pos=>(raw.slice(0,pos).match(/\d/g)||[]).length;
   const locate=count=>{
     if(!count)return 0;
     let n=0;
     for(let i=0;i<formatted.length;i++){
-      if(/\\d/.test(formatted[i]))n++;
+      if(/\d/.test(formatted[i]))n++;
       if(n===count)return i+1;
     }
     return formatted.length;
