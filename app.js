@@ -12,6 +12,9 @@ let toastTimer=null;
 let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
+const LOCK_KEY='ham-app-lock-v1';
+const LOCK_ITERATIONS=150000;
+let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatYen(v){return A.formatYen(v);}
@@ -229,11 +232,99 @@ function bind(){
   $('completeMonthButton').onclick=completeMonth;$('backupExport').onclick=exportBackup;$('backupImport').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);};$('clearAll').onclick=clearAll;
 }
 
+
+/* Optional local screen lock; does not encrypt IndexedDB or JSON backups. */
+function lockConfig(){
+  try{const raw=localStorage.getItem(LOCK_KEY);return raw?JSON.parse(raw):null;}
+  catch(e){console.error('Lock config unreadable',e);return {invalid:true};}
+}
+function byteHex(bytes){return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function pinDigest(pin,salt,iterations=LOCK_ITERATIONS){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new Uint8Array(salt.match(/.{2}/g).map(x=>parseInt(x,16))),iterations},key,256);
+  return byteHex(new Uint8Array(bits));
+}
+function secureEquals(a,b){if(typeof a!=='string'||typeof b!=='string')return false;let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return diff===0;}
+function updateLockSettings(){
+  const enabled=!!lockConfig();
+  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（画面閲覧防止用。保存データの暗号化ではありません）':'起動ロック：無効';
+  $('lockEnablePanel').classList.toggle('hidden',enabled);
+  $('lockDisablePanel').classList.toggle('hidden',!enabled);
+  $('lockNowButton').classList.toggle('hidden',!enabled);
+}
+function showLock(){
+  if(!lockConfig())return;
+  document.body.classList.add('app-locked');
+  $('lockOverlay').classList.remove('hidden');
+  $('lockPin').value='';
+  $('lockError').textContent='';
+  $('lockPin').focus();
+}
+function hideLock(){
+  unlockFailures=0;unlockDelayUntil=0;
+  document.body.classList.remove('app-locked');
+  $('lockOverlay').classList.add('hidden');
+  $('lockPin').value='';
+}
+async function unlockApp(e){
+  e.preventDefault();
+  if(Date.now()<unlockDelayUntil)return $('lockError').textContent='しばらくしてから再試行してください。';
+  const cfg=lockConfig();
+  if(!cfg||cfg.invalid||!cfg.salt||!cfg.hash)return $('lockError').textContent='ロック設定を読み込めません。';
+  try{
+    const candidate=await pinDigest($('lockPin').value,cfg.salt,cfg.iterations);
+    if(secureEquals(candidate,cfg.hash)){hideLock();return;}
+    unlockFailures++;
+    if(unlockFailures>=5){unlockDelayUntil=Date.now()+30000;unlockFailures=0;}
+    $('lockError').textContent='PINが違います。'+(unlockDelayUntil>Date.now()?'30秒後に再試行できます。':'');
+    $('lockPin').value='';
+  }catch(err){$('lockError').textContent='認証処理に失敗しました。';console.error(err);}
+}
+async function enableLock(e){
+  e.preventDefault();
+  const pin=$('lockNewPin').value,confirmation=$('lockConfirmPin').value;
+  if(!/^\d{6,12}$/.test(pin))return toast('PINは数字6〜12桁で入力してください。');
+  if(pin!==confirmation)return toast('確認用PINが一致しません。');
+  if(!crypto.subtle||!crypto.getRandomValues)return toast('この環境では安全なPIN設定ができません。');
+  try{
+    const salt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
+    const hash=await pinDigest(pin,salt);
+    localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS}));
+    $('lockNewPin').value='';$('lockConfirmPin').value='';
+    updateLockSettings();toast('起動ロックを有効にしました。');
+  }catch(err){toast('設定に失敗しました: '+err.message);}
+}
+async function disableLock(e){
+  e.preventDefault();
+  const cfg=lockConfig();
+  if(!cfg||cfg.invalid)return toast('ロック設定を確認できません。');
+  try{
+    if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
+    localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
+    updateLockSettings();toast('起動ロックを解除しました。');
+  }catch(err){toast('解除に失敗しました。');}
+}
+function setupLock(){
+  $('lockUnlockForm').onsubmit=unlockApp;
+  $('lockEnableForm').onsubmit=enableLock;
+  $('lockDisableForm').onsubmit=disableLock;
+  $('lockNowButton').onclick=showLock;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)hiddenAt=Date.now();
+    else if(hiddenAt&&Date.now()-hiddenAt>=60000){if(lockConfig())showLock();hiddenAt=0;}
+  });
+  window.addEventListener('pagehide',()=>{hiddenAt=Date.now();});
+  window.addEventListener('pageshow',()=>{if(hiddenAt&&Date.now()-hiddenAt>=60000&&lockConfig())showLock();});
+  updateLockSettings();
+  if(lockConfig())showLock();
+}
+
 async function init(){
   try{
-    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();
+    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();setupLock();document.body.classList.remove('app-booting');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
-  }catch(e){console.error(e);document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
+  }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
 init();
 })(window);
