@@ -395,7 +395,7 @@ async function importPreparedCsv(){
     await DB.bulkPut('transactions',txs);await DB.put('cardImports',{id:importId,importedAt:DB.now(),fileName:p.fileName,fileSize:p.fileSize,fileHash:p.fileHash,rowCount:p.rows.length+(p.excludedRows||[]).length,importedCount:txs.length,skippedCount:p.invalidRows.length+(p.excludedRows||[]).length,duplicateCount:p.duplicateRows.length,targetRange:rangeText(p.newRows),paymentDate:p.paymentDate||null,statementAmount:p.statementAmount,createdAt:DB.now()});
     if(p.statementAmount!=null){const pid=`dcard:${p.paymentDate||p.fileHash.slice(0,12)}`;await DB.put('paymentPlans',{id:pid,name:'dカード引落',dueDate:p.paymentDate||null,amount:p.statementAmount,type:'card',status:'planned',reservedAmount:0,sourceImportId:importId,createdAt:DB.now(),updatedAt:DB.now()});}
     const months=[...new Set(txs.map(x=>x.month))];for(const m of months){const st=await DB.getMonthStatus(m);if(st.completedAt){st.postCompletionUpdatedAt=DB.now();st.postCompletionChangeCount=n(st.postCompletionChangeCount)+txs.filter(x=>x.month===m).length;}st.completionItems.dcard=true;st.cardCsvUpdatedAt=DB.now();await DB.saveMonthStatus(st);}
-    const rules=[];for(const r of p.newRows){if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantNormalized){const existing=(await DB.getAll('categoryRules')).find(x=>x.matchType==='merchant_exact'&&x.pattern===r.merchantNormalized);if(!existing)rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern:r.merchantNormalized,category:r.category,mealType:r.mealType||null,enabled:true,createdAt:DB.now()});}}
+    const rules=[];for(const r of p.newRows){if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantRaw){const originalName=DC.normalizeMerchant(r.merchantRaw);const existing=(await DB.getAll('categoryRules')).find(x=>x.matchType==='merchant_exact'&&x.pattern===originalName);if(!existing&&!rules.some(x=>x.pattern===originalName))rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern:originalName,category:r.category,mealType:r.mealType||null,enabled:true,createdAt:DB.now()});}}
     if(rules.length)await DB.bulkPut('categoryRules',rules);
     $('csvMerchantEditWrap').classList.add('hidden');$('csvMerchantEditList').innerHTML='';
     $('csvPreview').innerHTML=`<div class="alert good"><strong>${txs.length}件を登録しました</strong><div class="muted">${months.length?months.map(monthLabel).join(' / '):''}</div></div>`;$('csvReview').classList.add('hidden');$('csvMeals').classList.add('hidden');$('csvImportButton').classList.add('hidden');$('dcardFile').value='';preparedCsv=null;toast('dカードCSVを取り込みました。');await renderHome();
@@ -598,7 +598,7 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
-  $('csvMerchantEditList').onchange=e=>{
+  $('csvMerchantEditList').oninput=e=>{
     const input=e.target.closest('[data-csv-merchant-name]');
     if(!input||!preparedCsv)return;
     const row=input.closest('[data-csv-merchant-row]');
@@ -607,8 +607,6 @@ function bind(){
     const next=cleanMerchantDisplayName(input.value);
     if(!next||next.length>120){toast('店名を1〜120文字で入力してください。');input.value=entry.merchantNormalized;return;}
     entry.merchantNormalized=next;
-    input.value=next;
-    renderCsvPrepared();
   };
   $('historyMerchantFilter').oninput=()=>void renderHistoryMerchantEdits();
   $('historyMerchantEditList').onclick=e=>{
