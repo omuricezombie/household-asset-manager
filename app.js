@@ -61,7 +61,9 @@ let assetBreakdownRequestId=0;
 const BREAKDOWN_MODE_KEY='ham-asset-breakdown-mode-v1';
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
-let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
+const LOCK_SESSION_KEY='ham-lock-session-v1';
+const LOCK_IDLE_MS=15*60*1000;
+let unlockFailures=0,unlockDelayUntil=0,lockIdleTimer=null,lastRecordedActivity=0;
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatYen(v){return A.formatYen(v);}
@@ -144,8 +146,11 @@ async function renderHome(){
     metric('実収入',cur.income,A.formatSigned(cur.income-prev.income)),
     metric('通常支出',cur.normal,A.formatSigned(cur.normal-prev.normal),cur.normal<=prev.normal?'good':'warn'),
     metric('臨時支出',cur.temporary,''),
-    metric('実質貯蓄',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
+    metric(selectedMonth===DB.currentMonth()?'今月の収支':'対象月の収支',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
   ].join('');
+  const monthStatus=await DB.getMonthStatus(selectedMonth);
+  $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':'暫定（登録済みの収入・支出による集計）';
+  renderExpenseDonut(cur.categories);
   const points=await A.pointTotal(selectedMonth),adv=(await A.outstandingAdvances()).reduce((s,x)=>s+x.outstanding,0);const plans=await A.paymentPlansUpcoming();const reserved=plans.reduce((s,x)=>s+n(x.reservedAmount),0);
   const wallet=cur.assets.rows.find(x=>x.account.id==='cash-wallet');
   const walletValue=wallet?.liveCash?.value??(wallet?.snapshot?wallet.value:null);
@@ -155,6 +160,36 @@ async function renderHome(){
   $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn','total'),metric('流動資産',cur.assets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
   const ins=await A.insights(selectedMonth);$('homeInsights').innerHTML=ins.length?ins.map(x=>`<div class="insight ${x.tone}">${esc(x.text)}</div>`).join(''):'<p class="muted">比較データがたまると、前月比や3か月平均との差を表示します。</p>';
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
+}
+/* Read-only SVG/HTML summaries. All money values come from existing Analysis.summary. */
+const CHART_PALETTE=['#60a5fa','#fbbf24','#34d399','#a78bfa','#fb7185','#94a3b8'];
+function chartColor(index){return CHART_PALETTE[index%CHART_PALETTE.length];}
+function renderExpenseDonut(categories){
+  const rows=Object.entries(categories||{}).filter(([,v])=>Number.isFinite(v)&&v>0).sort((a,b)=>b[1]-a[1]);
+  const total=rows.reduce((sum,[,v])=>sum+v,0);
+  if(!total){
+    $('homeExpenseDonut').innerHTML='<p class="muted">この月の支出内訳データはありません。</p>';
+    return;
+  }
+  const top=rows.slice(0,5);
+  const other=rows.slice(5).reduce((sum,[,v])=>sum+v,0);
+  if(other>0)top.push(['その他（複数カテゴリ）',other]);
+  let cumulative=0;
+  const circles=top.map(([label,value],i)=>{
+    const share=value/total;
+    const circle=`<circle r="42" cx="50" cy="50" fill="none" stroke="${chartColor(i)}" stroke-width="16" stroke-dasharray="${share*263.8938} 263.8938" stroke-dashoffset="${-cumulative*263.8938}" transform="rotate(-90 50 50)"><title>${esc(label)} ${formatYen(value)}</title></circle>`;
+    cumulative+=share;
+    return circle;
+  }).join('');
+  const legend=top.map(([label,value],i)=>`<div class="donut-legend-row"><i style="background:${chartColor(i)}" aria-hidden="true"></i><span>${esc(label)}</span><strong>${formatYen(value)}</strong><span class="donut-percent">${(100*value/total).toFixed(1)}%</span></div>`).join('');
+  const hasNegative=Object.values(categories||{}).some(v=>v<0);
+  $('homeExpenseDonut').innerHTML=`<div class="donut-layout"><div class="donut-figure"><svg viewBox="0 0 100 100" role="img" aria-label="支出カテゴリの構成比。合計 ${esc(formatYen(total))}"><circle r="42" cx="50" cy="50" fill="none" stroke="var(--line)" stroke-width="16"></circle>${circles}<text x="50" y="47" text-anchor="middle" class="donut-center-label">カテゴリ別</text><text x="50" y="60" text-anchor="middle" class="donut-center-total">100%</text></svg></div><div class="donut-legend">${legend}</div></div>${hasNegative?'<p class="finance-note">返金などで差引がマイナスとなったカテゴリは構成比の対象外です。</p>':''}<p class="finance-note">登録済みのプラスの支出をカテゴリ別に表示しています。立替の他人負担分は含みません。</p>`;
+}
+function renderMonthlyCashflow(summaries){
+  const rows=[...summaries].reverse();
+  const max=Math.max(1,...rows.flatMap(x=>[x.income,x.expense]).filter(Number.isFinite));
+  const html=rows.map(x=>`<div class="cashflow-month"><div class="cashflow-month-label">${esc(monthLabel(x.month))}</div><div class="cashflow-bar-row"><span>収入</span><div class="cashflow-track"><div class="cashflow-fill income" style="width:${Math.max(0,Math.min(100,x.income/max*100))}%"></div></div><strong>${formatYen(x.income)}</strong></div><div class="cashflow-bar-row"><span>支出</span><div class="cashflow-track"><div class="cashflow-fill expense" style="width:${Math.max(0,Math.min(100,x.expense/max*100))}%"></div></div><strong>${formatYen(x.expense)}</strong></div></div>`).join('');
+  $('historyCashflowChart').innerHTML=html+'<p class="finance-note">選択月を含む直近6か月。収入・支出は同じ尺度で比較しています（登録済みデータ）。</p>';
 }
 function metric(label,value,delta='',tone='',breakdown=''){
   const tag=breakdown?'button':'div';
@@ -528,7 +563,7 @@ async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthS
 async function renderChecklist(){const st=await recomputeMonthStatus(selectedMonth);$('monthEndProgress').textContent=`${st.completionRate}%`;const keys=['dcard','bank','cash','stock','dc','points','rent','income'];$('monthEndChecklist').innerHTML=keys.map(k=>`<div class="status-row"><div><strong>${itemLabel(k)}</strong>${k==='dcard'&&st.cardCsvUpdatedAt?`<div class="status-meta">最終取込 ${new Date(st.cardCsvUpdatedAt).toLocaleString('ja-JP')}</div>`:''}</div><div>${st.completionItems[k]?'<span class="badge">確認済</span>':(['dcard','rent','income'].includes(k)?`<button data-check-item="${k}">確認済みにする</button>`:'<span class="badge">未確認</span>')}</div></div>`).join('');$$('[data-check-item]').forEach(b=>b.onclick=async()=>{const s=await DB.getMonthStatus(selectedMonth);s.completionItems[b.dataset.checkItem]=true;await DB.saveMonthStatus(s);await renderChecklist();});$('completeMonthButton').disabled=st.completionRate<100;$('completeMonthButton').title=st.completionRate<100?'未確認項目があります':'';}
 async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
@@ -672,13 +707,42 @@ function showNewRecoveryCode(code){
 }
 function updateLockSettings(){
   const enabled=!!lockConfig();
-  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（画面閲覧防止用。保存データの暗号化ではありません）':'起動ロック：無効';
+  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（15分間操作がなければ再ロック。保存データの暗号化ではありません）':'起動ロック：無効';
   $('lockEnablePanel').classList.toggle('hidden',enabled);
   $('lockDisablePanel').classList.toggle('hidden',!enabled);
   $('lockNowButton').classList.toggle('hidden',!enabled);
 }
+function clearUnlockSession(){
+  try{sessionStorage.removeItem(LOCK_SESSION_KEY);}catch(e){console.warn('ロック解除状態の削除に失敗',e);}
+}
+function readUnlockSession(){
+  try{
+    const session=JSON.parse(sessionStorage.getItem(LOCK_SESSION_KEY)||'null');
+    const cfg=lockConfig();
+    const now=Date.now();
+    if(!cfg||cfg.invalid||!session||session.hash!==cfg.hash||
+       !Number.isFinite(session.lastActive)||session.lastActive>now||
+       now-session.lastActive>=LOCK_IDLE_MS)return null;
+    return session;
+  }catch{return null;}
+}
+function recordUnlockActivity({force=false}={}){
+  if(document.hidden||document.body.classList.contains('app-locked')||!lockConfig())return;
+  const now=Date.now();
+  if(!force&&now-lastRecordedActivity<10000)return;
+  if(!force&&!readUnlockSession()){showLock();return;}
+  try{
+    sessionStorage.setItem(LOCK_SESSION_KEY,JSON.stringify({hash:lockConfig().hash,lastActive:now}));
+    lastRecordedActivity=now;
+  }catch(e){console.warn('ロック解除状態の保存に失敗',e);}
+}
+function checkUnlockIdle(){
+  if(!lockConfig()||document.body.classList.contains('app-locked'))return;
+  if(!readUnlockSession())showLock();
+}
 function showLock(){
   if(!lockConfig())return;
+  clearUnlockSession();
   document.body.classList.add('app-locked');
   $('lockOverlay').classList.remove('hidden');
   $('lockPin').value='';
@@ -693,6 +757,7 @@ function hideLock(){
   document.body.classList.remove('app-locked');
   $('lockOverlay').classList.add('hidden');
   $('lockPin').value='';
+  recordUnlockActivity({force:true});
 }
 async function unlockApp(e){
   e.preventDefault();
@@ -721,6 +786,7 @@ async function enableLock(e){
     const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
     const recoveryHash=await pinDigest(recoveryCode,recoverySalt);
     localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS,recoverySalt,recoveryHash}));
+    clearUnlockSession();
     showNewRecoveryCode(recoveryCode);
     $('lockNewPin').value='';$('lockConfirmPin').value='';
     updateLockSettings();toast('起動ロックを有効にしました。');
@@ -732,7 +798,7 @@ async function disableLock(e){
   if(!cfg||cfg.invalid)return toast('ロック設定を確認できません。');
   try{
     if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
-    localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
+    localStorage.removeItem(LOCK_KEY);clearUnlockSession();$('lockDisablePin').value='';
     clearVisibleRecovery();
     updateLockSettings();toast('起動ロックを解除しました。');
   }catch(err){toast('解除に失敗しました。');}
@@ -775,7 +841,7 @@ async function recoverLock(e){
       return;
     }
     if(!confirm('起動ロックのみ解除します。家計データは削除されません。よろしいですか？'))return;
-    localStorage.removeItem(LOCK_KEY);
+    localStorage.removeItem(LOCK_KEY);clearUnlockSession();
     $('lockRecoveryInput').value='';
     $('lockRecoveryForm').classList.add('hidden');
     hideLock();updateLockSettings();toast('起動ロックを解除しました。必要なら新しいPINを設定してください。');
@@ -790,14 +856,19 @@ function setupLock(){
   $('lockRegenerateForm').onsubmit=regenerateRecovery;
   $('lockRecoveryAcknowledged').onclick=clearVisibleRecovery;
   $('lockRecoveryToggle').onclick=()=>{const form=$('lockRecoveryForm');form.classList.toggle('hidden');if(!form.classList.contains('hidden'))$('lockRecoveryInput').focus();};
-  document.addEventListener('visibilitychange',()=>{
-    if(document.hidden)hiddenAt=Date.now();
-    else if(hiddenAt&&Date.now()-hiddenAt>=60000){if(lockConfig())showLock();hiddenAt=0;}
-  });
-  window.addEventListener('pagehide',()=>{hiddenAt=Date.now();});
-  window.addEventListener('pageshow',()=>{if(hiddenAt&&Date.now()-hiddenAt>=60000&&lockConfig())showLock();});
+  for(const type of ['pointerdown','keydown']){
+    document.addEventListener(type,()=>recordUnlockActivity(),{passive:true});
+  }
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUnlockIdle();});
+  window.addEventListener('pageshow',()=>checkUnlockIdle());
+  lockIdleTimer=setInterval(checkUnlockIdle,15000);
   updateLockSettings();
-  if(lockConfig())showLock();
+  if(lockConfig()){
+    if(readUnlockSession()){
+      document.body.classList.remove('app-locked');
+      $('lockOverlay').classList.add('hidden');
+    }else showLock();
+  }else clearUnlockSession();
 }
 
 async function init(){
