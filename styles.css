@@ -126,3 +126,10 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .cashflow-fill.income{background:#34d399}
 .cashflow-fill.expense{background:#60a5fa}
 @media(max-width:390px){.donut-layout{grid-template-columns:minmax(100px,38%) minmax(0,1fr);gap:8px}.donut-legend-row{font-size:10px}.cashflow-bar-row{grid-template-columns:28px minmax(0,1fr) 77px;gap:4px}}
+
+
+/* CSV draft persistence controls */
+.csv-draft-notice{border:1px solid var(--line);border-radius:8px;padding:10px;margin:10px 0;background:var(--card);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#csvDraftControls:not(.hidden){display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+#csvDraftControls button{flex:1 1 auto;min-height:38px}
+#csvDraftSaveStatus{font-size:12px;margin:8px 0}
