@@ -61,7 +61,9 @@ let assetBreakdownRequestId=0;
 const BREAKDOWN_MODE_KEY='ham-asset-breakdown-mode-v1';
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
-let hiddenAt=0,unlockFailures=0,unlockDelayUntil=0;
+const LOCK_SESSION_KEY='ham-lock-session-v1';
+const LOCK_IDLE_MS=15*60*1000;
+let unlockFailures=0,unlockDelayUntil=0,lockIdleTimer=null,lastRecordedActivity=0;
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatYen(v){return A.formatYen(v);}
@@ -705,13 +707,42 @@ function showNewRecoveryCode(code){
 }
 function updateLockSettings(){
   const enabled=!!lockConfig();
-  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（画面閲覧防止用。保存データの暗号化ではありません）':'起動ロック：無効';
+  $('lockSettingsStatus').textContent=enabled?'起動ロック：有効（15分間操作がなければ再ロック。保存データの暗号化ではありません）':'起動ロック：無効';
   $('lockEnablePanel').classList.toggle('hidden',enabled);
   $('lockDisablePanel').classList.toggle('hidden',!enabled);
   $('lockNowButton').classList.toggle('hidden',!enabled);
 }
+function clearUnlockSession(){
+  try{sessionStorage.removeItem(LOCK_SESSION_KEY);}catch(e){console.warn('ロック解除状態の削除に失敗',e);}
+}
+function readUnlockSession(){
+  try{
+    const session=JSON.parse(sessionStorage.getItem(LOCK_SESSION_KEY)||'null');
+    const cfg=lockConfig();
+    const now=Date.now();
+    if(!cfg||cfg.invalid||!session||session.hash!==cfg.hash||
+       !Number.isFinite(session.lastActive)||session.lastActive>now||
+       now-session.lastActive>=LOCK_IDLE_MS)return null;
+    return session;
+  }catch{return null;}
+}
+function recordUnlockActivity({force=false}={}){
+  if(document.hidden||document.body.classList.contains('app-locked')||!lockConfig())return;
+  const now=Date.now();
+  if(!force&&now-lastRecordedActivity<10000)return;
+  if(!force&&!readUnlockSession()){showLock();return;}
+  try{
+    sessionStorage.setItem(LOCK_SESSION_KEY,JSON.stringify({hash:lockConfig().hash,lastActive:now}));
+    lastRecordedActivity=now;
+  }catch(e){console.warn('ロック解除状態の保存に失敗',e);}
+}
+function checkUnlockIdle(){
+  if(!lockConfig()||document.body.classList.contains('app-locked'))return;
+  if(!readUnlockSession())showLock();
+}
 function showLock(){
   if(!lockConfig())return;
+  clearUnlockSession();
   document.body.classList.add('app-locked');
   $('lockOverlay').classList.remove('hidden');
   $('lockPin').value='';
@@ -726,6 +757,7 @@ function hideLock(){
   document.body.classList.remove('app-locked');
   $('lockOverlay').classList.add('hidden');
   $('lockPin').value='';
+  recordUnlockActivity({force:true});
 }
 async function unlockApp(e){
   e.preventDefault();
@@ -754,6 +786,7 @@ async function enableLock(e){
     const recoverySalt=byteHex(crypto.getRandomValues(new Uint8Array(16)));
     const recoveryHash=await pinDigest(recoveryCode,recoverySalt);
     localStorage.setItem(LOCK_KEY,JSON.stringify({salt,hash,iterations:LOCK_ITERATIONS,recoverySalt,recoveryHash}));
+    clearUnlockSession();
     showNewRecoveryCode(recoveryCode);
     $('lockNewPin').value='';$('lockConfirmPin').value='';
     updateLockSettings();toast('起動ロックを有効にしました。');
@@ -765,7 +798,7 @@ async function disableLock(e){
   if(!cfg||cfg.invalid)return toast('ロック設定を確認できません。');
   try{
     if(!secureEquals(await pinDigest($('lockDisablePin').value,cfg.salt,cfg.iterations),cfg.hash))return toast('PINが違います。');
-    localStorage.removeItem(LOCK_KEY);$('lockDisablePin').value='';
+    localStorage.removeItem(LOCK_KEY);clearUnlockSession();$('lockDisablePin').value='';
     clearVisibleRecovery();
     updateLockSettings();toast('起動ロックを解除しました。');
   }catch(err){toast('解除に失敗しました。');}
@@ -808,7 +841,7 @@ async function recoverLock(e){
       return;
     }
     if(!confirm('起動ロックのみ解除します。家計データは削除されません。よろしいですか？'))return;
-    localStorage.removeItem(LOCK_KEY);
+    localStorage.removeItem(LOCK_KEY);clearUnlockSession();
     $('lockRecoveryInput').value='';
     $('lockRecoveryForm').classList.add('hidden');
     hideLock();updateLockSettings();toast('起動ロックを解除しました。必要なら新しいPINを設定してください。');
@@ -823,14 +856,19 @@ function setupLock(){
   $('lockRegenerateForm').onsubmit=regenerateRecovery;
   $('lockRecoveryAcknowledged').onclick=clearVisibleRecovery;
   $('lockRecoveryToggle').onclick=()=>{const form=$('lockRecoveryForm');form.classList.toggle('hidden');if(!form.classList.contains('hidden'))$('lockRecoveryInput').focus();};
-  document.addEventListener('visibilitychange',()=>{
-    if(document.hidden)hiddenAt=Date.now();
-    else if(hiddenAt&&Date.now()-hiddenAt>=60000){if(lockConfig())showLock();hiddenAt=0;}
-  });
-  window.addEventListener('pagehide',()=>{hiddenAt=Date.now();});
-  window.addEventListener('pageshow',()=>{if(hiddenAt&&Date.now()-hiddenAt>=60000&&lockConfig())showLock();});
+  for(const type of ['pointerdown','keydown']){
+    document.addEventListener(type,()=>recordUnlockActivity(),{passive:true});
+  }
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUnlockIdle();});
+  window.addEventListener('pageshow',()=>checkUnlockIdle());
+  lockIdleTimer=setInterval(checkUnlockIdle,15000);
   updateLockSettings();
-  if(lockConfig())showLock();
+  if(lockConfig()){
+    if(readUnlockSession()){
+      document.body.classList.remove('app-locked');
+      $('lockOverlay').classList.add('hidden');
+    }else showLock();
+  }else clearUnlockSession();
 }
 
 async function init(){
