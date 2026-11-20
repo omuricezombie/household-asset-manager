@@ -84,3 +84,20 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .cash-date-edit-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:8px}
 .cash-date-edit-actions input{min-width:0}
 .cash-date-edit-actions button{font-size:13px;padding:11px}
+
+/* Optional merchant name corrections, keeping compact mobile layout */
+.merchant-edit-row{padding:11px 0;border-bottom:1px solid var(--line)}
+.merchant-edit-row:last-child{border-bottom:0}
+.merchant-edit-label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.merchant-edit-label span{white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
+.merchant-edit-row .muted{margin:5px 0;font-size:12px;overflow-wrap:anywhere}
+.merchant-edit-row label{display:block;font-size:12px}
+.merchant-edit-row input{box-sizing:border-box;width:100%;min-width:0}
+.merchant-edit-actions{display:flex;align-items:center;gap:8px;margin-top:7px}
+.merchant-edit-actions input{flex:1;min-width:0}
+.merchant-edit-actions button{flex:0 0 auto}
+
+/* CSV review: optional merchant correction stays next to category and meal checks */
+.csv-merchant-review{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0}
+.csv-merchant-review summary{font-weight:700;cursor:pointer}
+.csv-merchant-review[open] summary{margin-bottom:8px}

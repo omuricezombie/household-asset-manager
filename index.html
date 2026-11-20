@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0218">
+  <link rel="stylesheet" href="styles.css?v=0219">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.18</p>
+      <p class="sub">v0.2.19</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -129,6 +129,11 @@
         <div id="csvPreview" class="hidden"></div>
         <div id="csvReview" class="hidden"></div>
         <div id="csvMeals" class="hidden"></div>
+        <details id="csvMerchantEditWrap" class="hidden csv-merchant-review">
+          <summary>店名の確認・修正（任意）</summary>
+          <p class="muted">「松戸本町店」など店名が分からない明細だけ、ここで修正できます。元のCSV店名・金額・利用日は変更されません。</p>
+          <div id="csvMerchantEditList"></div>
+        </details>
         <button id="csvImportButton" class="primary hidden">新規明細を登録</button>
       </div>
     </section>
@@ -170,6 +175,14 @@
       <div class="card">
         <h2>店舗</h2>
         <div id="historyMerchants"></div>
+      </div>
+      <div class="card">
+        <details id="historyMerchantEditWrap">
+          <summary>取込済みdカード明細の店名を修正</summary>
+          <p class="muted">表示中の対象月にあるdカード明細だけを変更できます。金額・利用日・重複判定は変更しません。</p>
+          <label>店名・日付・金額で絞り込み<input id="historyMerchantFilter" type="search" autocomplete="off" placeholder="例：松戸本町店"></label>
+          <div id="historyMerchantEditList"></div>
+        </details>
       </div>
       <div class="card">
         <h2>食費（朝・昼・夜）</h2>
@@ -281,9 +294,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0218"></script>
-  <script src="dcard-import.js?v=0218"></script>
-  <script src="analysis.js?v=0218"></script>
-  <script src="app.js?v=0218"></script>
+  <script src="db.js?v=0219"></script>
+  <script src="dcard-import.js?v=0219"></script>
+  <script src="analysis.js?v=0219"></script>
+  <script src="app.js?v=0219"></script>
 </body>
 </html>

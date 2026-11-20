@@ -323,15 +323,69 @@ async function renderOutstanding(){
 
 async function handleCsvFile(file){
   try{
+    $('csvMerchantEditWrap').classList.add('hidden');$('csvMerchantEditWrap').open=false;
     $('csvPreview').classList.remove('hidden');$('csvPreview').innerHTML='<p>解析中...</p>';$('csvReview').classList.add('hidden');$('csvMeals').classList.add('hidden');$('csvImportButton').classList.add('hidden');
     const rules=await DB.getAll('categoryRules');const p=await DC.prepareFile(file,rules);const old=await DB.getByIndex('cardImports','fileHash',p.fileHash);if(old){preparedCsv=null;$('csvPreview').innerHTML=`<div class="alert">このCSVは取込済みです。<div class="muted">${esc(old.importedAt||'')}</div></div>`;return;}
     const allTx=await DB.getAll('transactions'),keys=new Set(allTx.map(x=>x.sourceRowKey).filter(Boolean));p.rows.forEach(r=>r.isDuplicate=!!r.sourceRowKey&&keys.has(r.sourceRowKey));p.newRows=p.rows.filter(r=>!r.invalid&&!r.isDuplicate);p.invalidRows=p.rows.filter(r=>r.invalid);p.duplicateRows=p.rows.filter(r=>r.isDuplicate);preparedCsv=p;
     renderCsvPrepared();
   }catch(e){preparedCsv=null;$('csvPreview').innerHTML=`<div class="alert warn"><strong>CSVを解析できませんでした</strong><div class="muted">${esc(e.message)}</div></div>`;}
 }
+function cleanMerchantDisplayName(value){
+  return String(value??'').normalize('NFKC').replace(/\\s+/g,' ').trim();
+}
+function renderCsvMerchantEdits(){
+  const rows=preparedCsv?.newRows||[];
+  const wrap=$('csvMerchantEditWrap');
+  wrap.classList.toggle('hidden',rows.length===0);
+  $('csvMerchantEditList').innerHTML=rows.map(r=>`
+    <div class="merchant-edit-row" data-csv-merchant-row="${esc(r.sourceRowKey)}">
+      <div class="merchant-edit-label"><strong>${esc(r.date)}</strong><span>${formatYen(r.amount)}</span></div>
+      <div class="muted">元のCSV店名：${esc(r.merchantRaw)}</div>
+      <label>表示用の店名<input type="text" maxlength="120" autocomplete="off" value="${esc(r.merchantNormalized)}" data-csv-merchant-name></label>
+    </div>`).join('');
+}
+async function renderHistoryMerchantEdits(){
+  const filter=$('historyMerchantFilter').value.trim().toLowerCase();
+  const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>t.sourceType==='dcard_csv');
+  const rows=transactions.filter(t=>!filter||[t.date,t.merchantRaw,t.merchantNormalized,String(t.amount)].some(x=>String(x||'').toLowerCase().includes(filter)));
+  $('historyMerchantEditList').innerHTML=rows.slice().reverse().map(t=>`
+    <div class="merchant-edit-row" data-history-merchant-row="${esc(t.id)}">
+      <div class="merchant-edit-label"><strong>${esc(t.date)}</strong><span>${formatYen(t.amount)}</span></div>
+      <div class="muted">元のCSV店名：${esc(t.merchantRaw)}</div>
+      <div class="merchant-edit-actions">
+        <input type="text" maxlength="120" autocomplete="off" aria-label="表示用の店名" value="${esc(t.merchantNormalized||DC.normalizeMerchant(t.merchantRaw))}" data-history-merchant-name>
+        <button type="button" data-history-merchant-save>保存</button>
+      </div>
+    </div>`).join('')||'<p class="muted">対象明細がありません。</p>';
+}
+async function saveHistoryMerchantName(button){
+  if(button.disabled)return false;
+  const row=button.closest('[data-history-merchant-row]');
+  const id=row?.getAttribute('data-history-merchant-row');
+  const input=row?.querySelector('[data-history-merchant-name]');
+  const name=cleanMerchantDisplayName(input?.value);
+  if(!id||!name||name.length>120){toast('店名を1〜120文字で入力してください。');return false;}
+  const tx=await DB.get('transactions',id);
+  if(!tx||tx.sourceType!=='dcard_csv'||tx.month!==selectedMonth){toast('対象のdカード明細が見つかりません。');return false;}
+  if(name===(tx.merchantNormalized||DC.normalizeMerchant(tx.merchantRaw))){toast('店名は変更されていません。');return false;}
+  button.disabled=true;
+  try{
+    await DB.put('transactions',{...tx,merchantNormalized:name,updatedAt:DB.now()});
+    const stored=await DB.get('transactions',id);
+    if(stored?.merchantNormalized!==name)throw new Error('保存結果を確認できませんでした。');
+    await renderHistory();
+    await renderHome();
+    toast('表示用の店名を更新しました。');
+    return true;
+  }catch(error){
+    console.error(error);
+    toast('店名を保存できません: '+error.message);
+    return false;
+  }finally{button.disabled=false;}
+}
 function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows=p.excludedRows||[],excluded=excludedRows.length,invalid=p.invalidRows.length;const review=p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund').concat(p.invalidRows);const excludedSummary=excluded?`<div class="muted">対象外：${esc(excludedRows[0]?.reason||'対象外行')} ${excluded}件</div>`:'';$('csvPreview').innerHTML=`<div class="summary-strip"><div>新規<b>${p.newRows.length}</b></div><div>重複<b>${p.duplicateRows.length}</b></div><div>除外・不正<b>${invalid}</b></div><div>要確認<b>${review.length}</b></div></div><p class="muted">対象期間：${esc(rangeText(p.newRows))}${p.statementAmount!=null?` / 請求合計候補 ${formatYen(p.statementAmount)}`:''}${p.paymentDate?` / 支払日候補 ${esc(p.paymentDate)}`:''}</p>${excludedSummary}`;
   if(review.length){$('csvReview').classList.remove('hidden');$('csvReview').innerHTML='<h3>要確認</h3>'+review.map((r,i)=>r.invalid?`<div class="review-row warn"><strong>${esc(r.reason)}</strong><div class="muted">CSV ${r.sourceLine}行目</div></div>`:`<div class="review-row" data-review-key="${esc(r.sourceRowKey)}"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)} / ${r.kind==='refund'?'返金候補':'カテゴリ未分類'}</span></div><strong>${formatYen(r.amount)}</strong></div><select data-category-key="${esc(r.sourceRowKey)}">${selectOptions(categories,r.category)}</select></div>`).join('');$$('[data-category-key]').forEach(s=>s.onchange=()=>{const r=p.newRows.find(x=>x.sourceRowKey===s.dataset.categoryKey);if(r){r.category=s.value;r.categoryConfirmed=true;if(r.category!=='食費')r.mealType=null;renderCsvMeals();}});}else $('csvReview').classList.add('hidden');
-  renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
+  renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
 }
 function renderCsvMeals(){const p=preparedCsv;if(!p)return;const food=p.newRows.filter(r=>r.category==='食費');if(!food.length){$('csvMeals').classList.add('hidden');return;}$('csvMeals').classList.remove('hidden');$('csvMeals').innerHTML='<h3>食費だけ確認</h3><p class="muted">未分類のままでも登録できます。</p>'+food.map(r=>`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)}${r.time?` ${esc(r.time)}`:''}</span></div><strong>${formatYen(r.amount)}</strong></div><div class="meal-buttons">${mealOptions.slice(1).map(([v,l])=>`<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="${v}" class="${r.mealType===v?'active':''}">${l}</button>`).join('')}<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="none" class="${!r.mealType?'active':''}">後で</button><button type="button" data-food-off="${esc(r.sourceRowKey)}">食費ではない</button></div></div>`).join('');$$('[data-meal-key]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.mealKey);if(r){r.mealType=b.dataset.meal==='none'?null:b.dataset.meal;if(b.dataset.meal!=='none')r.categoryConfirmed=true;renderCsvMeals();}});$$('[data-food-off]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.foodOff);if(r){r.category='未分類';r.mealType=null;r.categoryConfirmed=true;renderCsvPrepared();}});}
 function rangeText(rows){const ds=rows.map(x=>x.date).filter(Boolean).sort();return ds.length?`${ds[0]}〜${ds[ds.length-1]}`:'—';}
@@ -341,8 +395,9 @@ async function importPreparedCsv(){
     await DB.bulkPut('transactions',txs);await DB.put('cardImports',{id:importId,importedAt:DB.now(),fileName:p.fileName,fileSize:p.fileSize,fileHash:p.fileHash,rowCount:p.rows.length+(p.excludedRows||[]).length,importedCount:txs.length,skippedCount:p.invalidRows.length+(p.excludedRows||[]).length,duplicateCount:p.duplicateRows.length,targetRange:rangeText(p.newRows),paymentDate:p.paymentDate||null,statementAmount:p.statementAmount,createdAt:DB.now()});
     if(p.statementAmount!=null){const pid=`dcard:${p.paymentDate||p.fileHash.slice(0,12)}`;await DB.put('paymentPlans',{id:pid,name:'dカード引落',dueDate:p.paymentDate||null,amount:p.statementAmount,type:'card',status:'planned',reservedAmount:0,sourceImportId:importId,createdAt:DB.now(),updatedAt:DB.now()});}
     const months=[...new Set(txs.map(x=>x.month))];for(const m of months){const st=await DB.getMonthStatus(m);if(st.completedAt){st.postCompletionUpdatedAt=DB.now();st.postCompletionChangeCount=n(st.postCompletionChangeCount)+txs.filter(x=>x.month===m).length;}st.completionItems.dcard=true;st.cardCsvUpdatedAt=DB.now();await DB.saveMonthStatus(st);}
-    const rules=[];for(const r of p.newRows){if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantNormalized){const existing=(await DB.getAll('categoryRules')).find(x=>x.matchType==='merchant_exact'&&x.pattern===r.merchantNormalized);if(!existing)rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern:r.merchantNormalized,category:r.category,mealType:r.mealType||null,enabled:true,createdAt:DB.now()});}}
+    const rules=[];for(const r of p.newRows){if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantRaw){const originalName=DC.normalizeMerchant(r.merchantRaw);const existing=(await DB.getAll('categoryRules')).find(x=>x.matchType==='merchant_exact'&&x.pattern===originalName);if(!existing&&!rules.some(x=>x.pattern===originalName))rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern:originalName,category:r.category,mealType:r.mealType||null,enabled:true,createdAt:DB.now()});}}
     if(rules.length)await DB.bulkPut('categoryRules',rules);
+    $('csvMerchantEditWrap').classList.add('hidden');$('csvMerchantEditList').innerHTML='';
     $('csvPreview').innerHTML=`<div class="alert good"><strong>${txs.length}件を登録しました</strong><div class="muted">${months.length?months.map(monthLabel).join(' / '):''}</div></div>`;$('csvReview').classList.add('hidden');$('csvMeals').classList.add('hidden');$('csvImportButton').classList.add('hidden');$('dcardFile').value='';preparedCsv=null;toast('dカードCSVを取り込みました。');await renderHome();
   }catch(e){toast('取込に失敗しました: '+e.message);}
 }
@@ -473,7 +528,7 @@ async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthS
 async function renderChecklist(){const st=await recomputeMonthStatus(selectedMonth);$('monthEndProgress').textContent=`${st.completionRate}%`;const keys=['dcard','bank','cash','stock','dc','points','rent','income'];$('monthEndChecklist').innerHTML=keys.map(k=>`<div class="status-row"><div><strong>${itemLabel(k)}</strong>${k==='dcard'&&st.cardCsvUpdatedAt?`<div class="status-meta">最終取込 ${new Date(st.cardCsvUpdatedAt).toLocaleString('ja-JP')}</div>`:''}</div><div>${st.completionItems[k]?'<span class="badge">確認済</span>':(['dcard','rent','income'].includes(k)?`<button data-check-item="${k}">確認済みにする</button>`:'<span class="badge">未確認</span>')}</div></div>`).join('');$$('[data-check-item]').forEach(b=>b.onclick=async()=>{const s=await DB.getMonthStatus(selectedMonth);s.completionItems[b.dataset.checkItem]=true;await DB.saveMonthStatus(s);await renderChecklist();});$('completeMonthButton').disabled=st.completionRate<100;$('completeMonthButton').title=st.completionRate<100?'未確認項目があります':'';}
 async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
@@ -543,6 +598,31 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 function bind(){
+  $('csvMerchantEditList').oninput=e=>{
+    const input=e.target.closest('[data-csv-merchant-name]');
+    if(!input||!preparedCsv)return;
+    const row=input.closest('[data-csv-merchant-row]');
+    const entry=preparedCsv.newRows.find(r=>r.sourceRowKey===row?.getAttribute('data-csv-merchant-row'));
+    if(!entry)return;
+    const next=cleanMerchantDisplayName(input.value);
+    if(next&&next.length<=120)entry.merchantNormalized=next;
+  };
+  $('csvMerchantEditList').onchange=e=>{
+    const input=e.target.closest('[data-csv-merchant-name]');
+    if(!input||!preparedCsv)return;
+    const row=input.closest('[data-csv-merchant-row]');
+    const entry=preparedCsv.newRows.find(r=>r.sourceRowKey===row?.getAttribute('data-csv-merchant-row'));
+    if(!entry)return;
+    const next=cleanMerchantDisplayName(input.value);
+    if(!next||next.length>120){toast('店名を1〜120文字で入力してください。');input.value=entry.merchantNormalized;return;}
+    entry.merchantNormalized=next;
+    input.value=next;
+  };
+  $('historyMerchantFilter').oninput=()=>void renderHistoryMerchantEdits();
+  $('historyMerchantEditList').onclick=e=>{
+    const button=e.target.closest('[data-history-merchant-save]');
+    if(button)void saveHistoryMerchantName(button);
+  };
   $('historyCashEditList').onclick=e=>{
     const button=e.target.closest('[data-cash-edit-save]');
     if(button)void saveManualCashDateEdit(button);
