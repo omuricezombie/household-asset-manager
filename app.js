@@ -1022,7 +1022,7 @@ async function saveHistoricalRemittance(){
 }
 async function renderHistoricalBankAccounts(){
   const selected=$('bulkBankAccount').value;
-  const accounts=(await DB.getAll('accounts')).filter(a=>a.category==='bank'&&a.active!==false);
+  const accounts=(await DB.getAll('accounts')).filter(a=>a.active!==false);
   $('bulkBankAccount').innerHTML='<option value="">銀行口座を選択</option>'+accounts.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('');
   if(accounts.some(a=>a.id===selected))$('bulkBankAccount').value=selected;
 }
@@ -1034,7 +1034,7 @@ async function loadHistoricalBank(){
   try{
     const accountId=$('bulkBankAccount').value;
     const account=await DB.get('accounts',accountId);
-    if(!account||account.category!=='bank'||account.active===false)throw new Error('銀行口座を選んでください。');
+    if(!account||account.active===false)throw new Error('資産項目を選んでください。');
     const months=historicalMonths($('bulkBankFrom').value,$('bulkBankTo').value);
     const entries=await Promise.all(months.map(m=>DB.get('assetSnapshots',[m,accountId])));
     historicalBankPlan={accountId,months};
@@ -1052,7 +1052,7 @@ async function saveHistoricalBank(){
     const plan=historicalBankPlan;
     if($('bulkBankAccount').value!==plan.accountId||$('bulkBankFrom').value!==plan.months[0]||$('bulkBankTo').value!==plan.months.at(-1))throw new Error('対象を変更したため、一覧を再表示してください。');
     const account=await DB.get('accounts',plan.accountId);
-    if(!account||account.category!=='bank'||account.active===false)throw new Error('銀行口座が見つかりません。');
+    if(!account||account.active===false)throw new Error('資産項目が見つかりません。');
     const inputs=[...document.querySelectorAll('[data-historical-bank-month]')];
     const toWrite=[];
     for(const input of inputs){
@@ -1068,8 +1068,8 @@ async function saveHistoricalBank(){
     if(!confirm(account.name+'の月末残高を'+toWrite.length+'か月分登録します。既存の月は変更しません。よろしいですか？'))return;
     await DB.atomicChanges({assetSnapshots:toWrite});
     historicalBankPlan=null;await loadHistoricalBank();await renderHome();await renderHistory();
-    toast(toWrite.length+'か月分の銀行残高を登録しました。');
-  }catch(e){toast('銀行残高の一括保存に失敗: '+e.message);}
+    toast(toWrite.length+'か月分の資産残高を登録しました。');
+  }catch(e){toast('資産残高の一括保存に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkBankSave').disabled=false;}
 }
 async function renderData(){await renderHistoricalBankAccounts();const im=(await DB.getAll('cardImports')).sort((a,b)=>(b.importedAt||'').localeCompare(a.importedAt||''));$('importHistory').innerHTML=im.length?im.slice(0,10).map(x=>`<div class="status-row"><div><strong>${esc(x.fileName)}</strong><div class="status-meta">${new Date(x.importedAt).toLocaleString('ja-JP')} / ${esc(x.targetRange||'')}</div></div><div>${x.importedCount}件</div></div>`).join(''):'<p class="muted">取込履歴はありません。</p>';$('appInfo').innerHTML=`<p>App ${DB.APP_VERSION}<br>schemaVersion ${DB.SCHEMA_VERSION}<br>DB ${DB.DB_NAME}</p>`;let info='';try{if(navigator.storage?.estimate){const e=await navigator.storage.estimate();info=`使用量 約${Math.round((e.usage||0)/1024)} KB / 利用可能枠 約${Math.round((e.quota||0)/1024/1024)} MB`;}}catch{}$('storageInfo').textContent=info;}
