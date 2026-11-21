@@ -3,7 +3,7 @@
   const HAM=global.HAM=global.HAM||{};
   const DB=()=>HAM.DB;
   const num=v=>Number(v)||0;
-  const effExpense=t=>t.kind==='expense'?(t.ownShare==null?num(t.amount):num(t.ownShare)):0;
+  const effExpense=t=>t.kind==='expense'?(t.isOtherPersonExpense?0:(t.ownShare==null?num(t.amount):num(t.ownShare))):0;
   const refundAmount=t=>t.kind==='refund'?num(t.amount):0;
 
   function cashMovementAmount(t){
