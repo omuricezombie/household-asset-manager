@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   const HAM=global.HAM=global.HAM||{};
-  const APP_VERSION='0.2.23';
+  const APP_VERSION='0.2.24-candidate.1';
   const SCHEMA_VERSION=2;
   const DB_NAME='householdAssetManagerDB_v2';
   const DB_VERSION=1;
@@ -51,6 +51,19 @@
   function getByIndex(name,indexName,key){return reqP(store(name).index(indexName).get(key));}
 
   async function bulkPut(name,values){if(!values.length)return;const tx=ensure().transaction(name,'readwrite');const s=tx.objectStore(name);values.forEach(v=>s.put(v));await txP(tx);}
+  async function atomicChanges(puts,deletes={}){
+    const names=[...new Set([...Object.keys(puts),...Object.keys(deletes)])];
+    if(!names.length)return;
+    for(const name of names)if(!STORES.includes(name))throw new Error('不明な保存先: '+name);
+    const tx=ensure().transaction(names,'readwrite'),done=txP(tx);
+    try{
+      for(const name of names){const store=tx.objectStore(name);
+        for(const value of (puts[name]||[]))store.put(value);
+        for(const key of (deletes[name]||[]))store.delete(key);
+      }
+    }catch(e){tx.abort();await done.catch(()=>{});throw e;}
+    await done;
+  }
   async function bulkDelete(name,keys){if(!keys.length)return;const tx=ensure().transaction(name,'readwrite');const s=tx.objectStore(name);keys.forEach(k=>s.delete(k));await txP(tx);}
 
   async function seed(){
@@ -105,5 +118,5 @@
   async function getMonthStatus(month){return await get('monthStatus',month)||{month,completionItems:{dcard:false,bank:false,cash:false,stock:false,dc:false,points:false,rent:false,income:false},completionRate:0,createdAt:now()};}
   async function saveMonthStatus(status){const vals=Object.values(status.completionItems||{});status.completionRate=vals.length?Math.round(vals.filter(Boolean).length/vals.length*100):0;status.updatedAt=now();await put('monthStatus',status);return status;}
 
-  HAM.DB={APP_VERSION,SCHEMA_VERSION,DB_NAME,STORES,open,seed,get,getAll,put,del,clear,getAllByIndex,getByIndex,bulkPut,bulkDelete,uid,now,ymd,currentMonth,prevMonth,monthEndDate,monthOfDate,sha256Text,sha256Bytes,stableStringify,buildBackup,validateBackup,restoreBackup,readAllStores,latestSnapshot,latestPointSnapshot,getMonthStatus,saveMonthStatus,touchMeta};
+  HAM.DB={APP_VERSION,SCHEMA_VERSION,DB_NAME,STORES,open,seed,get,getAll,put,del,clear,getAllByIndex,getByIndex,bulkPut,bulkDelete,atomicChanges,uid,now,ymd,currentMonth,prevMonth,monthEndDate,monthOfDate,sha256Text,sha256Bytes,stableStringify,buildBackup,validateBackup,restoreBackup,readAllStores,latestSnapshot,latestPointSnapshot,getMonthStatus,saveMonthStatus,touchMeta};
 })(window);
