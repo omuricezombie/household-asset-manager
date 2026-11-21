@@ -242,6 +242,32 @@
 
     <section class="screen" data-screen="data">
       <div class="card">
+        <h2>過去の仕送りをまとめて登録</h2>
+        <p class="muted">月額が同じ期間だけを指定して、毎月1件の仕送りを登録します。すでに仕送りがある月は追加しません。現在月と未来月は対象外です。</p>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkRemitFrom" type="month"></label>
+          <label>終了月<input id="bulkRemitTo" type="month"></label>
+          <label>毎月の金額<input id="bulkRemitAmount" type="text" inputmode="numeric" placeholder="例：52000"></label>
+          <label>毎月の日付（1〜28日）<input id="bulkRemitDay" type="number" inputmode="numeric" min="1" max="28" value="1"></label>
+        </div>
+        <button id="bulkRemitPreview" type="button">登録予定を確認</button>
+        <div id="bulkRemitReview" aria-live="polite"></div>
+        <button id="bulkRemitSave" type="button" class="primary hidden">重複を除いて一括登録</button>
+      </div>
+      <div class="card">
+        <h2>過去の預金残高を一覧入力</h2>
+        <p class="muted">銀行口座と期間を指定し、月末残高を月別に入力できます。既に登録済みの月は読み取り専用です。空欄の月は登録しません。0円は数字の0を入力してください。</p>
+        <label>銀行口座<select id="bulkBankAccount"><option value="">銀行口座を選択</option></select></label>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkBankFrom" type="month"></label>
+          <label>終了月<input id="bulkBankTo" type="month"></label>
+        </div>
+        <button id="bulkBankLoad" type="button">残高の一覧を表示</button>
+        <div id="bulkBankStatus" aria-live="polite"></div>
+        <div id="bulkBankRows" class="historical-rows"></div>
+        <button id="bulkBankSave" type="button" class="primary hidden">未登録の残高を一括保存</button>
+      </div>
+      <div class="card">
         <h2>バックアップ</h2>
         <button id="backupExport" class="primary">JSONバックアップを保存</button>
         <label class="file-label">JSONバックアップを復元<input id="backupImport" type="file" accept="application/json,.json"></label>
