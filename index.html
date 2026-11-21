@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0223">
+  <link rel="stylesheet" href="styles.css?v=0224c1">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.23</p>
+      <p class="sub">v0.2.24-candidate.1</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -109,10 +109,10 @@
         <div class="segmented"><button class="active" data-advance-mode="new">立替を登録</button><button data-advance-mode="repay">返金を登録</button></div>
         <div id="advanceNew">
           <h3>カード利用の立替</h3>
-          <p class="muted">d払い・iD・dカードで家族分を立て替えた場合は、CSVで取り込んだ明細から対象だけを選び、「立替額（家族分）」を入力します。通常のカード利用は立替として扱いません。</p>
+          <p class="muted">カード立替は当日に事前記録できます。後日CSV取込で紐づけ、支出の二重計上を防ぎます。CSV登録済みの明細は下の一覧から立替設定してください。</p>
           <div id="advanceCardList"></div>
           <details>
-            <summary>現金・銀行振込などの立替を新規登録</summary>
+            <summary>立替を新規登録（カードはCSV照合待ち）</summary>
             <label>支払総額<input id="advanceTotal" type="text" inputmode="numeric" autocomplete="off"></label>
             <label>自分負担額<input id="advanceOwn" type="text" inputmode="numeric" autocomplete="off"></label>
             <label>立替額（家族分）<input id="advanceOther" type="text" inputmode="numeric" autocomplete="off" readonly></label><p class="muted">支払総額はあなたが支払った総額です。立替額（家族分）は「支払総額 − 自分負担額」で自動計算し、家族からの返金待ちとして管理します。</p>
@@ -143,6 +143,7 @@
         </div>
         <p id="csvDraftSaveStatus" class="muted hidden" role="status" aria-live="polite"></p>
         <div id="csvPreview" class="hidden"></div>
+        <div id="csvAdvanceMatches" class="hidden"></div>
         <div id="csvReview" class="hidden"></div>
         <details id="csvSuggestedReview" class="hidden csv-merchant-review">
           <summary>自動分類の候補を確認・修正（<span id="csvSuggestedCount">0</span>件・任意）</summary>
@@ -319,9 +320,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0223"></script>
-  <script src="dcard-import.js?v=0223"></script>
-  <script src="analysis.js?v=0223"></script>
-  <script src="app.js?v=0223"></script>
+  <script src="db.js?v=0224c1"></script>
+  <script src="dcard-import.js?v=0224c1"></script>
+  <script src="analysis.js?v=0224c1"></script>
+  <script src="app.js?v=0224c1"></script>
 </body>
 </html>
