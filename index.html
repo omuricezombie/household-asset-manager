@@ -242,6 +242,16 @@
 
     <section class="screen" data-screen="data">
       <div class="card">
+        <h2>過去月の登録状況一覧</h2>
+        <p class="muted">収支や資産残高の登録件数を月別に確認できます。月を開くと月末更新に移動します。</p>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkStatusFrom" type="month"></label>
+          <label>終了月<input id="bulkStatusTo" type="month"></label>
+        </div>
+        <button type="button" id="bulkStatusLoad">登録状況を表示</button>
+        <div id="bulkStatusRows" class="historical-rows" aria-live="polite"></div>
+      </div>
+      <div class="card">
         <h2>過去の仕送りをまとめて登録</h2>
         <p class="muted">月額が同じ期間だけを指定して、毎月1件の仕送りを登録します。すでに仕送りがある月は追加しません。現在月と未来月は対象外です。</p>
         <div class="historical-fields">
