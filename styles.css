@@ -133,3 +133,10 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 #csvDraftControls:not(.hidden){display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 #csvDraftControls button{flex:1 1 auto;min-height:38px}
 #csvDraftSaveStatus{font-size:12px;margin:8px 0}
+
+/* Optional merchant edit directly alongside CSV category review */
+.review-merchant-edit{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.review-merchant-edit summary{font-size:12px;font-weight:600;cursor:pointer}
+.review-merchant-edit label{display:block;margin-top:8px}
+.review-merchant-edit input{width:100%;min-width:0}
+.review-merchant-edit .muted{font-size:11px;margin-top:5px;overflow-wrap:anywhere}
