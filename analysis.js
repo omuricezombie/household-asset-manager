@@ -77,12 +77,12 @@
     if(!/^\d{4}$/.test(year)||!Number.isInteger(end)||end<1||end>12)throw new Error('対象月が正しくありません。');
     const months=Array.from({length:end},(_,i)=>year+'-'+String(i+1).padStart(2,'0'));
     let income=0,expense=0,normal=0,temporary=0;
-    const categories={},monthRows=[];
+    const categories={},incomeCategories={},monthRows=[];
     for(const m of months){
       const data=await monthTransactions(m);
       let monthIncome=0,monthExpense=0,hasEntries=data.some(t=>t.kind==='income'||t.kind==='expense'||t.kind==='refund');
       for(const t of data){
-        if(t.kind==='income'){const amount=num(t.amount);income+=amount;monthIncome+=amount;}
+        if(t.kind==='income'){const amount=num(t.amount);income+=amount;monthIncome+=amount;const kind=t.subCategory||t.category||'その他';incomeCategories[kind]=(incomeCategories[kind]||0)+amount;}
         else if(t.kind==='expense'){
           const amount=effExpense(t);expense+=amount;monthExpense+=amount;
           if(t.isTemporaryExpense)temporary+=amount;else normal+=amount;
@@ -94,7 +94,7 @@
       }
       monthRows.push({month:m,income:monthIncome,expense:monthExpense,hasEntries});
     }
-    return {year,throughMonth:month,income,expense,normal,temporary,saving:income-expense,categories,monthRows,
+    return {year,throughMonth:month,income,expense,normal,temporary,saving:income-expense,categories,incomeCategories,monthRows,
       monthsWithEntries:monthRows.filter(m=>m.hasEntries).length,monthsCount:months.length};
   }
   async function bankBalanceDelta(month){
@@ -114,6 +114,21 @@
     const prior=complete?rows.reduce((v,x)=>v+x.previous,0):null;
     return {month,previous,available:complete,current,prior,delta:complete?current-prior:null,rows,
       reason:rows.length?'前月と当月の両方で銀行月末残高の確認が必要です。':'比較できる銀行の月末残高がありません。'};
+  }
+
+  async function stockYearComparison(month){
+    const year=Number(month.slice(0,4)),mon=month.slice(5,7);
+    const previous=String(year-1)+'-'+mon;
+    const accounts=(await DB().getAll('accounts')).filter(a=>a.active!==false&&a.category==='stock');
+    if(!accounts.length)return {available:false,previous,reason:'株式の資産項目がありません。'};
+    let current=0,prior=0;
+    for(const account of accounts){
+      const now=await DB().get('assetSnapshots',[month,account.id]);
+      const before=await DB().get('assetSnapshots',[previous,account.id]);
+      if(!now?.confirmed||!before?.confirmed)return {available:false,previous,reason:'当月と前年同月の株式評価額の両方を確認済みにすると比較できます。'};
+      current+=num(now.value);prior+=num(before.value);
+    }
+    return {available:true,previous,current,prior,delta:current-prior,rate:prior>0?(current-prior)/prior*100:null};
   }
   async function outstandingAdvances(){
     const all=await DB().getAll('transactions');
@@ -149,5 +164,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,assetSummary,bankBalanceDelta,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
 })(window);
