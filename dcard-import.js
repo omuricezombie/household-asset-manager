@@ -33,6 +33,11 @@
     const m=normText(merchant).toLowerCase();
     const has=(arr)=>arr.some(k=>m.includes(k.toLowerCase()));
     if(has(['ファミリーマート','ローソン','セブン','マクドナルド','オフィスグリコ','松屋','吉野家','すき家','モスバーガー','ケンタッキー','スターバックス','ドトール','自販機'])) return '食費';
+    // Narrow keywords only: generic marketplaces, department stores and drugstores stay unclassified.
+    if(has(['病院','クリニック','歯科','医院','調剤薬局'])) return '医療';
+    if(has(['ユニクロ','uniqlo','ジーユー','guオンラインストア','しまむら','無印良品 衣料'])) return '衣料費';
+    if(has(['美容室','ヘアサロン','理容室','ヘアカット','qbハウス'])) return '美容費';
+    if(has(['ヤマダデンキ','ケーズデンキ','エディオン','ノジマ電気'])) return '家電';
     if(has(['book☆walker','book walker','bookwalker','コミック','ebookjapan'])) return '漫画・本';
     if(has(['放送大学','模試','受験料','受講料','検定料'])) return '教育費';
     if(has(['chatgpt','openai','u-next','unext','netflix','dアニメ','lemino','spotify','youtube premium','amazon prime','prime video'])) return 'サブスク';
