@@ -977,8 +977,8 @@ function historicalMonths(from,to){
 function historicalDefaults(){
   const thisMonth=DB.currentMonth(),last=DB.prevMonth(thisMonth);
   const from=thisMonth.slice(0,4)+'-01';
-  for(const id of ['bulkRemitFrom','bulkBankFrom','bulkStatusFrom'])$(id).value=from;
-  for(const id of ['bulkRemitTo','bulkBankTo','bulkStatusTo'])$(id).value=last;
+  for(const id of ['bulkRemitFrom','bulkBankFrom','bulkStatusFrom','bulkRentFrom'])$(id).value=from;
+  for(const id of ['bulkRemitTo','bulkBankTo','bulkStatusTo','bulkRentTo'])$(id).value=last;
 }
 
 async function renderHistoricalStatus(){
@@ -1056,6 +1056,83 @@ async function saveHistoricalRemittance(){
   }catch(e){toast('定額収支の一括登録に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkRemitSave').disabled=false;}
 }
+
+let historicalRentPlan=null;
+function invalidateHistoricalRent(){
+  historicalRentPlan=null;
+  $('bulkRentSave').classList.add('hidden');
+}
+async function renderHistoricalRentAccounts(){
+  const select=$('bulkRentAccount'),current=select.value;
+  const accounts=(await DB.getAll('accounts')).filter(a=>a.active!==false&&a.category==='bank');
+  select.innerHTML='<option value="">未指定</option>'+accounts.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('');
+  if(accounts.some(a=>a.id===current))select.value=current;
+}
+function historicalRentExisting(transactions,plans){
+  const months=new Set(transactions.filter(t=>t.kind==='expense'&&t.category==='家賃').map(t=>t.month));
+  for(const p of plans)if(p.type==='rent'&&/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(p.dueDate||'' ).slice(0,7)))months.add(p.dueDate.slice(0,7));
+  for(const p of plans)if(String(p.id||'').startsWith('rent:'))months.add(String(p.id).slice(5,12));
+  return months;
+}
+async function prepareHistoricalRent(){
+  invalidateHistoricalRent();
+  const el=$('bulkRentReview');
+  try{
+    const months=historicalMonths($('bulkRentFrom').value,$('bulkRentTo').value);
+    const amount=parseAmount($('bulkRentAmount').value),day=Number($('bulkRentDay').value);
+    if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('家賃は1円以上の整数で入力してください。');
+    if(!Number.isInteger(day)||day<1||day>28)throw new Error('振込日は1〜28日を指定してください。');
+    const accountId=$('bulkRentAccount').value;
+    if(accountId){const account=await DB.get('accounts',accountId);if(!account||account.active===false||account.category!=='bank')throw new Error('有効な銀行口座を選んでください。');}
+    const existing=historicalRentExisting(await DB.getAll('transactions'),await DB.getAll('paymentPlans'));
+    const available=months.filter(month=>!existing.has(month));
+    historicalRentPlan={months,amount,day,accountId,available};
+    el.innerHTML='<p class="muted">対象 '+months.length+'か月 / 登録予定 <strong>'+available.length+'件</strong> / 既存の家賃支出・予定があるためスキップ '+(months.length-available.length)+'件</p>'+
+      '<div class="historical-rows">'+months.map(month=>'<div class="historical-month-row"><strong>'+esc(month)+'</strong><span class="muted">'+(existing.has(month)?'登録済・追加なし':formatYen(amount)+' を登録')+'</span></div>').join('')+'</div>';
+    $('bulkRentSave').classList.toggle('hidden',!available.length);
+  }catch(e){el.textContent=e.message;}
+}
+async function saveHistoricalRent(){
+  if(historicalSaveBusy||!historicalRentPlan)return;
+  historicalSaveBusy=true;$('bulkRentSave').disabled=true;
+  try{
+    const plan=historicalRentPlan;
+    if($('bulkRentFrom').value!==plan.months[0]||$('bulkRentTo').value!==plan.months.at(-1)||
+       parseAmount($('bulkRentAmount').value)!==plan.amount||Number($('bulkRentDay').value)!==plan.day||
+       $('bulkRentAccount').value!==plan.accountId)throw new Error('入力条件が変わっています。登録予定を再確認してください。');
+    if(plan.accountId){const account=await DB.get('accounts',plan.accountId);if(!account||account.category!=='bank'||account.active===false)throw new Error('支払元の銀行口座を確認できません。');}
+    const existing=historicalRentExisting(await DB.getAll('transactions'),await DB.getAll('paymentPlans'));
+    const months=plan.available.filter(month=>!existing.has(month));
+    if(!months.length)throw new Error('追加する月がありません。すべて登録済みです。');
+    if(!confirm(months.length+'か月分の家賃（毎月 '+formatYen(plan.amount)+'）を支払済みとして登録します。既存の家賃記録や予定は変更しません。よろしいですか？'))return;
+    // Recheck immediately before building the atomic transaction; never modify existing records.
+    const finalExisting=historicalRentExisting(await DB.getAll('transactions'),await DB.getAll('paymentPlans'));
+    const targets=months.filter(month=>!finalExisting.has(month));
+    if(!targets.length)throw new Error('保存直前に登録済みとなったため、今回は保存しません。');
+    const at=DB.now(),transactions=[],paymentPlans=[],monthStatus=[];
+    for(const month of targets){
+      const date=month+'-'+String(plan.day).padStart(2,'0');
+      transactions.push({id:DB.uid('tx'),date,month,kind:'expense',amount:plan.amount,paymentMethod:'bank_transfer',
+        category:'家賃',merchantRaw:'家賃',merchantNormalized:'家賃',isTemporaryExpense:false,
+        sourceType:'historical_bulk',accountId:plan.accountId,createdAt:at,updatedAt:at});
+      paymentPlans.push({id:'rent:'+month,name:'家賃',dueDate:date,amount:plan.amount,type:'rent',status:'paid',
+        paymentSource:plan.accountId,paidAt:date,createdAt:at,updatedAt:at});
+      const st=await DB.getMonthStatus(month);
+      st.completionItems={...st.completionItems,rent:true};
+      const vals=Object.values(st.completionItems);
+      st.completionRate=vals.length?Math.round(vals.filter(Boolean).length/vals.length*100):0;
+      st.updatedAt=at;
+      monthStatus.push(st);
+    }
+    await DB.atomicChanges({transactions,paymentPlans,monthStatus});
+    invalidateHistoricalRent();
+    await prepareHistoricalRent();
+    await renderHome();await renderHistory();
+    toast(targets.length+'か月分の家賃を登録しました。');
+    void renderHistoricalStatus();
+  }catch(e){toast('家賃の一括登録に失敗: '+e.message);}
+  finally{historicalSaveBusy=false;$('bulkRentSave').disabled=false;}
+}
 async function renderHistoricalBankAccounts(){
   const selected=$('bulkBankAccount').value;
   const accounts=(await DB.getAll('accounts')).filter(a=>a.active!==false);
@@ -1108,7 +1185,7 @@ async function saveHistoricalBank(){
   }catch(e){toast('資産残高の一括保存に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkBankSave').disabled=false;}
 }
-async function renderData(){await renderHistoricalBankAccounts();const im=(await DB.getAll('cardImports')).sort((a,b)=>(b.importedAt||'').localeCompare(a.importedAt||''));$('importHistory').innerHTML=im.length?im.slice(0,10).map(x=>`<div class="status-row"><div><strong>${esc(x.fileName)}</strong><div class="status-meta">${new Date(x.importedAt).toLocaleString('ja-JP')} / ${esc(x.targetRange||'')}</div></div><div>${x.importedCount}件</div></div>`).join(''):'<p class="muted">取込履歴はありません。</p>';$('appInfo').innerHTML=`<p>App ${DB.APP_VERSION}<br>schemaVersion ${DB.SCHEMA_VERSION}<br>DB ${DB.DB_NAME}</p>`;let info='';try{if(navigator.storage?.estimate){const e=await navigator.storage.estimate();info=`使用量 約${Math.round((e.usage||0)/1024)} KB / 利用可能枠 約${Math.round((e.quota||0)/1024/1024)} MB`;}}catch{}$('storageInfo').textContent=info;}
+async function renderData(){await renderHistoricalBankAccounts();await renderHistoricalRentAccounts();const im=(await DB.getAll('cardImports')).sort((a,b)=>(b.importedAt||'').localeCompare(a.importedAt||''));$('importHistory').innerHTML=im.length?im.slice(0,10).map(x=>`<div class="status-row"><div><strong>${esc(x.fileName)}</strong><div class="status-meta">${new Date(x.importedAt).toLocaleString('ja-JP')} / ${esc(x.targetRange||'')}</div></div><div>${x.importedCount}件</div></div>`).join(''):'<p class="muted">取込履歴はありません。</p>';$('appInfo').innerHTML=`<p>App ${DB.APP_VERSION}<br>schemaVersion ${DB.SCHEMA_VERSION}<br>DB ${DB.DB_NAME}</p>`;let info='';try{if(navigator.storage?.estimate){const e=await navigator.storage.estimate();info=`使用量 約${Math.round((e.usage||0)/1024)} KB / 利用可能枠 約${Math.round((e.quota||0)/1024/1024)} MB`;}}catch{}$('storageInfo').textContent=info;}
 async function exportBackup(){try{const p=await DB.buildBackup();const blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`household_asset_backup_v2_${DB.ymd()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('バックアップを作成しました。');}catch(e){toast('バックアップ失敗: '+e.message);}}
 async function importBackup(file){try{const p=JSON.parse(await file.text());await DB.validateBackup(p);if(!confirm('v0.2の現在データをバックアップ内容で置き換えます。よろしいですか？'))return;await DB.restoreBackup(p);toast('復元しました。');await renderAll();}catch(e){toast('復元できません: '+e.message);}finally{$('backupImport').value='';}}
 
@@ -1171,6 +1248,9 @@ function bind(){
   $('bulkRemitSave').onclick=()=>void saveHistoricalRemittance();
   $('bulkBankLoad').onclick=()=>void loadHistoricalBank();
   $('bulkBankSave').onclick=()=>void saveHistoricalBank();
+  $('bulkRentPreview').onclick=()=>void prepareHistoricalRent();
+  $('bulkRentSave').onclick=()=>void saveHistoricalRent();
+  for(const id of ['bulkRentFrom','bulkRentTo','bulkRentAmount','bulkRentDay','bulkRentAccount'])$(id).addEventListener('change',invalidateHistoricalRent);
   for(const id of ['bulkRemitFrom','bulkRemitTo','bulkRemitAmount','bulkRemitDay','bulkRecurringCategory'])$(id).addEventListener('input',()=>{$('bulkRemitSave').classList.add('hidden');historicalRemitPlan=null;});
   for(const id of ['bulkBankAccount','bulkBankFrom','bulkBankTo'])$(id).addEventListener('change',()=>{$('bulkBankSave').classList.add('hidden');historicalBankPlan=null;$('bulkBankRows').innerHTML='';});
   for(const [id,attr] of [['csvReview','data-review-merchant-name'],['csvMerchantEditList','data-csv-merchant-name']]){
