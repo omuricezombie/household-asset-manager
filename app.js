@@ -1070,7 +1070,7 @@ async function renderHistoricalRentAccounts(){
 }
 function historicalRentExisting(transactions,plans){
   const months=new Set(transactions.filter(t=>t.kind==='expense'&&t.category==='家賃').map(t=>t.month));
-  for(const p of plans)if(p.type==='rent'&&/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(p.dueDate||'' ).slice(0,7)))months.add(p.dueDate.slice(0,7));
+  for(const p of plans)if(p.type==='rent'&&/^\d{4}-(0[1-9]|1[0-2])$/.test(String(p.dueDate||'' ).slice(0,7)))months.add(p.dueDate.slice(0,7));
   for(const p of plans)if(String(p.id||'').startsWith('rent:'))months.add(String(p.id).slice(5,12));
   return months;
 }
