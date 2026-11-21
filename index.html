@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0227">
+  <link rel="stylesheet" href="styles.css?v=0229">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.27</p>
+      <p class="sub">v0.2.29</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -228,9 +228,57 @@
         <h2>食費（朝・昼・夜）</h2>
         <div id="historyMeals"></div>
       </div>
+      <div class="card"><h2>株式評価額の前年同月比</h2><div id="historyStockYoY"></div><p class="muted">前年同月との差額です。入金・売買による増減を含み、運用利回りや確定利益ではありません。DCは含みません。</p></div>
+      <div class="card" id="annualExpenseCard">
+        <h2 id="annualExpenseTitle">年間累計</h2>
+        <p id="annualExpenseNote" class="muted"></p>
+        <div id="annualExpenseTotals" class="metric-grid"></div>
+        <h3>収入内訳の累計</h3>
+        <div class="table-wrap"><table><thead><tr><th>収入種別</th><th>累計</th><th>構成比</th></tr></thead><tbody id="annualIncomeCategories"></tbody></table></div>
+        <h3>支出内訳の累計</h3>
+        <div class="table-wrap"><table><thead><tr><th>支出カテゴリ</th><th>累計</th><th>構成比</th></tr></thead><tbody id="annualExpenseCategories"></tbody></table></div>
+      </div>
     </section>
 
     <section class="screen" data-screen="data">
+      <div class="card">
+        <h2>過去月の登録状況一覧</h2>
+        <p class="muted">収支や資産残高の登録件数を月別に確認できます。月を開くと月末更新に移動します。</p>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkStatusFrom" type="month"></label>
+          <label>終了月<input id="bulkStatusTo" type="month"></label>
+        </div>
+        <button type="button" id="bulkStatusLoad">登録状況を表示</button>
+        <div id="bulkStatusRows" class="historical-rows" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h2>過去の定額収支をまとめて登録</h2>
+        <p class="muted">毎月定額の仕送り・給与などを一括登録できます。同じ分類の収支がある月は追加しません。現在月と未来月は対象外です。家賃は専用入力画面を利用してください。</p>
+        <div class="historical-fields">
+          <label>収支<select id="bulkRecurringKind"><option value="expense">支出</option><option value="income">収入</option></select></label>
+          <label>分類<select id="bulkRecurringCategory"></select></label>
+          <label>開始月<input id="bulkRemitFrom" type="month"></label>
+          <label>終了月<input id="bulkRemitTo" type="month"></label>
+          <label>毎月の金額<input id="bulkRemitAmount" type="text" inputmode="numeric" placeholder="例：52000"></label>
+          <label>毎月の日付（1〜28日）<input id="bulkRemitDay" type="number" inputmode="numeric" min="1" max="28" value="1"></label>
+        </div>
+        <button id="bulkRemitPreview" type="button">登録予定を確認</button>
+        <div id="bulkRemitReview" aria-live="polite"></div>
+        <button id="bulkRemitSave" type="button" class="primary hidden">重複を除いて一括登録</button>
+      </div>
+      <div class="card">
+        <h2>過去の資産残高を一覧入力</h2>
+        <p class="muted">銀行・株式・DCなどの資産項目と期間を指定し、月末残高を月別に入力できます。既に登録済みの月は読み取り専用です。空欄の月は登録しません。0円は数字の0を入力してください。</p>
+        <label>資産項目<select id="bulkBankAccount"><option value="">資産項目を選択</option></select></label>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkBankFrom" type="month"></label>
+          <label>終了月<input id="bulkBankTo" type="month"></label>
+        </div>
+        <button id="bulkBankLoad" type="button">残高の一覧を表示</button>
+        <div id="bulkBankStatus" aria-live="polite"></div>
+        <div id="bulkBankRows" class="historical-rows"></div>
+        <button id="bulkBankSave" type="button" class="primary hidden">未登録の残高を一括保存</button>
+      </div>
       <div class="card">
         <h2>バックアップ</h2>
         <button id="backupExport" class="primary">JSONバックアップを保存</button>
@@ -334,9 +382,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0227"></script>
-  <script src="dcard-import.js?v=0227"></script>
-  <script src="analysis.js?v=0227"></script>
-  <script src="app.js?v=0227"></script>
+  <script src="db.js?v=0229"></script>
+  <script src="dcard-import.js?v=0229"></script>
+  <script src="analysis.js?v=0229"></script>
+  <script src="app.js?v=0229"></script>
 </body>
 </html>
