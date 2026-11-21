@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0222">
+  <link rel="stylesheet" href="styles.css?v=0223">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.22</p>
+      <p class="sub">v0.2.23</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -117,9 +117,14 @@
             <label>自分負担額<input id="advanceOwn" type="text" inputmode="numeric" autocomplete="off"></label>
             <label>立替額（家族分）<input id="advanceOther" type="text" inputmode="numeric" autocomplete="off" readonly></label><p class="muted">支払総額はあなたが支払った総額です。立替額（家族分）は「支払総額 − 自分負担額」で自動計算し、家族からの返金待ちとして管理します。</p>
             <label>日付<input id="advanceDate" type="date"></label>
-            <label>支払手段<select id="advancePayment"><option value="cash">現金</option><option value="bank_transfer">銀行振込</option><option value="other">その他</option></select></label>
+            <label>支払手段<select id="advancePayment"><option value="cash">現金</option><option value="bank_transfer">銀行振込</option><option value="dbarai">d払い</option><option value="id">iD</option><option value="dcard">dカード</option><option value="other">その他</option></select></label>
             <label>店舗・メモ<input id="advanceMerchant" type="text"></label>
             <button id="advanceSave" class="primary sticky-action">登録</button>
+          </details>
+          <details id="manualAdvanceEditDetails">
+            <summary>登録済みの手動立替の支払方法を修正</summary>
+            <p class="muted">誤って選んだ支払手段だけを変更します。金額や返金履歴は変更しません。d払い・iD・dカードの明細が後からCSVに入る場合は二重登録に注意してください。</p>
+            <div id="manualAdvancePaymentEditList"></div>
           </details>
         </div>
         <div id="advanceRepay" class="hidden">
@@ -314,9 +319,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0222"></script>
-  <script src="dcard-import.js?v=0222"></script>
-  <script src="analysis.js?v=0222"></script>
-  <script src="app.js?v=0222"></script>
+  <script src="db.js?v=0223"></script>
+  <script src="dcard-import.js?v=0223"></script>
+  <script src="analysis.js?v=0223"></script>
+  <script src="app.js?v=0223"></script>
 </body>
 </html>
