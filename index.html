@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0229">
+  <link rel="stylesheet" href="styles.css?v=0230c1">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.29</p>
+      <p class="sub">v0.2.30-candidate.1</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -267,6 +267,20 @@
         <button id="bulkRemitSave" type="button" class="primary hidden">重複を除いて一括登録</button>
       </div>
       <div class="card">
+        <h2>過去の家賃をまとめて登録</h2>
+        <p class="muted">家賃専用の登録です。支出・支払済み予定・月末確認をまとめて保存します。既存の家賃支出または家賃予定がある月は変更せず、登録対象から除外します。金額が変わった期間は分けて登録してください。</p>
+        <div class="historical-fields">
+          <label>開始月<input id="bulkRentFrom" type="month"></label>
+          <label>終了月<input id="bulkRentTo" type="month"></label>
+          <label>毎月の家賃<input id="bulkRentAmount" type="text" inputmode="numeric" placeholder="例：62000"></label>
+          <label>毎月の振込日（1〜28日）<input id="bulkRentDay" type="number" inputmode="numeric" min="1" max="28" value="1"></label>
+        </div>
+        <label>支払元口座<select id="bulkRentAccount"><option value="">未指定</option></select></label>
+        <button id="bulkRentPreview" type="button">家賃の登録予定を確認</button>
+        <div id="bulkRentReview" aria-live="polite"></div>
+        <button id="bulkRentSave" type="button" class="primary hidden">未登録月の家賃を一括登録</button>
+      </div>
+      <div class="card">
         <h2>過去の資産残高を一覧入力</h2>
         <p class="muted">銀行・株式・DCなどの資産項目と期間を指定し、月末残高を月別に入力できます。既に登録済みの月は読み取り専用です。空欄の月は登録しません。0円は数字の0を入力してください。</p>
         <label>資産項目<select id="bulkBankAccount"><option value="">資産項目を選択</option></select></label>
@@ -382,9 +396,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0229"></script>
-  <script src="dcard-import.js?v=0229"></script>
-  <script src="analysis.js?v=0229"></script>
-  <script src="app.js?v=0229"></script>
+  <script src="db.js?v=0230c1"></script>
+  <script src="dcard-import.js?v=0230c1"></script>
+  <script src="analysis.js?v=0230c1"></script>
+  <script src="app.js?v=0230c1"></script>
 </body>
 </html>
