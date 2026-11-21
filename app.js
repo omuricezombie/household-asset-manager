@@ -105,7 +105,7 @@ async function showScreen(name,{push=true,panel=null}={}){
   }
   if(name!=='data'&&$('lockRecoveryNotice')&&!$('lockRecoveryNotice').classList.contains('hidden'))clearVisibleRecovery();
   if(currentPanel==='cash')$('cashAmount').focus();
-  if(currentPanel==='advance')renderAdvanceCardTransactions();
+  if(currentPanel==='advance'){renderAdvanceCardTransactions();renderManualAdvancePaymentEdits();}
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
   if(push&&historyReady) history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
   return true;
@@ -348,7 +348,42 @@ async function setCardAdvance(id){
   await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
 }
 function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)&&total>own?formatAmount(total-own):'';}
-async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();}
+async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();await renderManualAdvancePaymentEdits();}
+
+async function renderManualAdvancePaymentEdits(){
+  const holder=$('manualAdvancePaymentEditList');
+  if(!holder)return;
+  const options=[['cash','現金'],['bank_transfer','銀行振込'],['dbarai','d払い'],['id','iD'],['dcard','dカード'],['other','その他']];
+  const all=(await DB.getAll('transactions')).filter(t=>t.kind==='expense'&&t.sourceType==='manual'&&t.ownShare!=null)
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,50);
+  holder.innerHTML=all.length?all.map(t=>`
+    <div class="review-row" data-manual-advance-payment="${esc(t.id)}">
+      <div class="review-main"><div><strong>${esc(t.merchantNormalized||t.merchantRaw||'手動立替')}</strong><span class="muted">${esc(t.date)} / ${formatYen(t.amount)} / 家族分 ${formatYen(t.advanceShare)}</span></div></div>
+      <label>支払方法<select data-manual-advance-method>${selectOptions(options,t.paymentMethod)}</select></label>
+      <button type="button" data-manual-advance-save>変更を保存</button>
+    </div>`).join(''):'<p class="muted">修正できる手動立替はありません。</p>';
+  holder.querySelectorAll('[data-manual-advance-save]').forEach(button=>button.onclick=async()=>{
+    const row=button.closest('[data-manual-advance-payment]');
+    const id=row?.dataset.manualAdvancePayment;
+    const method=row?.querySelector('[data-manual-advance-method]')?.value;
+    if(!options.some(([value])=>value===method))return toast('支払方法を選択してください。');
+    const t=await DB.get('transactions',id);
+    if(!t||t.kind!=='expense'||t.sourceType!=='manual'||t.ownShare==null)return toast('対象立替を確認できません。');
+    if(t.paymentMethod===method)return toast('支払方法は変更されていません。');
+    if(['dbarai','id','dcard'].includes(method)&&!confirm('dカードCSVにも同じ支払が登録される場合、二重計上になります。既存のCSV明細と重複していないことを確認しましたか？'))return;
+    button.disabled=true;
+    try{
+      t.paymentMethod=method;
+      t.updatedAt=DB.now();
+      await DB.put('transactions',t);
+      await renderManualAdvancePaymentEdits();
+      await renderOutstanding();
+      await renderHome();
+      toast('支払方法を修正しました。財布残高への反映も確認してください。');
+    }catch(e){button.disabled=false;toast('変更を保存できませんでした。');}
+  });
+}
+
 async function renderOutstanding(){
   const rows=await A.outstandingAdvances();
   const labels={dbarai:'d払い',id:'iD',dcard:'dカード',cash:'現金',bank_transfer:'銀行振込',other:'その他'};
@@ -834,7 +869,7 @@ function bind(){
   setupAmountInput($('advanceTotal'),updateAdvanceCalc);
   setupAmountInput($('advanceOwn'),updateAdvanceCalc);
   $('cashSave').onclick=saveCash;$('incomeSave').onclick=saveIncome;$('rentSave').onclick=saveRent;$('advanceSave').onclick=saveAdvance;
-  $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();});
+  $$('[data-advance-mode]').forEach(b=>b.onclick=()=>{$$('[data-advance-mode]').forEach(x=>x.classList.toggle('active',x===b));$('advanceNew').classList.toggle('hidden',b.dataset.advanceMode!=='new');$('advanceRepay').classList.toggle('hidden',b.dataset.advanceMode!=='repay');if(b.dataset.advanceMode==='repay')renderOutstanding();else renderManualAdvancePaymentEdits();});
   $('cashCategory').onchange=()=>{$('cashMealWrap').classList.toggle('hidden',$('cashCategory').value!=='食費');};
   $('dcardFile').onchange=e=>{if(e.target.files[0])void handleCsvFile(e.target.files[0]);};$('csvImportButton').onclick=importPreparedCsv;
   $('csvDraftResume').onclick=()=>void resumeCsvDraft();
