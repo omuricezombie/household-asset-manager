@@ -252,9 +252,11 @@
         <div id="bulkStatusRows" class="historical-rows" aria-live="polite"></div>
       </div>
       <div class="card">
-        <h2>過去の仕送りをまとめて登録</h2>
-        <p class="muted">月額が同じ期間だけを指定して、毎月1件の仕送りを登録します。すでに仕送りがある月は追加しません。現在月と未来月は対象外です。</p>
+        <h2>過去の定額収支をまとめて登録</h2>
+        <p class="muted">毎月定額の仕送り・給与などを一括登録できます。同じ分類の収支がある月は追加しません。現在月と未来月は対象外です。家賃は専用入力画面を利用してください。</p>
         <div class="historical-fields">
+          <label>収支<select id="bulkRecurringKind"><option value="expense">支出</option><option value="income">収入</option></select></label>
+          <label>分類<select id="bulkRecurringCategory"></select></label>
           <label>開始月<input id="bulkRemitFrom" type="month"></label>
           <label>終了月<input id="bulkRemitTo" type="month"></label>
           <label>毎月の金額<input id="bulkRemitAmount" type="text" inputmode="numeric" placeholder="例：52000"></label>
