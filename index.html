@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0226c2">
+  <link rel="stylesheet" href="styles.css?v=0226c3">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.26-candidate.2</p>
+      <p class="sub">v0.2.26-candidate.3</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -302,7 +302,7 @@
       <h2>資産項目を追加</h2>
       <label>表示名<input id="accountName" type="text" required></label>
       <label>種別<select id="accountCategory"><option value="bank">銀行</option><option value="cash">現金</option><option value="stock">株式</option><option value="dc">DC</option><option value="other">その他資産</option></select></label>
-      <div class="dialog-actions"><button value="cancel">キャンセル</button><button id="accountCreate" value="default" class="primary">追加</button></div>
+      <div class="dialog-actions"><button type="submit" value="cancel" formnovalidate>キャンセル</button><button id="accountCreate" value="default" class="primary">追加</button></div>
     </form>
   </dialog>
 
@@ -310,7 +310,7 @@
     <form method="dialog" class="dialog-card">
       <h2>ポイント項目を追加</h2>
       <label>ポイント名<input id="pointName" type="text" required placeholder="例：楽天ポイント"></label>
-      <div class="dialog-actions"><button value="cancel">キャンセル</button><button id="pointCreate" value="default" class="primary">追加</button></div>
+      <div class="dialog-actions"><button type="submit" value="cancel" formnovalidate>キャンセル</button><button id="pointCreate" value="default" class="primary">追加</button></div>
     </form>
   </dialog>
 
@@ -332,9 +332,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0226c2"></script>
-  <script src="dcard-import.js?v=0226c2"></script>
-  <script src="analysis.js?v=0226c2"></script>
-  <script src="app.js?v=0226c2"></script>
+  <script src="db.js?v=0226c3"></script>
+  <script src="dcard-import.js?v=0226c3"></script>
+  <script src="analysis.js?v=0226c3"></script>
+  <script src="app.js?v=0226c3"></script>
 </body>
 </html>
