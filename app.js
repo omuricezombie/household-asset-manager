@@ -598,7 +598,7 @@ async function renderCsvAdvanceMatches(){
   const p=preparedCsv,el=$('csvAdvanceMatches');if(!p||!el)return;
   p.matchIds=p.matchIds||{};
   const all=await DB.getAll('transactions'),candidates=all.filter(isManualAdvanceCandidate);
-  const rows=p.newRows.filter(r=>r.kind==='expense'&&isCardAdvanceMethod(r.paymentMethod)),html=[];
+  const rows=p.newRows.filter(r=>r.kind==='expense'&&!r.isOtherPersonExpense&&isCardAdvanceMethod(r.paymentMethod)),html=[];
   for(const r of rows){
     const choices=candidates.filter(t=>t.paymentMethod===r.paymentMethod&&n(t.amount)===n(r.amount)&&
       Math.abs((Date.parse(t.date+'T00:00:00')-Date.parse(r.date+'T00:00:00'))/86400000)<=31);
@@ -624,11 +624,48 @@ function validateAdvanceMatches(p,all){
   for(const r of p.newRows){
     const id=(p.matchIds||{})[r.sourceRowKey];if(!id)continue;
     const t=candidates.get(id),delta=t?Math.abs((Date.parse(t.date+'T00:00:00')-Date.parse(r.date+'T00:00:00'))/86400000):Infinity;
-    if(!t||r.kind!=='expense'||t.paymentMethod!==r.paymentMethod||n(t.amount)!==n(r.amount)||delta>31||seen.has(id))
+    if(!t||r.isOtherPersonExpense||r.kind!=='expense'||t.paymentMethod!==r.paymentMethod||n(t.amount)!==n(r.amount)||delta>31||seen.has(id))
       throw new Error('立替照合が無効です。同じ取引を二重選択していないか確認してください。');
     seen.add(id);out.set(r.sourceRowKey,t);
   }
   return out;
+}
+
+function renderCsvOtherExpenses(){
+  const p=preparedCsv,wrap=$('csvOtherExpenseWrap'),el=$('csvOtherExpenseList');
+  if(!p||!wrap||!el)return;
+  const rows=p.newRows.filter(r=>r.kind==='expense');
+  wrap.classList.toggle('hidden',rows.length===0);
+  el.innerHTML=rows.map(r=>`<label class="review-row"><input type="checkbox" data-other-csv-key="${esc(r.sourceRowKey)}" ${r.isOtherPersonExpense?'checked':''}>
+    <span>${esc(r.date)} / ${esc(r.merchantNormalized||r.merchantRaw)} / ${formatYen(r.amount)} — 他人負担</span></label>`).join('')||'<p class="muted">対象の明細はありません。</p>';
+  el.querySelectorAll('[data-other-csv-key]').forEach(box=>box.onchange=()=>{
+    const r=p.newRows.find(x=>x.sourceRowKey===box.dataset.otherCsvKey);
+    if(!r)return;
+    r.isOtherPersonExpense=box.checked;
+    if(box.checked&&p.matchIds)delete p.matchIds[r.sourceRowKey];
+    scheduleCsvDraftSave();
+    void renderCsvAdvanceMatches();
+  });
+}
+async function renderHistoryOtherExpenses(){
+  const el=$('historyOtherExpenseList');if(!el)return;
+  const rows=(await A.monthTransactions(selectedMonth)).filter(t=>t.sourceType==='dcard_csv'&&t.kind==='expense');
+  el.innerHTML=rows.map(t=>`<label class="review-row">
+    <input type="checkbox" data-history-other-id="${esc(t.id)}" ${t.isOtherPersonExpense?'checked':''} ${t.advanceRecordId||Number(t.advanceShare)>0?'disabled':''}>
+    <span>${esc(t.date)} / ${esc(t.merchantNormalized||t.merchantRaw)} / ${formatYen(t.amount)}${t.advanceRecordId||Number(t.advanceShare)>0?'（立替管理中・変更不可）':''}</span>
+  </label>`).join('')||'<p class="muted">対象のCSV明細はありません。</p>';
+  el.querySelectorAll('[data-history-other-id]').forEach(box=>box.onchange=async()=>{
+    const id=box.dataset.historyOtherId,t=await DB.get('transactions',id);
+    if(!t||t.sourceType!=='dcard_csv'||t.kind!=='expense'||t.month!==selectedMonth||t.advanceRecordId||Number(t.advanceShare)>0){
+      box.checked=!box.checked;return toast('対象明細を変更できません。');
+    }
+    box.disabled=true;
+    try{
+      await DB.put('transactions',{...t,isOtherPersonExpense:box.checked,updatedAt:DB.now()});
+      await renderHome();await renderHistory();
+      toast(box.checked?'自分の支出から除外しました。':'自分の支出へ戻しました。');
+    }catch(e){box.disabled=false;box.checked=!box.checked;toast('保存に失敗しました。');}
+  });
 }
 function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows=p.excludedRows||[],excluded=excludedRows.length,invalid=p.invalidRows.length;const review=p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund').concat(p.invalidRows);const suggestions=p.newRows.filter(r=>r.category!=='未分類'&&(r.categorySource==='rule'||r.categorySource==='heuristic')).length;const excludedSummary=excluded?`<div class="muted">対象外：${esc(excludedRows[0]?.reason||'対象外行')} ${excluded}件</div>`:'';$('csvPreview').innerHTML=`<div class="summary-strip"><div>新規<b>${p.newRows.length}</b></div><div>重複<b>${p.duplicateRows.length}</b></div><div>除外・不正<b>${invalid}</b></div><div>要確認<b>${review.length}</b></div></div><p class="muted">対象期間：${esc(rangeText(p.newRows))}${p.statementAmount!=null?` / 請求合計候補 ${formatYen(p.statementAmount)}`:''}${p.paymentDate?` / 支払日候補 ${esc(p.paymentDate)}`:''}</p><p class="muted">自動分類候補：${suggestions}件（店舗名による推定です。商品内容が異なる場合は分類を変更してください）</p>${excludedSummary}`;
   if(review.length){$('csvReview').classList.remove('hidden');$('csvReview').innerHTML='<h3>要確認</h3>'+review.map((r,i)=>r.invalid?`<div class="review-row warn"><strong>${esc(r.reason)}</strong><div class="muted">CSV ${r.sourceLine}行目</div></div>`:`<div class="review-row" data-review-key="${esc(r.sourceRowKey)}"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)} / ${r.kind==='refund'?'返金候補':'カテゴリ未分類'}</span></div><strong>${formatYen(r.amount)}</strong></div><select data-category-key="${esc(r.sourceRowKey)}">${selectOptions(categories,r.category)}</select><details class="review-merchant-edit"><summary>店名も修正（必要な場合のみ）</summary><label>表示用の店舗名<input type="text" maxlength="120" autocomplete="off" value="${esc(r.merchantNormalized)}" data-review-merchant-name></label><div class="muted">元のCSV店名：${esc(r.merchantRaw)}</div></details></div>`).join('');$$('[data-category-key]').forEach(s=>s.onchange=()=>{const r=p.newRows.find(x=>x.sourceRowKey===s.dataset.categoryKey);if(r){r.category=s.value;r.categoryConfirmed=true;if(r.category!=='食費')r.mealType=null;renderCsvMeals();scheduleCsvDraftSave();}});}else $('csvReview').classList.add('hidden');
@@ -645,7 +682,7 @@ function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows
       renderCsvMeals();scheduleCsvDraftSave();
     });
   }
-  void renderCsvAdvanceMatches();renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
+  void renderCsvAdvanceMatches();renderCsvOtherExpenses();renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
 }
 function renderCsvMeals(){const p=preparedCsv;if(!p)return;const food=p.newRows.filter(r=>r.category==='食費');if(!food.length){$('csvMeals').classList.add('hidden');return;}$('csvMeals').classList.remove('hidden');$('csvMeals').innerHTML='<h3>食費だけ確認</h3><p class="muted">未分類のままでも登録できます。</p>'+food.map(r=>`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)}${r.time?` ${esc(r.time)}`:''}</span></div><strong>${formatYen(r.amount)}</strong></div><div class="meal-buttons">${mealOptions.slice(1).map(([v,l])=>`<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="${v}" class="${r.mealType===v?'active':''}">${l}</button>`).join('')}<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="none" class="${!r.mealType?'active':''}">後で</button><button type="button" data-food-off="${esc(r.sourceRowKey)}">食費ではない</button></div></div>`).join('');$$('[data-meal-key]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.mealKey);if(r){r.mealType=b.dataset.meal==='none'?null:b.dataset.meal;if(b.dataset.meal!=='none')r.categoryConfirmed=true;renderCsvMeals();scheduleCsvDraftSave();}});$$('[data-food-off]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.foodOff);if(r){r.category='未分類';r.mealType=null;r.categoryConfirmed=true;renderCsvPrepared();scheduleCsvDraftSave();}});}
 function rangeText(rows){const ds=rows.map(x=>x.date).filter(Boolean).sort();return ds.length?`${ds[0]}〜${ds[ds.length-1]}`:'—';}
@@ -664,7 +701,7 @@ async function importPreparedCsv(){
       const t={id:DB.uid('tx'),date:r.date,time:r.time||null,month:DB.monthOfDate(r.date),kind:r.kind,
         amount:r.amount,paymentMethod:r.paymentMethod,merchantRaw:r.merchantRaw,merchantNormalized:r.merchantNormalized,
         category:r.category,mealType:r.mealType||null,isTemporaryExpense:false,sourceType:'dcard_csv',sourceImportId:importId,
-        sourceRowKey:r.sourceRowKey,sourceLine:r.sourceLine,paymentType:r.paymentType,note:r.note,createdAt:at,updatedAt:at};
+        sourceRowKey:r.sourceRowKey,sourceLine:r.sourceLine,paymentType:r.paymentType,note:r.note,isOtherPersonExpense:!!r.isOtherPersonExpense,createdAt:at,updatedAt:at};
       const manual=matches.get(r.sourceRowKey);
       if(manual){t.ownShare=n(manual.ownShare);t.advanceShare=n(manual.advanceShare);t.advanceRecordId=manual.id;
         manualUpdates.push({...manual,kind:'advance_linked',linkedCsvTransactionId:t.id,updatedAt:at});}
@@ -824,11 +861,11 @@ async function savePoint(id,same){
   if(ok)toast('ポイント残高を保存しました。');
 }
 function itemLabel(k){return ({dcard:'dカードCSV',bank:'銀行',cash:'現金',stock:'株式',dc:'DC',points:'ポイント',rent:'家賃',income:'主要収入'})[k]||k;}
-async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthStatus(month);const builtins=new Set(['cash-wallet','stock-total','dc-total','dpoint']);const allAccounts=(await DB.getAll('accounts')).filter(x=>x.active!==false);const ac=[];for(const x of allAccounts){if(builtins.has(x.id)||!x.createdAt||String(x.createdAt).slice(0,7)<=month||await DB.get('assetSnapshots',[month,x.id]))ac.push(x);}for(const cat of ['bank','cash','stock','dc']){const list=ac.filter(x=>x.category===cat);if(!list.length){st.completionItems[cat]=true;continue;}const checks=[];for(const x of list){const snap=await DB.get('assetSnapshots',[month,x.id]);let ok=!!snap?.confirmed;if(ok&&x.id==='cash-wallet'&&month===DB.currentMonth()){const live=await A.liveCashBalance(month,x.id);if(live.movement!==0)ok=false;}checks.push(ok);}st.completionItems[cat]=checks.every(Boolean);}const pts=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false&&applies(x));st.completionItems.points=pts.length?(await Promise.all(pts.map(x=>DB.get('pointSnapshots',[month,x.id])))).every(x=>x?.confirmed):true;const tx=await A.monthTransactions(month);if(tx.some(x=>x.kind==='income'))st.completionItems.income=true;if(tx.some(x=>x.kind==='expense'&&x.category==='家賃'))st.completionItems.rent=true;return save?await DB.saveMonthStatus(st):({...st,completionRate:Math.round(Object.values(st.completionItems).filter(Boolean).length/Object.values(st.completionItems).length*100)});}
+async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthStatus(month);const builtins=new Set(['cash-wallet','stock-total','dc-total','dpoint']);const allAccounts=(await DB.getAll('accounts')).filter(x=>x.active!==false);const ac=[];for(const x of allAccounts){if(builtins.has(x.id)||!x.createdAt||String(x.createdAt).slice(0,7)<=month||await DB.get('assetSnapshots',[month,x.id]))ac.push(x);}for(const cat of ['bank','cash','stock','dc']){const list=ac.filter(x=>x.category===cat);if(!list.length){st.completionItems[cat]=true;continue;}const checks=[];for(const x of list){const snap=await DB.get('assetSnapshots',[month,x.id]);let ok=!!snap?.confirmed;if(ok&&x.id==='cash-wallet'&&month===DB.currentMonth()){const live=await A.liveCashBalance(month,x.id);if(live.movement!==0)ok=false;}checks.push(ok);}st.completionItems[cat]=checks.every(Boolean);}const pts=(await DB.getAll('pointAccounts')).filter(x=>x.active!==false&&(x.id==='dpoint'||!x.createdAt||String(x.createdAt).slice(0,7)<=month));st.completionItems.points=pts.length?(await Promise.all(pts.map(x=>DB.get('pointSnapshots',[month,x.id])))).every(x=>x?.confirmed):true;const tx=await A.monthTransactions(month);if(tx.some(x=>x.kind==='income'))st.completionItems.income=true;if(tx.some(x=>x.kind==='expense'&&x.category==='家賃'))st.completionItems.rent=true;return save?await DB.saveMonthStatus(st):({...st,completionRate:Math.round(Object.values(st.completionItems).filter(Boolean).length/Object.values(st.completionItems).length*100)});}
 async function renderChecklist(){const st=await recomputeMonthStatus(selectedMonth);const bankAccounts=[];for(const x of (await DB.getAll('accounts')).filter(x=>x.active!==false&&x.category==='bank')){if(!x.createdAt||String(x.createdAt).slice(0,7)<=selectedMonth||await DB.get('assetSnapshots',[selectedMonth,x.id]))bankAccounts.push(x);}$('monthEndProgress').textContent=`${st.completionRate}%`;const keys=['dcard','bank','cash','stock','dc','points','rent','income'];$('monthEndChecklist').innerHTML=keys.map(k=>`<div class="status-row"><div><strong>${itemLabel(k)}</strong>${k==='dcard'&&st.cardCsvUpdatedAt?`<div class="status-meta">最終取込 ${new Date(st.cardCsvUpdatedAt).toLocaleString('ja-JP')}</div>`:''}</div><div>${k==='bank'&&!bankAccounts.length?'<span class="badge">対象なし</span>':st.completionItems[k]?'<span class="badge">確認済</span>':(['dcard','rent','income'].includes(k)?`<button data-check-item="${k}">確認済みにする</button>`:'<span class="badge">未確認</span>')}</div></div>`).join('');$$('[data-check-item]').forEach(b=>b.onclick=async()=>{const s=await DB.getMonthStatus(selectedMonth);s.completionItems[b.dataset.checkItem]=true;await DB.saveMonthStatus(s);await renderChecklist();});$('completeMonthButton').disabled=st.completionRate<100;$('completeMonthButton').title=st.completionRate<100?'未確認項目があります':'';}
 async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
