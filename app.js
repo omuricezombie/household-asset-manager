@@ -583,7 +583,25 @@ async function importPreparedCsv(){
     await DB.bulkPut('transactions',txs);await DB.put('cardImports',{id:importId,importedAt:DB.now(),fileName:p.fileName,fileSize:p.fileSize,fileHash:p.fileHash,rowCount:p.rows.length+(p.excludedRows||[]).length,importedCount:txs.length,skippedCount:p.invalidRows.length+(p.excludedRows||[]).length,duplicateCount:p.duplicateRows.length,targetRange:rangeText(p.newRows),paymentDate:p.paymentDate||null,statementAmount:p.statementAmount,createdAt:DB.now()});
     if(p.statementAmount!=null){const pid=`dcard:${p.paymentDate||p.fileHash.slice(0,12)}`;await DB.put('paymentPlans',{id:pid,name:'dカード引落',dueDate:p.paymentDate||null,amount:p.statementAmount,type:'card',status:'planned',reservedAmount:0,sourceImportId:importId,createdAt:DB.now(),updatedAt:DB.now()});}
     const months=[...new Set(txs.map(x=>x.month))];for(const m of months){const st=await DB.getMonthStatus(m);if(st.completedAt){st.postCompletionUpdatedAt=DB.now();st.postCompletionChangeCount=n(st.postCompletionChangeCount)+txs.filter(x=>x.month===m).length;}st.completionItems.dcard=true;st.cardCsvUpdatedAt=DB.now();await DB.saveMonthStatus(st);}
-    const rules=[];for(const r of p.newRows){if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantRaw){const originalName=DC.normalizeMerchant(r.merchantRaw);const existing=(await DB.getAll('categoryRules')).find(x=>x.matchType==='merchant_exact'&&x.pattern===originalName);if(!existing&&!rules.some(x=>x.pattern===originalName))rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern:originalName,category:r.category,mealType:r.mealType||null,enabled:true,createdAt:DB.now()});}}
+    // Explicit changes become the next CSV's suggestion. Update existing exact-match rules,
+    // rather than silently keeping a stale category forever.
+    const existingRules=(await DB.getAll('categoryRules')).filter(x=>x.matchType==='merchant_exact');
+    const confirmedByMerchant=new Map();
+    for(const r of p.newRows){
+      if(!r.categoryConfirmed||!r.category||r.category==='未分類'||!r.merchantRaw)continue;
+      confirmedByMerchant.set(DC.normalizeMerchant(r.merchantRaw),r);
+    }
+    const rules=[];
+    for(const [pattern,r] of confirmedByMerchant){
+      const prior=existingRules.find(x=>x.pattern===pattern);
+      if(prior){
+        rules.push({...prior,category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,enabled:true,updatedAt:DB.now()});
+      }else{
+        rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern,
+          category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,
+          enabled:true,createdAt:DB.now()});
+      }
+    }
     if(rules.length)await DB.bulkPut('categoryRules',rules);
     clearTimeout(csvDraftSaveTimer);csvDraftSaveTimer=null;++csvDraftGeneration;
     await csvDraftSaveChain.catch(()=>{});
