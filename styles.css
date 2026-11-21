@@ -128,6 +128,16 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 @media(max-width:390px){.donut-layout{grid-template-columns:minmax(100px,38%) minmax(0,1fr);gap:8px}.donut-legend-row{font-size:10px}.cashflow-bar-row{grid-template-columns:28px minmax(0,1fr) 77px;gap:4px}}
 
 
+/* Historical bulk entry — optimized for narrow phone screens */
+.historical-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.historical-fields label{min-width:0}
+.historical-rows{max-height:460px;overflow-y:auto;overscroll-behavior:contain;margin:10px 0}
+.historical-month-row{display:grid;grid-template-columns:80px minmax(0,1fr);align-items:center;gap:10px;padding:7px 3px;border-bottom:1px solid var(--line)}
+.historical-month-row label{margin:0}
+.historical-month-row input{margin:0;padding:10px;min-width:0}
+.historical-month-row .muted{font-size:12px}
+.historical-rows .badge{display:inline-block}
+@media(max-width:360px){.historical-fields{grid-template-columns:1fr}}
 /* CSV draft persistence controls */
 .csv-draft-notice{border:1px solid var(--line);border-radius:8px;padding:10px;margin:10px 0;background:var(--card);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 #csvDraftControls:not(.hidden){display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
