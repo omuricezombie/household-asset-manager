@@ -977,8 +977,31 @@ function historicalMonths(from,to){
 function historicalDefaults(){
   const thisMonth=DB.currentMonth(),last=DB.prevMonth(thisMonth);
   const from=thisMonth.slice(0,4)+'-01';
-  for(const id of ['bulkRemitFrom','bulkBankFrom'])$(id).value=from;
-  for(const id of ['bulkRemitTo','bulkBankTo'])$(id).value=last;
+  for(const id of ['bulkRemitFrom','bulkBankFrom','bulkStatusFrom'])$(id).value=from;
+  for(const id of ['bulkRemitTo','bulkBankTo','bulkStatusTo'])$(id).value=last;
+}
+
+async function renderHistoricalStatus(){
+  const el=$('bulkStatusRows');
+  try{
+    const months=historicalMonths($('bulkStatusFrom').value,$('bulkStatusTo').value);
+    const txs=await DB.getAll('transactions');
+    const accounts=(await DB.getAll('accounts')).filter(a=>a.active!==false);
+    const snapshots=await DB.getAll('assetSnapshots');
+    const count=(m,kind)=>txs.filter(t=>t.month===m&&t.kind===kind).length;
+    const balanceCount=(m,category)=>snapshots.filter(s=>s.month===m&&s.confirmed&&accounts.some(a=>a.id===s.accountId&&a.category===category)).length;
+    el.innerHTML=months.slice().reverse().map(m=>
+      '<div class="historical-status-row"><button type="button" data-historical-go="'+esc(m)+'">'+esc(m)+' を開く</button>'+
+      '<span class="muted">収入 '+count(m,'income')+'件 / 支出 '+count(m,'expense')+'件 / 銀行 '+balanceCount(m,'bank')+
+      '件 / 株式 '+balanceCount(m,'stock')+'件 / DC '+balanceCount(m,'dc')+'件</span></div>'
+    ).join('');
+    el.querySelectorAll('[data-historical-go]').forEach(button=>button.onclick=()=>{
+      const month=button.dataset.historicalGo;
+      selectedMonth=month;$('globalMonth').value=month;
+      for(const id of ['cashDate','incomeDate','rentDate','advanceDate'])$(id).value=dateForSelected();
+      void showScreen('monthend');
+    });
+  }catch(e){el.textContent=e.message;}
 }
 async function prepareHistoricalRemittance(){
   historicalRemitPlan=null;$('bulkRemitSave').classList.add('hidden');
@@ -1016,7 +1039,7 @@ async function saveHistoricalRemittance(){
     if(!confirm(txs.length+'件の仕送り（各 '+formatYen(plan.amount)+'）を過去月に登録します。既存データは変更しません。よろしいですか？'))return;
     await DB.atomicChanges({transactions:txs});
     historicalRemitPlan=null;await prepareHistoricalRemittance();await renderHome();await renderHistory();
-    toast(txs.length+'件の過去の仕送りを登録しました。');
+    toast(txs.length+'件の過去の仕送りを登録しました。');void renderHistoricalStatus();
   }catch(e){toast('仕送りの一括登録に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkRemitSave').disabled=false;}
 }
@@ -1068,7 +1091,7 @@ async function saveHistoricalBank(){
     if(!confirm(account.name+'の月末残高を'+toWrite.length+'か月分登録します。既存の月は変更しません。よろしいですか？'))return;
     await DB.atomicChanges({assetSnapshots:toWrite});
     historicalBankPlan=null;await loadHistoricalBank();await renderHome();await renderHistory();
-    toast(toWrite.length+'か月分の資産残高を登録しました。');
+    toast(toWrite.length+'か月分の資産残高を登録しました。');void renderHistoricalStatus();
   }catch(e){toast('資産残高の一括保存に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkBankSave').disabled=false;}
 }
@@ -1128,6 +1151,7 @@ function bindMonthSwipe(){
 function bind(){
   bindMonthSwipe();
   historicalDefaults();
+  $('bulkStatusLoad').onclick=()=>void renderHistoricalStatus();
   $('bulkRemitPreview').onclick=()=>void prepareHistoricalRemittance();
   $('bulkRemitSave').onclick=()=>void saveHistoricalRemittance();
   $('bulkBankLoad').onclick=()=>void loadHistoricalBank();
