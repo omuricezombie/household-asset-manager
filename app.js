@@ -51,6 +51,7 @@ const categories=['未分類','食費','日用品','衣料費','交通費','医�
 const mealOptions=[['','未分類'],['breakfast','朝'],['lunch','昼'],['dinner','夜'],['snack','間食・飲料'],['other','その他']];
 let selectedMonth=DB.currentMonth();
 let preparedCsv=null;
+let csvImportInProgress=false;
 const CSV_DRAFT_KEY='dcardCsvDraft';
 let csvDraftSaveChain=Promise.resolve();
 let csvDraftGeneration=0;
@@ -336,7 +337,7 @@ async function renderAdvanceCardTransactions(){
 }
 async function setCardAdvance(id){
   const t=await DB.get('transactions',id);if(!t)return toast('対象明細が見つかりません。');
-  const all=await DB.getAll('transactions');if(all.some(x=>x.kind==='advance_repayment'&&x.linkedTransactionId===id))return toast('返金登録済みの立替は変更できません。');
+  const all=await DB.getAll('transactions');if(t.advanceRecordId)return toast('事前立替と紐づいたCSV明細の立替額は変更できません。');if(all.some(x=>x.kind==='advance_repayment'&&x.linkedTransactionId===id))return toast('返金登録済みの立替は変更できません。');
   const current=n(t.advanceShare);
   const v=prompt(`支払総額 ${formatYen(t.amount)}\n立替額（家族分）を入力してください。\n全額が家族分なら ${formatAmount(n(t.amount))} を入力します。`,current>0?formatAmount(current):'');
   if(v==null)return;
@@ -347,14 +348,16 @@ async function setCardAdvance(id){
   toast(advance>0?`立替 ${formatYen(advance)}（自分負担 ${formatYen(own)}）を設定しました。`:'立替設定を解除しました。');
   await renderAdvanceCardTransactions();await renderOutstanding();await renderHome();
 }
+function isCardAdvanceMethod(method){return ['dbarai','id','dcard'].includes(method);}
+function isManualAdvanceCandidate(t){return t.sourceType==='manual'&&n(t.advanceShare)>0&&isCardAdvanceMethod(t.paymentMethod)&&!t.linkedCsvTransactionId&&['expense','advance_pending'].includes(t.kind);}
 function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)&&total>own?formatAmount(total-own):'';}
-async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();await renderManualAdvancePaymentEdits();}
+async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:isCardAdvanceMethod($('advancePayment').value)?'advance_pending':'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast(isCardAdvanceMethod($('advancePayment').value)?'カード立替をCSV照合待ちで保存しました。':'立替を登録しました。');await renderOutstanding();await renderManualAdvancePaymentEdits();}
 
 async function renderManualAdvancePaymentEdits(){
   const holder=$('manualAdvancePaymentEditList');
   if(!holder)return;
   const options=[['cash','現金'],['bank_transfer','銀行振込'],['dbarai','d払い'],['id','iD'],['dcard','dカード'],['other','その他']];
-  const all=(await DB.getAll('transactions')).filter(t=>t.kind==='expense'&&t.sourceType==='manual'&&t.ownShare!=null)
+  const all=(await DB.getAll('transactions')).filter(t=>['expense','advance_pending'].includes(t.kind)&&t.sourceType==='manual'&&t.ownShare!=null)
     .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,50);
   holder.innerHTML=all.length?all.map(t=>`
     <div class="review-row" data-manual-advance-payment="${esc(t.id)}">
@@ -368,12 +371,13 @@ async function renderManualAdvancePaymentEdits(){
     const method=row?.querySelector('[data-manual-advance-method]')?.value;
     if(!options.some(([value])=>value===method))return toast('支払方法を選択してください。');
     const t=await DB.get('transactions',id);
-    if(!t||t.kind!=='expense'||t.sourceType!=='manual'||t.ownShare==null)return toast('対象立替を確認できません。');
+    if(!t||!['expense','advance_pending'].includes(t.kind)||t.sourceType!=='manual'||t.ownShare==null)return toast('対象立替を確認できません。');
     if(t.paymentMethod===method)return toast('支払方法は変更されていません。');
-    if(['dbarai','id','dcard'].includes(method)&&!confirm('dカードCSVにも同じ支払が登録される場合、二重計上になります。既存のCSV明細と重複していないことを確認しましたか？'))return;
+    if(isCardAdvanceMethod(method)&&!confirm('カード支払としてCSV照合待ちに変更します。すでにCSVへ登録済みの支払いなら二重になるため、取込済み明細から立替設定してください。続けますか？'))return;
     button.disabled=true;
     try{
       t.paymentMethod=method;
+      t.kind=isCardAdvanceMethod(method)?'advance_pending':'expense';
       t.updatedAt=DB.now();
       await DB.put('transactions',t);
       await renderManualAdvancePaymentEdits();
@@ -388,7 +392,7 @@ async function renderOutstanding(){
   const rows=await A.outstandingAdvances();
   const labels={dbarai:'d払い',id:'iD',dcard:'dカード',cash:'現金',bank_transfer:'銀行振込',other:'その他'};
   $('advanceOutstanding').innerHTML=rows.length?rows.map(x=>{
-    const source=x.sourceType==='dcard_csv'?'カード立替':'手動立替';
+    const source=x.sourceType==='dcard_csv'?'カード立替':x.kind==='advance_pending'?'CSV照合待ち立替':x.kind==='advance_linked'?'CSV照合済み立替':'手動立替';
     const method=labels[x.paymentMethod]||x.paymentMethod||'';
     return `<div class="review-row"><div class="review-main"><div><strong>${esc(x.merchantNormalized||x.merchantRaw||'立替')}</strong><span class="muted">${esc(x.date)} / ${esc(source)}${method?` / ${esc(method)}`:''}</span></div><strong>${formatYen(x.outstanding)}</strong></div><button data-repay-id="${x.id}" data-repay-max="${x.outstanding}">現金で返金を受けた</button></div>`;
   }).join(''):'<p class="muted">未回収の立替はありません。</p>';
@@ -400,7 +404,7 @@ async function renderOutstanding(){
 function csvDraftMessage(message){const el=$('csvDraftSaveStatus');el.textContent=message;el.classList.toggle('hidden',!message);}
 function draftRecordFromPrepared(p){
   return {key:CSV_DRAFT_KEY,draftVersion:1,fileHash:p.fileHash,fileName:p.fileName,fileSize:p.fileSize,
-    savedAt:DB.now(),payload:{rows:p.rows,excludedRows:p.excludedRows||[],statementAmount:p.statementAmount,
+    savedAt:DB.now(),payload:{rows:p.rows,matchIds:p.matchIds||{},excludedRows:p.excludedRows||[],statementAmount:p.statementAmount,
       paymentDate:p.paymentDate,headerRow:p.headerRow,fileHash:p.fileHash,fileName:p.fileName,fileSize:p.fileSize}};
 }
 function scheduleCsvDraftSave({immediate=false}={}){
@@ -589,6 +593,43 @@ async function saveHistoryMerchantName(button){
     return false;
   }finally{button.disabled=false;}
 }
+
+async function renderCsvAdvanceMatches(){
+  const p=preparedCsv,el=$('csvAdvanceMatches');if(!p||!el)return;
+  p.matchIds=p.matchIds||{};
+  const all=await DB.getAll('transactions'),candidates=all.filter(isManualAdvanceCandidate);
+  const rows=p.newRows.filter(r=>r.kind==='expense'&&isCardAdvanceMethod(r.paymentMethod)),html=[];
+  for(const r of rows){
+    const choices=candidates.filter(t=>t.paymentMethod===r.paymentMethod&&n(t.amount)===n(r.amount)&&
+      Math.abs((Date.parse(t.date+'T00:00:00')-Date.parse(r.date+'T00:00:00'))/86400000)<=31);
+    if(!choices.length&&!p.matchIds[r.sourceRowKey])continue;
+    html.push(`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized||r.merchantRaw)}</strong><span class="muted">${esc(r.date)} / ${formatYen(r.amount)}</span></div></div>
+    <label>事前立替との照合<select data-advance-match="${esc(r.sourceRowKey)}">
+      <option value="">紐づけしない</option>
+      ${p.matchIds[r.sourceRowKey]&&!choices.some(t=>t.id===p.matchIds[r.sourceRowKey])?'<option value="INVALID" selected disabled>前回の照合候補が見つかりません。別の候補か「紐づけしない」を選択してください。</option>':''}
+      ${choices.map(t=>`<option value="${esc(t.id)}" ${p.matchIds[r.sourceRowKey]===t.id?'selected':''}>${esc(t.date)} / ${esc(t.merchantNormalized||t.merchantRaw||'立替')} / 家族分 ${formatYen(t.advanceShare)}${t.kind==='expense'?'（旧登録）':''}</option>`).join('')}
+    </select></label></div>`);
+  }
+  el.classList.toggle('hidden',html.length===0);
+  el.innerHTML=html.length?'<h3>事前立替との照合候補</h3><p class="muted">金額・支払方法・日付前後31日の候補です。自動確定はしません。実際に同じ利用か確認してください。</p>'+html.join(''):'';
+  el.querySelectorAll('[data-advance-match]').forEach(select=>select.onchange=()=>{
+    if(select.value)p.matchIds[select.dataset.advanceMatch]=select.value;
+    else delete p.matchIds[select.dataset.advanceMatch];
+    scheduleCsvDraftSave();
+  });
+}
+function validateAdvanceMatches(p,all){
+  const candidates=new Map(all.filter(isManualAdvanceCandidate).map(t=>[t.id,t]));
+  const seen=new Set(),out=new Map();
+  for(const r of p.newRows){
+    const id=(p.matchIds||{})[r.sourceRowKey];if(!id)continue;
+    const t=candidates.get(id),delta=t?Math.abs((Date.parse(t.date+'T00:00:00')-Date.parse(r.date+'T00:00:00'))/86400000):Infinity;
+    if(!t||r.kind!=='expense'||t.paymentMethod!==r.paymentMethod||n(t.amount)!==n(r.amount)||delta>31||seen.has(id))
+      throw new Error('立替照合が無効です。同じ取引を二重選択していないか確認してください。');
+    seen.add(id);out.set(r.sourceRowKey,t);
+  }
+  return out;
+}
 function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows=p.excludedRows||[],excluded=excludedRows.length,invalid=p.invalidRows.length;const review=p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund').concat(p.invalidRows);const suggestions=p.newRows.filter(r=>r.category!=='未分類'&&(r.categorySource==='rule'||r.categorySource==='heuristic')).length;const excludedSummary=excluded?`<div class="muted">対象外：${esc(excludedRows[0]?.reason||'対象外行')} ${excluded}件</div>`:'';$('csvPreview').innerHTML=`<div class="summary-strip"><div>新規<b>${p.newRows.length}</b></div><div>重複<b>${p.duplicateRows.length}</b></div><div>除外・不正<b>${invalid}</b></div><div>要確認<b>${review.length}</b></div></div><p class="muted">対象期間：${esc(rangeText(p.newRows))}${p.statementAmount!=null?` / 請求合計候補 ${formatYen(p.statementAmount)}`:''}${p.paymentDate?` / 支払日候補 ${esc(p.paymentDate)}`:''}</p><p class="muted">自動分類候補：${suggestions}件（店舗名による推定です。商品内容が異なる場合は分類を変更してください）</p>${excludedSummary}`;
   if(review.length){$('csvReview').classList.remove('hidden');$('csvReview').innerHTML='<h3>要確認</h3>'+review.map((r,i)=>r.invalid?`<div class="review-row warn"><strong>${esc(r.reason)}</strong><div class="muted">CSV ${r.sourceLine}行目</div></div>`:`<div class="review-row" data-review-key="${esc(r.sourceRowKey)}"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)} / ${r.kind==='refund'?'返金候補':'カテゴリ未分類'}</span></div><strong>${formatYen(r.amount)}</strong></div><select data-category-key="${esc(r.sourceRowKey)}">${selectOptions(categories,r.category)}</select><details class="review-merchant-edit"><summary>店名も修正（必要な場合のみ）</summary><label>表示用の店舗名<input type="text" maxlength="120" autocomplete="off" value="${esc(r.merchantNormalized)}" data-review-merchant-name></label><div class="muted">元のCSV店名：${esc(r.merchantRaw)}</div></details></div>`).join('');$$('[data-category-key]').forEach(s=>s.onchange=()=>{const r=p.newRows.find(x=>x.sourceRowKey===s.dataset.categoryKey);if(r){r.category=s.value;r.categoryConfirmed=true;if(r.category!=='食費')r.mealType=null;renderCsvMeals();scheduleCsvDraftSave();}});}else $('csvReview').classList.add('hidden');
   const proposed=p.newRows.filter(r=>r.category!=='未分類'&&(r.categorySource==='rule'||r.categorySource==='heuristic'));
@@ -604,50 +645,63 @@ function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows
       renderCsvMeals();scheduleCsvDraftSave();
     });
   }
-  renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
+  void renderCsvAdvanceMatches();renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
 }
 function renderCsvMeals(){const p=preparedCsv;if(!p)return;const food=p.newRows.filter(r=>r.category==='食費');if(!food.length){$('csvMeals').classList.add('hidden');return;}$('csvMeals').classList.remove('hidden');$('csvMeals').innerHTML='<h3>食費だけ確認</h3><p class="muted">未分類のままでも登録できます。</p>'+food.map(r=>`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)}${r.time?` ${esc(r.time)}`:''}</span></div><strong>${formatYen(r.amount)}</strong></div><div class="meal-buttons">${mealOptions.slice(1).map(([v,l])=>`<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="${v}" class="${r.mealType===v?'active':''}">${l}</button>`).join('')}<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="none" class="${!r.mealType?'active':''}">後で</button><button type="button" data-food-off="${esc(r.sourceRowKey)}">食費ではない</button></div></div>`).join('');$$('[data-meal-key]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.mealKey);if(r){r.mealType=b.dataset.meal==='none'?null:b.dataset.meal;if(b.dataset.meal!=='none')r.categoryConfirmed=true;renderCsvMeals();scheduleCsvDraftSave();}});$$('[data-food-off]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.foodOff);if(r){r.category='未分類';r.mealType=null;r.categoryConfirmed=true;renderCsvPrepared();scheduleCsvDraftSave();}});}
 function rangeText(rows){const ds=rows.map(x=>x.date).filter(Boolean).sort();return ds.length?`${ds[0]}〜${ds[ds.length-1]}`:'—';}
 async function importPreparedCsv(){
-  const p=preparedCsv;if(!p||!p.newRows.length)return;try{
+  if(csvImportInProgress)return;
+  const p=preparedCsv;if(!p||!p.newRows.length)return;
+  csvImportInProgress=true;$('csvImportButton').disabled=true;
+  try{
     await flushCsvDraftSave();
-    const fresh=await reconcileCsvDraftRows(p);
-    if(fresh.alreadyImported)return toast('このCSVはすでに取込済みです。');
-    if(!p.newRows.length){renderCsvPrepared();return toast('未登録の明細はありません。');}
-    const importId=DB.uid('dcard');const txs=p.newRows.map(r=>({id:DB.uid('tx'),date:r.date,time:r.time||null,month:DB.monthOfDate(r.date),kind:r.kind,amount:r.amount,paymentMethod:r.paymentMethod,merchantRaw:r.merchantRaw,merchantNormalized:r.merchantNormalized,category:r.category,mealType:r.mealType||null,isTemporaryExpense:false,sourceType:'dcard_csv',sourceImportId:importId,sourceRowKey:r.sourceRowKey,sourceLine:r.sourceLine,paymentType:r.paymentType,note:r.note,createdAt:DB.now(),updatedAt:DB.now()}));
-    await DB.bulkPut('transactions',txs);await DB.put('cardImports',{id:importId,importedAt:DB.now(),fileName:p.fileName,fileSize:p.fileSize,fileHash:p.fileHash,rowCount:p.rows.length+(p.excludedRows||[]).length,importedCount:txs.length,skippedCount:p.invalidRows.length+(p.excludedRows||[]).length,duplicateCount:p.duplicateRows.length,targetRange:rangeText(p.newRows),paymentDate:p.paymentDate||null,statementAmount:p.statementAmount,createdAt:DB.now()});
-    if(p.statementAmount!=null){const pid=`dcard:${p.paymentDate||p.fileHash.slice(0,12)}`;await DB.put('paymentPlans',{id:pid,name:'dカード引落',dueDate:p.paymentDate||null,amount:p.statementAmount,type:'card',status:'planned',reservedAmount:0,sourceImportId:importId,createdAt:DB.now(),updatedAt:DB.now()});}
-    const months=[...new Set(txs.map(x=>x.month))];for(const m of months){const st=await DB.getMonthStatus(m);if(st.completedAt){st.postCompletionUpdatedAt=DB.now();st.postCompletionChangeCount=n(st.postCompletionChangeCount)+txs.filter(x=>x.month===m).length;}st.completionItems.dcard=true;st.cardCsvUpdatedAt=DB.now();await DB.saveMonthStatus(st);}
-    // Explicit changes become the next CSV's suggestion. Update existing exact-match rules,
-    // rather than silently keeping a stale category forever.
-    const existingRules=(await DB.getAll('categoryRules')).filter(x=>x.matchType==='merchant_exact');
-    const confirmedByMerchant=new Map();
-    for(const r of p.newRows){
-      if(!r.categoryConfirmed||!r.category||r.category==='未分類'||!r.merchantRaw)continue;
-      confirmedByMerchant.set(DC.normalizeMerchant(r.merchantRaw),r);
+    if((await reconcileCsvDraftRows(p)).alreadyImported)throw new Error('このCSVはすでに取込済みです。');
+    if(!p.newRows.length){renderCsvPrepared();throw new Error('未登録の明細はありません。');}
+    const matches=validateAdvanceMatches(p,await DB.getAll('transactions'));
+    if(matches.size&&!confirm(matches.size+'件のCSVと事前立替を紐づけます。同じ取引であることを確認しましたか？'))return;
+    const at=DB.now(),importId=DB.uid('dcard'),manualUpdates=[];
+    const txs=p.newRows.map(r=>{
+      const t={id:DB.uid('tx'),date:r.date,time:r.time||null,month:DB.monthOfDate(r.date),kind:r.kind,
+        amount:r.amount,paymentMethod:r.paymentMethod,merchantRaw:r.merchantRaw,merchantNormalized:r.merchantNormalized,
+        category:r.category,mealType:r.mealType||null,isTemporaryExpense:false,sourceType:'dcard_csv',sourceImportId:importId,
+        sourceRowKey:r.sourceRowKey,sourceLine:r.sourceLine,paymentType:r.paymentType,note:r.note,createdAt:at,updatedAt:at};
+      const manual=matches.get(r.sourceRowKey);
+      if(manual){t.ownShare=n(manual.ownShare);t.advanceShare=n(manual.advanceShare);t.advanceRecordId=manual.id;
+        manualUpdates.push({...manual,kind:'advance_linked',linkedCsvTransactionId:t.id,updatedAt:at});}
+      return t;
+    });
+    const cardImport={id:importId,importedAt:at,fileName:p.fileName,fileSize:p.fileSize,fileHash:p.fileHash,
+      rowCount:p.rows.length+(p.excludedRows||[]).length,importedCount:txs.length,
+      skippedCount:p.invalidRows.length+(p.excludedRows||[]).length,duplicateCount:p.duplicateRows.length,
+      targetRange:rangeText(p.newRows),paymentDate:p.paymentDate||null,statementAmount:p.statementAmount,createdAt:at};
+    const plans=p.statementAmount!=null?[{id:`dcard:${p.paymentDate||p.fileHash.slice(0,12)}`,
+      name:'dカード引落',dueDate:p.paymentDate||null,amount:p.statementAmount,type:'card',status:'planned',
+      reservedAmount:0,sourceImportId:importId,createdAt:at,updatedAt:at}]:[];
+    const months=[...new Set(txs.map(t=>t.month))],statuses=[];
+    for(const m of months){const st=await DB.getMonthStatus(m);
+      if(st.completedAt){st.postCompletionUpdatedAt=at;st.postCompletionChangeCount=n(st.postCompletionChangeCount)+txs.filter(t=>t.month===m).length;}
+      st.completionItems.dcard=true;st.cardCsvUpdatedAt=at;
+      const vals=Object.values(st.completionItems||{});st.completionRate=vals.length?Math.round(vals.filter(Boolean).length/vals.length*100):0;
+      st.updatedAt=at;statuses.push(st);
     }
-    const rules=[];
-    for(const [pattern,r] of confirmedByMerchant){
-      const prior=existingRules.find(x=>x.pattern===pattern);
-      if(prior){
-        rules.push({...prior,category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,enabled:true,updatedAt:DB.now()});
-      }else{
-        rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern,
-          category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,
-          enabled:true,createdAt:DB.now()});
-      }
+    const oldRules=(await DB.getAll('categoryRules')).filter(x=>x.matchType==='merchant_exact'),confirmed=new Map(),rules=[];
+    for(const r of p.newRows)if(r.categoryConfirmed&&r.category&&r.category!=='未分類'&&r.merchantRaw)confirmed.set(DC.normalizeMerchant(r.merchantRaw),r);
+    for(const [pattern,r] of confirmed){
+      const prior=oldRules.find(x=>x.pattern===pattern);
+      if(prior)rules.push({...prior,category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,enabled:true,updatedAt:at});
+      else rules.push({id:DB.uid('rule'),matchType:'merchant_exact',pattern,category:r.category,mealType:r.category==='食費'?(r.mealType||null):null,enabled:true,createdAt:at});
     }
-    if(rules.length)await DB.bulkPut('categoryRules',rules);
+    await DB.atomicChanges({transactions:[...txs,...manualUpdates],cardImports:[cardImport],
+      paymentPlans:plans,monthStatus:statuses,categoryRules:rules},{settings:[CSV_DRAFT_KEY]});
     clearTimeout(csvDraftSaveTimer);csvDraftSaveTimer=null;++csvDraftGeneration;
-    await csvDraftSaveChain.catch(()=>{});
-    await DB.del('settings',CSV_DRAFT_KEY);
-    await refreshCsvDraftControls();
-    csvDraftMessage('');
+    await csvDraftSaveChain.catch(()=>{});await refreshCsvDraftControls();csvDraftMessage('');
     $('csvMerchantEditWrap').classList.add('hidden');$('csvMerchantEditList').innerHTML='';
-    $('csvPreview').innerHTML=`<div class="alert good"><strong>${txs.length}件を登録しました</strong><div class="muted">${months.length?months.map(monthLabel).join(' / '):''}</div></div>`;$('csvReview').classList.add('hidden');$('csvMeals').classList.add('hidden');$('csvImportButton').classList.add('hidden');$('dcardFile').value='';preparedCsv=null;toast('dカードCSVを取り込みました。');await renderHome();
-  }catch(e){toast('取込に失敗しました: '+e.message);}
+    $('csvPreview').innerHTML=`<div class="alert good"><strong>${txs.length}件を登録しました</strong><div class="muted">事前立替との紐づけ ${matches.size}件 / ${months.map(monthLabel).join(' / ')}</div></div>`;
+    for(const id of ['csvReview','csvMeals','csvAdvanceMatches','csvImportButton'])$(id).classList.add('hidden');
+    $('dcardFile').value='';preparedCsv=null;toast('dカードCSVを取り込みました。');await renderHome();
+  }catch(e){console.error(e);toast('取込に失敗しました: '+e.message);}
+  finally{csvImportInProgress=false;$('csvImportButton').disabled=false;}
 }
-
 async function renderMonthEnd(){
   const walletLive=await A.liveCashBalance(selectedMonth);
   const walletDirty=!!(walletLive&&walletLive.value!=null&&walletLive.movement!==0&&selectedMonth===DB.currentMonth());

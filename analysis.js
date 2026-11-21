@@ -66,7 +66,7 @@
   }
   async function outstandingAdvances(){
     const all=await DB().getAll('transactions');
-    const advances=all.filter(x=>x.kind==='expense'&&num(x.advanceShare)>0);
+    const advances=all.filter(x=>['expense','advance_pending','advance_linked'].includes(x.kind)&&num(x.advanceShare)>0&&!(x.kind==='expense'&&x.advanceRecordId));
     const repayments=all.filter(x=>x.kind==='advance_repayment');
     return advances.map(a=>{const paid=repayments.filter(r=>r.linkedTransactionId===a.id).reduce((s,r)=>s+num(r.amount),0);return {...a,repaidAmount:paid,outstanding:Math.max(0,num(a.advanceShare)-paid)};}).filter(x=>x.outstanding>0);
   }
