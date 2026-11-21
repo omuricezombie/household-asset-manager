@@ -70,6 +70,25 @@
     }
     return {total,liquid,rows};
   }
+
+  async function bankBalanceDelta(month){
+    const previous=DB().prevMonth(month);
+    const accounts=(await DB().getAll('accounts')).filter(a=>a.active!==false&&a.category==='bank');
+    const rows=[];
+    for(const account of accounts){
+      const current=await DB().get('assetSnapshots',[month,account.id]);
+      const prior=await DB().get('assetSnapshots',[previous,account.id]);
+      if(!current&&!prior)continue;
+      rows.push({id:account.id,name:account.name,current:current?.confirmed?num(current.value):null,previous:prior?.confirmed?num(prior.value):null});
+    }
+    // The same registered bank accounts must have confirmed balances at both month ends.
+    // Carried-forward balances never qualify as evidence of actual savings.
+    const complete=rows.length>0&&rows.every(x=>x.current!==null&&x.previous!==null);
+    const current=complete?rows.reduce((v,x)=>v+x.current,0):null;
+    const prior=complete?rows.reduce((v,x)=>v+x.previous,0):null;
+    return {month,previous,available:complete,current,prior,delta:complete?current-prior:null,rows,
+      reason:rows.length?'前月と当月の両方で銀行月末残高の確認が必要です。':'比較できる銀行の月末残高がありません。'};
+  }
   async function outstandingAdvances(){
     const all=await DB().getAll('transactions');
     const advances=all.filter(x=>['expense','advance_pending','advance_linked'].includes(x.kind)&&num(x.advanceShare)>0&&!(x.kind==='expense'&&x.advanceRecordId));
@@ -104,5 +123,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,assetSummary,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,assetSummary,bankBalanceDelta,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
 })(window);
