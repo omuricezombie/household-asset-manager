@@ -150,7 +150,7 @@ async function renderHomeBankDelta(summary){
   if(!info.available){el.innerHTML='<p class="muted">'+esc(info.reason)+'</p>';return;}
   const balanceDiff=info.delta-summary.saving;
   el.innerHTML='<div class="metric-grid">'+
-    metric('銀行預金の増減',info.delta,A.formatSigned(info.delta),info.delta>=0?'good':'warn')+
+    metric('銀行預金の増減',info.delta,'',info.delta>=0?'good':'warn')+
     metric('登録済み家計収支',summary.saving,'')+
     '</div><p class="muted">差額（銀行増減 − 家計収支）：'+esc(A.formatSigned(balanceDiff))+'。口座間・証券への移動、現金引き出し、未登録の入出金などが影響します。</p>';
 }
