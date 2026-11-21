@@ -1003,21 +1003,33 @@ async function renderHistoricalStatus(){
     });
   }catch(e){el.textContent=e.message;}
 }
+function updateRecurringCategory(){
+  const kind=$('bulkRecurringKind').value;
+  const options=kind==='income'?['給与','賞与','配当','利息','その他']:categories.filter(x=>x!=='家賃');
+  const current=$('bulkRecurringCategory').value;
+  $('bulkRecurringCategory').innerHTML=options.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+  $('bulkRecurringCategory').value=options.includes(current)?current:(kind==='income'?'給与':'仕送り');
+  historicalRemitPlan=null;$('bulkRemitSave').classList.add('hidden');
+}
 async function prepareHistoricalRemittance(){
   historicalRemitPlan=null;$('bulkRemitSave').classList.add('hidden');
   const el=$('bulkRemitReview');
   try{
     const from=$('bulkRemitFrom').value,to=$('bulkRemitTo').value;
+    const kind=$('bulkRecurringKind').value,category=$('bulkRecurringCategory').value;
+    if(!['expense','income'].includes(kind))throw new Error('収支の種類が正しくありません。');
+    if(kind==='expense'&&!categories.filter(x=>x!=='家賃').includes(category))throw new Error('支出分類が正しくありません。');
+    if(kind==='income'&&!['給与','賞与','配当','利息','その他'].includes(category))throw new Error('収入分類が正しくありません。');
     const amount=parseAmount($('bulkRemitAmount').value);
     const day=Number($('bulkRemitDay').value);
     if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('毎月の金額を1円以上の整数で入力してください。');
     if(!Number.isInteger(day)||day<1||day>28)throw new Error('日付は1〜28日を指定してください。');
     const months=historicalMonths(from,to);
     const transactions=await DB.getAll('transactions');
-    const existing=new Set(transactions.filter(t=>t.kind==='expense'&&t.category==='仕送り').map(t=>t.month));
+    const existing=new Set(transactions.filter(t=>t.kind===kind&&(t.subCategory||t.category)===category).map(t=>t.month));
     const available=months.filter(m=>!existing.has(m));
-    historicalRemitPlan={months,amount,day,available};
-    el.innerHTML='<p class="muted">対象 '+months.length+'か月 / 登録予定 <strong>'+available.length+'件</strong> / 既存の仕送りがあるためスキップ '+(months.length-available.length)+'件</p>'+
+    historicalRemitPlan={months,amount,day,available,kind,category};
+    el.innerHTML='<p class="muted">対象 '+months.length+'か月 / 登録予定 <strong>'+available.length+'件</strong> / 既存の同分類があるためスキップ '+(months.length-available.length)+'件</p>'+
       '<div class="historical-rows">'+months.map(m=>'<div class="historical-month-row"><strong>'+esc(m)+'</strong><span class="muted">'+(existing.has(m)?'既存あり・追加なし':formatYen(amount)+' を登録')+'</span></div>').join('')+'</div>';
     $('bulkRemitSave').classList.toggle('hidden',available.length===0);
   }catch(e){el.textContent=e.message;}
@@ -1027,20 +1039,21 @@ async function saveHistoricalRemittance(){
   historicalSaveBusy=true;$('bulkRemitSave').disabled=true;
   try{
     const plan=historicalRemitPlan;
-    if($('bulkRemitFrom').value!==plan.months[0]||$('bulkRemitTo').value!==plan.months.at(-1)||parseAmount($('bulkRemitAmount').value)!==plan.amount||Number($('bulkRemitDay').value)!==plan.day)throw new Error('入力条件が変わっています。先に登録予定を確認してください。');
-    const existing=new Set((await DB.getAll('transactions')).filter(t=>t.kind==='expense'&&t.category==='仕送り').map(t=>t.month));
+    if($('bulkRemitFrom').value!==plan.months[0]||$('bulkRemitTo').value!==plan.months.at(-1)||parseAmount($('bulkRemitAmount').value)!==plan.amount||Number($('bulkRemitDay').value)!==plan.day||$('bulkRecurringKind').value!==plan.kind||$('bulkRecurringCategory').value!==plan.category)throw new Error('入力条件が変わっています。先に登録予定を確認してください。');
+    const existing=new Set((await DB.getAll('transactions')).filter(t=>t.kind===plan.kind&&(t.subCategory||t.category)===plan.category).map(t=>t.month));
     const at=DB.now();
     const txs=plan.available.filter(m=>!existing.has(m)).map(month=>({
-      id:DB.uid('tx'),date:month+'-'+String(plan.day).padStart(2,'0'),month,kind:'expense',amount:plan.amount,
-      paymentMethod:'bank_transfer',category:'仕送り',merchantRaw:'仕送り',merchantNormalized:'仕送り',
-      isTemporaryExpense:false,sourceType:'historical_bulk',note:'過去月の仕送り一括登録',createdAt:at,updatedAt:at
+      id:DB.uid('tx'),date:month+'-'+String(plan.day).padStart(2,'0'),month,kind:plan.kind,amount:plan.amount,
+      paymentMethod:'bank_transfer',category:plan.category,subCategory:plan.kind==='income'?plan.category:null,
+      merchantRaw:plan.kind==='expense'?plan.category:'',merchantNormalized:plan.kind==='expense'?plan.category:'',
+      isTemporaryExpense:false,sourceType:'historical_bulk',note:'過去月の定額収支一括登録',createdAt:at,updatedAt:at
     }));
     if(!txs.length)throw new Error('追加できる月はありません。すべて登録済みです。');
-    if(!confirm(txs.length+'件の仕送り（各 '+formatYen(plan.amount)+'）を過去月に登録します。既存データは変更しません。よろしいですか？'))return;
+    if(!confirm(txs.length+'か月分の'+plan.category+'（各 '+formatYen(plan.amount)+'）を登録します。既存データは変更しません。よろしいですか？'))return;
     await DB.atomicChanges({transactions:txs});
     historicalRemitPlan=null;await prepareHistoricalRemittance();await renderHome();await renderHistory();
-    toast(txs.length+'件の過去の仕送りを登録しました。');void renderHistoricalStatus();
-  }catch(e){toast('仕送りの一括登録に失敗: '+e.message);}
+    toast(txs.length+'件の過去の定額収支を登録しました。');void renderHistoricalStatus();
+  }catch(e){toast('定額収支の一括登録に失敗: '+e.message);}
   finally{historicalSaveBusy=false;$('bulkRemitSave').disabled=false;}
 }
 async function renderHistoricalBankAccounts(){
@@ -1151,12 +1164,14 @@ function bindMonthSwipe(){
 function bind(){
   bindMonthSwipe();
   historicalDefaults();
+  updateRecurringCategory();
+  $('bulkRecurringKind').onchange=updateRecurringCategory;
   $('bulkStatusLoad').onclick=()=>void renderHistoricalStatus();
   $('bulkRemitPreview').onclick=()=>void prepareHistoricalRemittance();
   $('bulkRemitSave').onclick=()=>void saveHistoricalRemittance();
   $('bulkBankLoad').onclick=()=>void loadHistoricalBank();
   $('bulkBankSave').onclick=()=>void saveHistoricalBank();
-  for(const id of ['bulkRemitFrom','bulkRemitTo','bulkRemitAmount','bulkRemitDay'])$(id).addEventListener('input',()=>{$('bulkRemitSave').classList.add('hidden');historicalRemitPlan=null;});
+  for(const id of ['bulkRemitFrom','bulkRemitTo','bulkRemitAmount','bulkRemitDay','bulkRecurringCategory'])$(id).addEventListener('input',()=>{$('bulkRemitSave').classList.add('hidden');historicalRemitPlan=null;});
   for(const id of ['bulkBankAccount','bulkBankFrom','bulkBankTo'])$(id).addEventListener('change',()=>{$('bulkBankSave').classList.add('hidden');historicalBankPlan=null;$('bulkBankRows').innerHTML='';});
   for(const [id,attr] of [['csvReview','data-review-merchant-name'],['csvMerchantEditList','data-csv-merchant-name']]){
     $(id).oninput=e=>{const input=e.target.closest('['+attr+']');if(input)applyCsvMerchantName(input);};
