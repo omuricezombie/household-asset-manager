@@ -71,6 +71,32 @@
     return {total,liquid,rows};
   }
 
+
+  async function annualCumulative(month){
+    const year=String(month||'').slice(0,4),end=Number(String(month||'').slice(5,7));
+    if(!/^\d{4}$/.test(year)||!Number.isInteger(end)||end<1||end>12)throw new Error('対象月が正しくありません。');
+    const months=Array.from({length:end},(_,i)=>year+'-'+String(i+1).padStart(2,'0'));
+    let income=0,expense=0,normal=0,temporary=0;
+    const categories={},monthRows=[];
+    for(const m of months){
+      const data=await monthTransactions(m);
+      let monthIncome=0,monthExpense=0,hasEntries=data.some(t=>t.kind==='income'||t.kind==='expense'||t.kind==='refund');
+      for(const t of data){
+        if(t.kind==='income'){const amount=num(t.amount);income+=amount;monthIncome+=amount;}
+        else if(t.kind==='expense'){
+          const amount=effExpense(t);expense+=amount;monthExpense+=amount;
+          if(t.isTemporaryExpense)temporary+=amount;else normal+=amount;
+          const cat=t.category||'未分類';categories[cat]=(categories[cat]||0)+amount;
+        }else if(t.kind==='refund'){
+          const amount=refundAmount(t);expense-=amount;normal-=amount;monthExpense-=amount;
+          const cat=t.category||'未分類';categories[cat]=(categories[cat]||0)-amount;
+        }
+      }
+      monthRows.push({month:m,income:monthIncome,expense:monthExpense,hasEntries});
+    }
+    return {year,throughMonth:month,income,expense,normal,temporary,saving:income-expense,categories,monthRows,
+      monthsWithEntries:monthRows.filter(m=>m.hasEntries).length,monthsCount:months.length};
+  }
   async function bankBalanceDelta(month){
     const previous=DB().prevMonth(month);
     const accounts=(await DB().getAll('accounts')).filter(a=>a.active!==false&&a.category==='bank');
@@ -123,5 +149,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,assetSummary,bankBalanceDelta,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,assetSummary,bankBalanceDelta,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
 })(window);
