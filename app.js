@@ -351,7 +351,7 @@ async function setCardAdvance(id){
 function isCardAdvanceMethod(method){return ['dbarai','id','dcard'].includes(method);}
 function isManualAdvanceCandidate(t){return t.sourceType==='manual'&&n(t.advanceShare)>0&&isCardAdvanceMethod(t.paymentMethod)&&!t.linkedCsvTransactionId&&['expense','advance_pending'].includes(t.kind);}
 function updateAdvanceCalc(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);$('advanceOther').value=Number.isSafeInteger(total)&&Number.isSafeInteger(own)&&total>own?formatAmount(total-own):'';}
-async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:isCardAdvanceMethod($('advancePayment').value)?'advance_pending':'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast('立替を登録しました。');await renderOutstanding();await renderManualAdvancePaymentEdits();}
+async function saveAdvance(){const total=parseAmount($('advanceTotal').value),own=$('advanceOwn').value.trim()===''?0:parseAmount($('advanceOwn').value);if(!Number.isSafeInteger(total)||!Number.isSafeInteger(own)||total<=0||own<0||own>total)return toast('金額を確認してください。');const date=$('advanceDate').value||dateForSelected();if(!confirmNonCurrentEntry(date))return;await DB.put('transactions',{id:DB.uid('tx'),date,month:DB.monthOfDate(date),kind:isCardAdvanceMethod($('advancePayment').value)?'advance_pending':'expense',amount:total,ownShare:own,advanceShare:total-own,advanceStatus:(total-own)>0?'unpaid':null,paymentMethod:$('advancePayment').value,merchantRaw:$('advanceMerchant').value.trim(),merchantNormalized:$('advanceMerchant').value.trim(),category:'未分類',sourceType:'manual',createdAt:DB.now(),updatedAt:DB.now()});$('advanceTotal').value='';$('advanceOwn').value='';$('advanceOther').value='';$('advanceMerchant').value='';toast(isCardAdvanceMethod($('advancePayment').value)?'カード立替をCSV照合待ちで保存しました。':'立替を登録しました。');await renderOutstanding();await renderManualAdvancePaymentEdits();}
 
 async function renderManualAdvancePaymentEdits(){
   const holder=$('manualAdvancePaymentEditList');
@@ -373,7 +373,7 @@ async function renderManualAdvancePaymentEdits(){
     const t=await DB.get('transactions',id);
     if(!t||!['expense','advance_pending'].includes(t.kind)||t.sourceType!=='manual'||t.ownShare==null)return toast('対象立替を確認できません。');
     if(t.paymentMethod===method)return toast('支払方法は変更されていません。');
-    if(['dbarai','id','dcard'].includes(method)&&!confirm('dカードCSVにも同じ支払が登録される場合、二重計上になります。既存のCSV明細と重複していないことを確認しましたか？'))return;
+    if(isCardAdvanceMethod(method)&&!confirm('カード支払としてCSV照合待ちに変更します。すでにCSVへ登録済みの支払いなら二重になるため、取込済み明細から立替設定してください。続けますか？'))return;
     button.disabled=true;
     try{
       t.paymentMethod=method;
@@ -602,10 +602,11 @@ async function renderCsvAdvanceMatches(){
   for(const r of rows){
     const choices=candidates.filter(t=>t.paymentMethod===r.paymentMethod&&n(t.amount)===n(r.amount)&&
       Math.abs((Date.parse(t.date+'T00:00:00')-Date.parse(r.date+'T00:00:00'))/86400000)<=31);
-    if(!choices.length)continue;
+    if(!choices.length&&!p.matchIds[r.sourceRowKey])continue;
     html.push(`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized||r.merchantRaw)}</strong><span class="muted">${esc(r.date)} / ${formatYen(r.amount)}</span></div></div>
     <label>事前立替との照合<select data-advance-match="${esc(r.sourceRowKey)}">
       <option value="">紐づけしない</option>
+      ${p.matchIds[r.sourceRowKey]&&!choices.some(t=>t.id===p.matchIds[r.sourceRowKey])?'<option value="INVALID" selected disabled>前回の照合候補が見つかりません。別の候補か「紐づけしない」を選択してください。</option>':''}
       ${choices.map(t=>`<option value="${esc(t.id)}" ${p.matchIds[r.sourceRowKey]===t.id?'selected':''}>${esc(t.date)} / ${esc(t.merchantNormalized||t.merchantRaw||'立替')} / 家族分 ${formatYen(t.advanceShare)}${t.kind==='expense'?'（旧登録）':''}</option>`).join('')}
     </select></label></div>`);
   }
