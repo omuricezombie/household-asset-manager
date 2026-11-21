@@ -144,6 +144,16 @@ function setupNavigationHistory(){
 function fillCategorySelect(el,current='未分類'){el.innerHTML=selectOptions(categories,current);}
 function fillMealSelect(el,current=''){el.innerHTML=selectOptions(mealOptions,current);}
 
+async function renderHomeBankDelta(summary){
+  const info=await A.bankBalanceDelta(selectedMonth);
+  const el=$('homeBankDelta');
+  if(!info.available){el.innerHTML='<p class="muted">'+esc(info.reason)+'</p>';return;}
+  const balanceDiff=info.delta-summary.saving;
+  el.innerHTML='<div class="metric-grid">'+
+    metric('銀行預金の増減',info.delta,A.formatSigned(info.delta),info.delta>=0?'good':'warn')+
+    metric('登録済み家計収支',summary.saving,'')+
+    '</div><p class="muted">差額（銀行増減 − 家計収支）：'+esc(A.formatSigned(balanceDiff))+'。口座間・証券への移動、現金引き出し、未登録の入出金などが影響します。</p>';
+}
 async function renderHome(){
   await renderHomeAlerts();
   const cur=await A.summary(selectedMonth),prev=await A.summary(DB.prevMonth(selectedMonth));
@@ -156,6 +166,7 @@ async function renderHome(){
   const monthStatus=await DB.getMonthStatus(selectedMonth);
   $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':'暫定（登録済みの収入・支出による集計）';
   renderExpenseDonut(cur.categories);
+  await renderHomeBankDelta(cur);
   const points=await A.pointTotal(selectedMonth),adv=(await A.outstandingAdvances()).reduce((s,x)=>s+x.outstanding,0);const plans=await A.paymentPlansUpcoming();const reserved=plans.reduce((s,x)=>s+n(x.reservedAmount),0);
   const wallet=cur.assets.rows.find(x=>x.account.id==='cash-wallet');
   const walletValue=wallet?.liveCash?.value??(wallet?.snapshot?wallet.value:null);
@@ -865,7 +876,7 @@ async function recomputeMonthStatus(month,save=true){const st=await DB.getMonthS
 async function renderChecklist(){const st=await recomputeMonthStatus(selectedMonth);const bankAccounts=[];for(const x of (await DB.getAll('accounts')).filter(x=>x.active!==false&&x.category==='bank')){if(!x.createdAt||String(x.createdAt).slice(0,7)<=selectedMonth||await DB.get('assetSnapshots',[selectedMonth,x.id]))bankAccounts.push(x);}$('monthEndProgress').textContent=`${st.completionRate}%`;const keys=['dcard','bank','cash','stock','dc','points','rent','income'];$('monthEndChecklist').innerHTML=keys.map(k=>`<div class="status-row"><div><strong>${itemLabel(k)}</strong>${k==='dcard'&&st.cardCsvUpdatedAt?`<div class="status-meta">最終取込 ${new Date(st.cardCsvUpdatedAt).toLocaleString('ja-JP')}</div>`:''}</div><div>${k==='bank'&&!bankAccounts.length?'<span class="badge">対象なし</span>':st.completionItems[k]?'<span class="badge">確認済</span>':(['dcard','rent','income'].includes(k)?`<button data-check-item="${k}">確認済みにする</button>`:'<span class="badge">未確認</span>')}</div></div>`).join('');$$('[data-check-item]').forEach(b=>b.onclick=async()=>{const s=await DB.getMonthStatus(selectedMonth);s.completionItems[b.dataset.checkItem]=true;await DB.saveMonthStatus(s);await renderChecklist();});$('completeMonthButton').disabled=st.completionRate<100;$('completeMonthButton').title=st.completionRate<100?'未確認項目があります':'';}
 async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);const bankDeltas=await Promise.all(months.map(m=>A.bankBalanceDelta(m)));$('historyBankDelta').innerHTML=bankDeltas.map((b,i)=>'<tr><td>'+esc(b.month)+'</td><td>'+(b.available?esc(A.formatSigned(b.delta)):'—')+'</td><td>'+formatYen(sums[i].saving)+'</td></tr>').join('');renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
@@ -934,7 +945,51 @@ async function addPointFromDialog(e){e.preventDefault();if(!(await flushMonthEnd
 async function clearAll(){if(!confirm('v0.2の家計・資産データを全削除します。v0.1旧DBは削除しません。実行しますか？'))return;if(!confirm('元に戻せません。JSONバックアップは保存しましたか？'))return;for(const s of DB.STORES)await DB.clear(s);await DB.seed();toast('v0.2データを削除しました。');await renderAll();}
 
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
+
+let swipeTouchStart=null;
+let swipeBusy=false;
+function monthShift(month,direction){
+  const [year,mon]=month.split('-').map(Number);
+  const d=new Date(year,mon-1+direction,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+async function changeSelectedMonth(target){
+  if(swipeBusy||target===selectedMonth||target>DB.currentMonth()||target<'2000-01')return false;
+  swipeBusy=true;
+  try{
+    selectedMonth=target;
+    $('globalMonth').value=target;
+    for(const id of ['cashDate','incomeDate','rentDate','advanceDate'])$(id).value=dateForSelected();
+    if(currentScreen==='home')await renderHome();
+    if(currentScreen==='history')await renderHistory();
+    return true;
+  }finally{swipeBusy=false;}
+}
+function bindMonthSwipe(){
+  const main=$('appMain');
+  if(!main)return;
+  main.addEventListener('touchstart',e=>{
+    swipeTouchStart=null;
+    if(currentScreen!=='home'&&currentScreen!=='history')return;
+    if(document.body.classList.contains('app-locked')||e.touches.length!==1)return;
+    const target=e.target;
+    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker'))return;
+    const touch=e.touches[0];
+    if(touch.clientX<26||touch.clientX>window.innerWidth-26)return;
+    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now()};
+  },{passive:true});
+  main.addEventListener('touchend',e=>{
+    if(!swipeTouchStart||e.changedTouches.length!==1)return;
+    const start=swipeTouchStart;swipeTouchStart=null;
+    if(currentScreen!=='home'&&currentScreen!=='history')return;
+    const touch=e.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+    if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-start.time>1300)return;
+    void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));
+  },{passive:true});
+  main.addEventListener('touchcancel',()=>{swipeTouchStart=null;},{passive:true});
+}
 function bind(){
+  bindMonthSwipe();
   for(const [id,attr] of [['csvReview','data-review-merchant-name'],['csvMerchantEditList','data-csv-merchant-name']]){
     $(id).oninput=e=>{const input=e.target.closest('['+attr+']');if(input)applyCsvMerchantName(input);};
     $(id).onchange=e=>{const input=e.target.closest('['+attr+']');if(input)applyCsvMerchantName(input,{final:true});};
