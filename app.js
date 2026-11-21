@@ -967,7 +967,7 @@ let historicalRemitPlan=null;
 let historicalBankPlan=null;
 let historicalSaveBusy=false;
 function historicalMonths(from,to){
-  if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(from)||!/^\\d{4}-(0[1-9]|1[0-2])$/.test(to)||from>to||to>=DB.currentMonth())throw new Error('過去月の開始・終了を正しく指定してください。');
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(from)||!/^\d{4}-(0[1-9]|1[0-2])$/.test(to)||from>to||to>=DB.currentMonth())throw new Error('過去月の開始・終了を正しく指定してください。');
   const months=[];
   let m=from;
   while(m<=to&&months.length<=36){months.push(m);const [y,mon]=m.split('-').map(Number);m=String(y+Math.floor(mon/12)).padStart(4,'0')+'-'+String(mon%12+1).padStart(2,'0');}
