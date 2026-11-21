@@ -23,12 +23,18 @@
     if(month!==DB().currentMonth())return {value:baseValue,baseValue,movement:0,snapshot,movements:[],isEstimated:false};
     const cutoff=snapshot.updatedAt||snapshot.confirmedAt||'';
     if(!cutoff)return {value:baseValue,baseValue,movement:0,snapshot,movements:[],isEstimated:false};
+    // Past-month entries added today must not be deducted from the current wallet.
+    // A snapshot for the current month represents cash actually confirmed on its
+    // recorded day; earlier dated entries are already included in that balance.
+    // For a prior-month snapshot the next month's cash activity starts afresh.
+    const confirmedDate=snapshot.month===month?DB().ymd(new Date(cutoff)):null;
     const all=await DB().getAll('transactions');
     const movements=all.filter(t=>{
       const amount=cashMovementAmount(t);
-      if(!amount)return false;
-      if(t.month&&t.month>month)return false;
-      return !!t.createdAt&&t.createdAt>cutoff;
+      if(!amount||t.month!==month||!t.date)return false;
+      if(!t.createdAt||t.createdAt<=cutoff)return false;
+      if(confirmedDate&&t.date<confirmedDate)return false;
+      return true;
     }).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
     const movement=movements.reduce((s,t)=>s+cashMovementAmount(t),0);
     return {value:baseValue+movement,baseValue,movement,snapshot,movements,isEstimated:movement!==0};
