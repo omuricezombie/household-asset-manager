@@ -886,13 +886,24 @@ async function renderAnnualExpense(){
     metric('収支累計',report.saving,'')
   ].join('');
   $('annualExpenseNote').textContent='登録済みの取引による累計です（'+report.monthsWithEntries+'/'+report.monthsCount+'か月に収支取引あり）。未登録月があっても0円として扱うため、データが揃っていない場合は確定年間額ではありません。他人負担と立替の自己負担額の扱いは月次集計と同じです。';
+  const incomeRows=Object.entries(report.incomeCategories).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
+  $('annualIncomeCategories').innerHTML=incomeRows.length?incomeRows.map(([kind,amount])=>'<tr><td>'+esc(kind)+'</td><td>'+formatYen(amount)+'</td><td>'+(report.income>0?(amount/report.income*100).toFixed(1)+'%':'—')+'</td></tr>').join(''):'<tr><td colspan="3">収入の登録がありません。</td></tr>';
   const rows=Object.entries(report.categories).filter(([,value])=>value!==0).sort((a,b)=>b[1]-a[1]);
   $('annualExpenseCategories').innerHTML=rows.length?rows.map(([category,amount])=>
     '<tr><td>'+esc(category)+'</td><td>'+formatYen(amount)+'</td><td>'+
     (report.expense>0?(amount/report.expense*100).toFixed(1)+'%':'—')+'</td></tr>').join(''):
     '<tr><td colspan="3">登録済みの支出がありません。</td></tr>';
 }
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);const bankDeltas=await Promise.all(months.map(m=>A.bankBalanceDelta(m)));$('historyBankDelta').innerHTML=bankDeltas.map((b,i)=>'<tr><td>'+esc(b.month)+'</td><td>'+(b.available?esc(A.formatSigned(b.delta)):'—')+'</td><td>'+formatYen(sums[i].saving)+'</td></tr>').join('');renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();await renderAnnualExpense();}
+
+async function renderStockYearComparison(){
+  const x=await A.stockYearComparison(selectedMonth);
+  $('historyStockYoY').innerHTML=x.available?
+    '<div class="metric-grid">'+metric('前年同月比',x.delta,'前年差（'+esc(x.previous)+'）')+
+    metric('当月株式評価額',x.current,'前年 '+formatYen(x.prior))+'</div>'+
+    '<p class="muted">前年差率：'+(x.rate===null?'算定不可':x.rate.toFixed(1)+'%')+'</p>':
+    '<p class="muted">'+esc(x.reason)+'</p>';
+}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);const bankDeltas=await Promise.all(months.map(m=>A.bankBalanceDelta(m)));$('historyBankDelta').innerHTML=bankDeltas.map((b,i)=>'<tr><td>'+esc(b.month)+'</td><td>'+(b.available?esc(A.formatSigned(b.delta)):'—')+'</td><td>'+formatYen(sums[i].saving)+'</td></tr>').join('');renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();await renderAnnualExpense();await renderStockYearComparison();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
