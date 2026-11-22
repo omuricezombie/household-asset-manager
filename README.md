@@ -8,14 +8,14 @@
 
 | 項目 | 基準 |
 | --- | --- |
-| 正式版 | **v0.2.36 stable**（2026-11-22時点） |
+| 正式版 | **v0.2.37 stable**（2026-11-22時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | 開発・監査用。v0.2.37-candidate.1で家計分析・充足状況の追加を検証中（main未反映） |
+| candidate | 開発・監査用。正式昇格後はmainと同期 |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | v0.2.36はAI QA / Human QA PASS。v0.2.37 candidateはQA中でstable未昇格 |
+| 品質 | v0.2.37はAI QA / Human QA PASS（候補版の代表ケース） |
 | 現在の段階 | 実データでの継続使用・評価 |
 
-v0.2.36正式昇格時（2026-11-22）のmain / candidate HEADは `b75307533f779b39518b9ffdd317e5a2472e0087` でした。現在はcandidateに分析追加があるため、正式版を取得する際はmainかそのcommitを使用してください。最新状態はNotion開発正本とGitHubの実HEADを照合します。
+v0.2.37は2026-11-22にHuman QA合格後、PR経由でmainへ昇格する版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
 
 ## 実装済みの主な機能
 
@@ -82,7 +82,7 @@ git rev-parse HEAD
 
 実CSV・本番JSON・口座情報・秘密情報は登録禁止です。`.gitignore`は誤登録を減らす補助であり、commit前に差分を確認してください。新規commitのauthor / committerはGitHub noreplyアドレスを明示し、生成後の実メタデータを監査します。
 
-## v0.2.37 candidateの検証対象
+## v0.2.37で追加した分析
 
 - 履歴・分析の月別データ品質チェック：dカード15日締めの2請求期間の取込、収入・家賃・未分類を確認。締め未到来と未取込を区別。
 - 利用月（暦月）ごとの支出集計は変更せず、入力が一定条件を満たした月だけで平均・中央値と、仕送り・リフレッシュ費を分けた内訳を表示。
