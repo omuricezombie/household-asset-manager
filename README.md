@@ -10,7 +10,7 @@
 | --- | --- |
 | 正式版 | **v0.2.35 stable**（2026-11-22時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | 開発・監査用。v0.2.36-candidate.1で保守監査を実施中（main未反映） |
+| candidate | 開発・監査用。v0.2.36-candidate.2で保守監査を実施中（main未反映） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
 | 品質 | v0.2.35はAI QA / Human QA PASS。v0.2.36 candidateは監査中でstable未昇格 |
 | 現在の段階 | 実データでの継続使用・評価 |
