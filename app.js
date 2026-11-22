@@ -1215,6 +1215,7 @@ async function renderAll(){await renderHome();await renderMonthEnd();await rende
 
 let swipeTouchStart=null;
 let swipeBusy=false;
+let swipeMetricClickGuard=null;
 function monthShift(month,direction){
   const [year,mon]=month.split('-').map(Number);
   const d=new Date(year,mon-1+direction,1);
@@ -1268,10 +1269,13 @@ function bindMonthSwipe(){
     if(currentScreen!=='home'&&currentScreen!=='history')return;
     if(document.body.classList.contains('app-locked')||e.touches.length!==1)return;
     const target=e.target;
-    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker'))return;
+    // Asset cards are buttons, but a horizontal gesture on them must still
+    // navigate months. Other controls remain excluded as before.
+    const metric=target.closest('#homeAssetSummary button[data-asset-breakdown]');
+    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker')&&!metric)return;
     const touch=e.touches[0];
     if(touch.clientX<26||touch.clientX>window.innerWidth-26)return;
-    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now()};
+    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now(),metric};
   },{passive:true});
   main.addEventListener('touchend',e=>{
     if(!swipeTouchStart||e.changedTouches.length!==1)return;
@@ -1279,8 +1283,19 @@ function bindMonthSwipe(){
     if(currentScreen!=='home'&&currentScreen!=='history')return;
     const touch=e.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y;
     if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-start.time>1300)return;
+    if(start.metric)swipeMetricClickGuard={metric:start.metric,time:Date.now()};
     void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));
   },{passive:true});
+  // An asset card's synthetic click after a swipe must not open its details.
+  main.addEventListener('click',e=>{
+    const guard=swipeMetricClickGuard;
+    if(!guard)return;
+    swipeMetricClickGuard=null;
+    if(Date.now()-guard.time<700&&guard.metric.contains(e.target)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },true);
   main.addEventListener('touchcancel',()=>{swipeTouchStart=null;},{passive:true});
 }
 function bind(){
