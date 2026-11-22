@@ -577,14 +577,18 @@ function renderCsvMerchantEdits(){
 async function renderHistoryMerchantEdits(){
   const filter=$('historyMerchantFilter').value.trim().toLowerCase();
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>t.sourceType==='dcard_csv');
-  const rows=transactions.filter(t=>!filter||[t.date,t.merchantRaw,t.merchantNormalized,String(t.amount)].some(x=>String(x||'').toLowerCase().includes(filter)));
+  const rows=transactions.filter(t=>!filter||[t.date,t.merchantRaw,t.merchantNormalized,t.category||'未分類',String(t.amount)].some(x=>String(x||'').toLowerCase().includes(filter)));
   $('historyMerchantEditList').innerHTML=rows.slice().reverse().map(t=>`
     <div class="merchant-edit-row" data-history-merchant-row="${esc(t.id)}">
       <div class="merchant-edit-label"><strong>${esc(t.date)}</strong><span>${formatYen(t.amount)}</span></div>
       <div class="muted">元のCSV店名：${esc(t.merchantRaw)}</div>
       <div class="merchant-edit-actions">
         <input type="text" maxlength="120" autocomplete="off" aria-label="表示用の店名" value="${esc(t.merchantNormalized||DC.normalizeMerchant(t.merchantRaw))}" data-history-merchant-name>
-        <button type="button" data-history-merchant-save>保存</button>
+        <button type="button" data-history-merchant-save>店名を保存</button>
+      </div>
+      <div class="merchant-edit-actions">
+        <select aria-label="カテゴリ" data-history-category>${selectOptions(categories,t.category||'未分類')}</select>
+        <button type="button" data-history-category-save>分類を保存</button>
       </div>
     </div>`).join('')||'<p class="muted">対象明細がありません。</p>';
 }
@@ -612,6 +616,33 @@ async function saveHistoryMerchantName(button){
     toast('店名を保存できません: '+error.message);
     return false;
   }finally{button.disabled=false;}
+}
+
+async function saveHistoryCategory(button){
+  if(button.disabled)return false;
+  const row=button.closest('[data-history-merchant-row]');
+  const id=row?.getAttribute('data-history-merchant-row');
+  const select=row?.querySelector('[data-history-category]');
+  const category=select?.value;
+  if(!id||!categories.includes(category)){toast('正しいカテゴリを選択してください。');return false;}
+  const tx=await DB.get('transactions',id);
+  if(!tx||tx.sourceType!=='dcard_csv'||!['expense','refund'].includes(tx.kind)||tx.month!==selectedMonth){
+    toast('対象のdカード明細が見つかりません。');return false;
+  }
+  if((tx.category||'未分類')===category){toast('カテゴリは変更されていません。');return false;}
+  button.disabled=true;select.disabled=true;
+  try{
+    // Only the selected transaction changes; merchant classification rules are not rewritten.
+    const next={...tx,category,mealType:category==='食費'?tx.mealType||null:null,updatedAt:DB.now()};
+    await DB.put('transactions',next);
+    const stored=await DB.get('transactions',id);
+    if(!stored||stored.category!==category||stored.mealType!==next.mealType)throw new Error('保存結果を確認できませんでした。');
+    await renderHistory();await renderHome();
+    toast('カテゴリを更新しました。');
+    return true;
+  }catch(e){
+    console.error(e);toast('カテゴリを保存できません: '+e.message);return false;
+  }finally{button.disabled=false;select.disabled=false;}
 }
 
 async function renderCsvAdvanceMatches(){
@@ -1364,6 +1395,8 @@ function bind(){
   }
   $('historyMerchantFilter').oninput=()=>void renderHistoryMerchantEdits();
   $('historyMerchantEditList').onclick=e=>{
+    const categoryButton=e.target.closest('[data-history-category-save]');
+    if(categoryButton){void saveHistoryCategory(categoryButton);return;}
     const button=e.target.closest('[data-history-merchant-save]');
     if(button)void saveHistoryMerchantName(button);
   };
