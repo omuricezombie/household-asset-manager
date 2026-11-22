@@ -8,14 +8,14 @@
 
 | 項目 | 基準 |
 | --- | --- |
-| 正式版 | **v0.2.35 stable**（2026-11-22時点） |
+| 正式版 | **v0.2.37 stable**（2026-11-22時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | 開発・監査用。v0.2.36-candidate.2で保守監査を実施中（main未反映） |
+| candidate | 開発・監査用。正式昇格後はmainと同期 |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | v0.2.35はAI QA / Human QA PASS。v0.2.36 candidateは監査中でstable未昇格 |
+| 品質 | v0.2.37はAI QA / Human QA PASS（候補版の代表ケース） |
 | 現在の段階 | 実データでの継続使用・評価 |
 
-v0.2.35正式昇格時（2026-11-22）のmain / candidate HEADは `2f247a87f321bec2deb19fc86f3adcf02dbf98a3` でした。現在はcandidateに保守修正があるため、正式版を取得する際はmainかそのcommitを使用してください。最新状態はNotion開発正本とGitHubの実HEADを照合します。
+v0.2.37は2026-11-22にHuman QA合格後、PR経由でmainへ昇格する版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
 
 ## 実装済みの主な機能
 
@@ -58,19 +58,19 @@ v0.2.35正式昇格時（2026-11-22）のmain / candidate HEADは `2f247a87f321b
 | rollback | 対象版の品質・保存データ互換性を確認して使用 |
 | 過去のcandidate | 開発履歴。正常動作確認済みstableと同一視しない |
 
-**現行stable v0.2.35の直前stableはv0.2.34（commit `09d5e70a82a1cd73ea77107d041a80ce98573e59`）です。** 固定rollbackはv0.2.16 tag / Releaseを維持します。同じschemaVersionだけで将来版との互換性を保証しません。
+**現行stable v0.2.36の直前stableはv0.2.35（commit `09d5e70a82a1cd73ea77107d041a80ce98573e59`）です。** 固定rollbackはv0.2.16 tag / Releaseを維持します。同じschemaVersionだけで将来版との互換性を保証しません。
 
 コード取得はReleaseの「Source code (zip)」またはGitで行えます。
 
 ```sh
 git clone https://github.com/omuricezombie/household-asset-manager.git
 cd household-asset-manager
-git switch --detach 2f247a87f321bec2deb19fc86f3adcf02dbf98a3
+git switch --detach b75307533f779b39518b9ffdd317e5a2472e0087
 git rev-parse HEAD
-# v0.2.35 stable確定コミット
+# v0.2.36 stable確定コミット
 ```
 
-これはコードの取得手順です。端末の家計データや本番Pagesを自動復元する操作ではありません。本番復旧時はJSONバックアップを確保し、互換性・Service Worker・静的ファイル一式を確認して、同じPages URLで復旧します。v0.2.35 stableのService Worker cache基準は `household-asset-manager-v0.2.35` です。
+これはコードの取得手順です。端末の家計データや本番Pagesを自動復元する操作ではありません。本番復旧時はJSONバックアップを確保し、互換性・Service Worker・静的ファイル一式を確認して、同じPages URLで復旧します。v0.2.35 stableのService Worker cache基準は `household-asset-manager-v0.2.36` です。
 
 ## 開発・管理
 
@@ -81,3 +81,9 @@ git rev-parse HEAD
 次工程は実データが蓄積した月次家計の品質・カバレッジ確認と、実用性の高い分析・内部資金移動の優先順位検討です。新規機能はcandidateで差分開発とQAを行います。
 
 実CSV・本番JSON・口座情報・秘密情報は登録禁止です。`.gitignore`は誤登録を減らす補助であり、commit前に差分を確認してください。新規commitのauthor / committerはGitHub noreplyアドレスを明示し、生成後の実メタデータを監査します。
+
+## v0.2.37で追加した分析
+
+- 履歴・分析の月別データ品質チェック：dカード15日締めの2請求期間の取込、収入・家賃・未分類を確認。締め未到来と未取込を区別。
+- 利用月（暦月）ごとの支出集計は変更せず、入力が一定条件を満たした月だけで平均・中央値と、仕送り・リフレッシュ費を分けた内訳を表示。
+- 店舗明細の全件確認やカード明細そのものの完全性は保証しない。実データはGitHubに保存しない。
