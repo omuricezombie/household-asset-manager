@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0238">
+  <link rel="stylesheet" href="styles.css?v=0239">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.38</p>
+      <p class="sub">v0.2.39</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -199,7 +199,7 @@
         <div id="livingCostMetrics" class="metric-grid"></div>
         <div id="livingCostBreakdown"></div>
       </div>
-      <div class="card"><h2>銀行預金の前月比（直近6か月）</h2><p class="muted">両月の銀行月末残高が確認済みの月だけ表示。資金移動がある場合、銀行増減と家計収支は一致しません。</p><div class="table-wrap"><table><thead><tr><th>月</th><th>銀行増減</th><th>家計収支</th></tr></thead><tbody id="historyBankDelta"></tbody></table></div></div>
+      <div class="card" id="historyBankDeltaCard"><h2>銀行預金の前月比（直近6か月）</h2><p class="muted">両月の銀行月末残高が確認済みの月だけ表示。資金移動がある場合、銀行増減と家計収支は一致しません。</p><div class="table-wrap"><table><thead><tr><th>月</th><th>銀行増減</th><th>家計収支</th></tr></thead><tbody id="historyBankDelta"></tbody></table></div></div>
       <div class="card">
         <h2>収入・支出の推移（6か月）</h2>
         <div id="historyCashflowChart"></div>
@@ -237,9 +237,9 @@
         <p id="annualExpenseNote" class="muted"></p>
         <div id="annualExpenseTotals" class="metric-grid"></div>
         <h3>収入内訳の累計</h3>
-        <div class="table-wrap"><table><thead><tr><th>収入種別</th><th>累計</th><th>構成比</th></tr></thead><tbody id="annualIncomeCategories"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>収入種別</th><th>累計／月平均</th><th>構成比</th></tr></thead><tbody id="annualIncomeCategories"></tbody></table></div>
         <h3>支出内訳の累計</h3>
-        <div class="table-wrap"><table><thead><tr><th>支出カテゴリ</th><th>累計</th><th>構成比</th></tr></thead><tbody id="annualExpenseCategories"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>支出カテゴリ</th><th>累計／月平均</th><th>構成比</th></tr></thead><tbody id="annualExpenseCategories"></tbody></table></div>
       </div>
     </section>
 
@@ -400,9 +400,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0238"></script>
-  <script src="dcard-import.js?v=0238"></script>
-  <script src="analysis.js?v=0238"></script>
-  <script src="app.js?v=0238"></script>
+  <script src="db.js?v=0239"></script>
+  <script src="dcard-import.js?v=0239"></script>
+  <script src="analysis.js?v=0239"></script>
+  <script src="app.js?v=0239"></script>
 </body>
 </html>
