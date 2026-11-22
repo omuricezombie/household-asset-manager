@@ -328,11 +328,14 @@
         const priorDelta=x.current-prior;
         const priorText=prev.transactions.length?` 前月同日比 ${formatSigned(Math.round(priorDelta))}。`:'';
         out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
+          type:'category-increase',category:x.cat,current:x.current,average:x.mean,delta:x.diff,previousDelta:prev.transactions.length?priorDelta:null,
+          covered:outlook.coveredToDate||!outlook.isCurrent,
           text:`${x.cat}：今月 ${formatYen(Math.round(x.current))}、同時点の過去3か月平均より ${formatYen(Math.round(x.diff))} 多い登録額です。${priorText}${x.cat==='家賃'?'固定費の支払額・計上時期の違いも確認してください。':''}`});
       }
       if(!significant.length){
         const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
-        if(down)out.push({tone:'neutral',text:`${down.cat}：同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です（未取込分は反映されていません）。`});
+        if(down)out.push({tone:'neutral',type:'category-decrease',category:down.cat,current:down.current,average:down.mean,delta:down.diff,covered:outlook.coveredToDate||!outlook.isCurrent,
+          text:`${down.cat}：同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です（未取込分は反映されていません）。`});
       }
     }
     // Retain one prior-month signal as context, clearly not a projection.
