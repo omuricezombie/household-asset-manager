@@ -104,7 +104,7 @@
     for(const account of accounts){
       const current=await DB().get('assetSnapshots',[month,account.id]);
       const prior=await DB().get('assetSnapshots',[previous,account.id]);
-      if(!current&&!prior)continue;
+      // Missing snapshots cannot be counted as zero or as a completed comparison.
       rows.push({id:account.id,name:account.name,current:current?.confirmed?num(current.value):null,previous:prior?.confirmed?num(prior.value):null});
     }
     // The same registered bank accounts must have confirmed balances at both month ends.
