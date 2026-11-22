@@ -187,6 +187,18 @@
         <h2>月次推移</h2>
         <div class="table-wrap"><table><thead><tr><th>月</th><th>収入</th><th>支出</th><th>収支</th><th>総資産</th></tr></thead><tbody id="historyMonthly"></tbody></table></div>
       </div>
+      <div class="card" id="householdQualityCard">
+        <h2>月別データの充足状況</h2>
+        <p class="muted">カードは15日締め・翌月10日支払い。利用日で集計し、請求期間のCSV取込は別に確認します。入力完了チェックとは別の参考判定です。</p>
+        <div id="householdQualitySummary" class="muted"></div>
+        <div id="householdQualityRows"></div>
+      </div>
+      <div class="card" id="livingCostCard">
+        <h2>生活費の実力分析</h2>
+        <p class="muted">利用月のカード明細・収入・家賃が揃い、未分類がない月だけで平均と中央値を算出。未収録の現金支出など、登録外の支出は検知できません。</p>
+        <div id="livingCostMetrics" class="metric-grid"></div>
+        <div id="livingCostBreakdown"></div>
+      </div>
       <div class="card"><h2>銀行預金の前月比（直近6か月）</h2><p class="muted">両月の銀行月末残高が確認済みの月だけ表示。資金移動がある場合、銀行増減と家計収支は一致しません。</p><div class="table-wrap"><table><thead><tr><th>月</th><th>銀行増減</th><th>家計収支</th></tr></thead><tbody id="historyBankDelta"></tbody></table></div></div>
       <div class="card">
         <h2>収入・支出の推移（6か月）</h2>
