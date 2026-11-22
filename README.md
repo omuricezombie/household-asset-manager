@@ -65,9 +65,9 @@ v0.2.35正式昇格時（2026-11-22）のmain / candidate HEADは `2f247a87f321b
 ```sh
 git clone https://github.com/omuricezombie/household-asset-manager.git
 cd household-asset-manager
-git switch --detach v0.2.15
+git switch --detach 2f247a87f321bec2deb19fc86f3adcf02dbf98a3
 git rev-parse HEAD
-# 期待値: 9a19ebcb6f75777d595c95a58749b15f0bac9729
+# v0.2.35 stable確定コミット
 ```
 
 これはコードの取得手順です。端末の家計データや本番Pagesを自動復元する操作ではありません。本番復旧時はJSONバックアップを確保し、互換性・Service Worker・静的ファイル一式を確認して、同じPages URLで復旧します。v0.2.35 stableのService Worker cache基準は `household-asset-manager-v0.2.35` です。
