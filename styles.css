@@ -187,3 +187,20 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .quality-average-rows span{min-width:0;overflow-wrap:anywhere}
 .quality-average-rows strong{flex:0 0 auto;font-variant-numeric:tabular-nums}
 #livingCostCard .metric-grid{margin:10px 0}
+
+/* Monthly bank comparison: always show all three fields together on phones. */
+#historyBankDeltaCard .table-wrap{overflow-x:visible;max-width:100%}
+#historyBankDeltaCard table{width:100%;min-width:0;table-layout:fixed}
+#historyBankDeltaCard th,#historyBankDeltaCard td{padding:9px 3px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#historyBankDeltaCard th:nth-child(1),#historyBankDeltaCard td:nth-child(1){width:21%;text-align:left}
+#historyBankDeltaCard th:nth-child(2),#historyBankDeltaCard td:nth-child(2){width:40%;text-align:right}
+#historyBankDeltaCard th:nth-child(3),#historyBankDeltaCard td:nth-child(3){width:39%;text-align:right}
+@media(max-width:390px){#historyBankDeltaCard th,#historyBankDeltaCard td{font-size:11px;padding:9px 2px}}
+
+/* Monthly category averages use a second line in the existing three-column table. */
+#annualExpenseCard th:nth-child(1),#annualExpenseCard td:nth-child(1){width:38%}
+#annualExpenseCard th:nth-child(2),#annualExpenseCard td:nth-child(2){width:41%;white-space:normal}
+#annualExpenseCard th:nth-child(3),#annualExpenseCard td:nth-child(3){width:21%}
+#annualExpenseCard .annual-cumulative{display:block;white-space:nowrap;font-weight:650;font-variant-numeric:tabular-nums}
+#annualExpenseCard .annual-average{display:block;margin-top:3px;color:var(--muted);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:360px){#annualExpenseCard .annual-average{font-size:10px}}
