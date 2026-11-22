@@ -97,6 +97,66 @@
     return {year,throughMonth:month,income,expense,normal,temporary,saving:income-expense,categories,incomeCategories,monthRows,
       monthsWithEntries:monthRows.filter(m=>m.hasEntries).length,monthsCount:months.length};
   }
+  // A d-card billing cycle closes on the 15th, covering the prior 16th through
+  // that day. Statements are identified by the actual paymentDate supplied in CSV.
+  // These are coverage indicators, not proof that every individual transaction posted.
+  function cardCycleForClose(closeMonth){
+    const [y,m]=closeMonth.split('-').map(Number);
+    const payment=new Date(y,m,10); // month after the close month, day 10
+    const paymentMonth=payment.getFullYear()+'-'+String(payment.getMonth()+1).padStart(2,'0');
+    return {closeMonth,paymentMonth,paymentDate:paymentMonth+'-10'};
+  }
+  function nextMonth(month){
+    const [year,mon]=month.split('-').map(Number),d=new Date(year,mon,1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  function cardCoverage(month,imports,today=DB().ymd()){
+    const periods=[month,nextMonth(month)].map(cardCycleForClose);
+    const checks=periods.map(x=>{
+      const imported=(imports||[]).some(i=>String(i.paymentDate||'').slice(0,7)===x.paymentMonth);
+      // Even after the 15th, the billing CSV may not yet have been issued.
+      const closed=today>=x.closeMonth+'-15';
+      return {...x,imported,closed,phase:imported?'imported':closed?'not-imported':'not-closed'};
+    });
+    return {month,checks,complete:checks.every(x=>x.imported),pending:checks.some(x=>!x.imported&&!x.closed),
+      missing:checks.some(x=>!x.imported&&x.closed)};
+  }
+  async function householdQualityReport(throughMonth){
+    const year=String(throughMonth).slice(0,4),last=Number(String(throughMonth).slice(5,7));
+    const all=await DB().getAll('transactions'),imports=await DB().getAll('cardImports');
+    const today=DB().ymd(),results=[];
+    for(let m=1;m<=last;m++){
+      const month=year+'-'+String(m).padStart(2,'0'),tx=all.filter(t=>t.month===month);
+      const coverage=cardCoverage(month,imports,today);
+      const unclassified=tx.filter(t=>['expense','refund'].includes(t.kind)&&(!t.category||t.category==='未分類'));
+      const income=tx.some(t=>t.kind==='income'),rent=tx.some(t=>t.kind==='expense'&&t.category==='家賃');
+      const expense=tx.filter(t=>t.kind==='expense').reduce((sum,t)=>sum+effExpense(t),0)
+        -tx.filter(t=>t.kind==='refund').reduce((sum,t)=>sum+refundAmount(t),0);
+      const remittance=tx.filter(t=>t.kind==='expense'&&t.category==='仕送り').reduce((sum,t)=>sum+effExpense(t),0)
+        -tx.filter(t=>t.kind==='refund'&&t.category==='仕送り').reduce((sum,t)=>sum+refundAmount(t),0);
+      const refresh=tx.filter(t=>t.kind==='expense'&&t.category==='リフレッシュ費').reduce((sum,t)=>sum+effExpense(t),0)
+        -tx.filter(t=>t.kind==='refund'&&t.category==='リフレッシュ費').reduce((sum,t)=>sum+refundAmount(t),0);
+      const rentAmount=tx.filter(t=>t.kind==='expense'&&t.category==='家賃').reduce((sum,t)=>sum+effExpense(t),0);
+      const valid=coverage.complete&&income&&rent&&!unclassified.length;
+      results.push({month,coverage,unclassified:unclassified.length,income,rent,expense,remittance,refresh,rentAmount,
+        otherExpense:expense-remittance-refresh,
+        sampleEligible:valid,transactionCount:tx.length});
+    }
+    return {throughMonth,rows:results,sample:results.filter(r=>r.sampleEligible)};
+  }
+  function livingExpenseAnalysis(report){
+    const sample=report.sample||[],size=sample.length;
+    const mean=key=>size?sample.reduce((s,r)=>s+num(r[key]),0)/size:null;
+    const median=key=>{
+      if(!size)return null;
+      const values=sample.map(r=>num(r[key])).sort((a,b)=>a-b);
+      return size%2?values[(size-1)/2]:(values[size/2-1]+values[size/2])/2;
+    };
+    return {months:size,monthsList:sample.map(r=>r.month),average:mean('expense'),median:median('expense'),
+      otherAverage:mean('otherExpense'),otherMedian:median('otherExpense'),
+      rentAverage:mean('rentAmount'),remittanceAverage:mean('remittance'),refreshAverage:mean('refresh')};
+  }
+
   async function bankBalanceDelta(month){
     const previous=DB().prevMonth(month);
     const accounts=(await DB().getAll('accounts')).filter(a=>a.active!==false&&a.category==='bank');
@@ -164,5 +224,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
 })(window);
