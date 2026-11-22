@@ -292,8 +292,46 @@
     }else{
       out.push({tone:'neutral',text:outlook.reason||'比較可能な月が不足しています。'});
     }
+    // Identify what changed, not just whether the monthly total changed.
+    // Compare expenses through the same calendar day; full-month comparisons
+    // unfairly treat incomplete current months as spending reductions.
     const prev=await summary(DB().prevMonth(month));
-    // Historical facts are context, never an end-of-month prediction.
+    const dayOfMonth=Number(DB().ymd().slice(8,10));
+    const compareCutoff=outlook.isCurrent?dayOfMonth:31;
+    const categorisedToDay=tx=>{
+      const amounts={};
+      for(const t of tx){
+        if(t.kind!=='expense'&&t.kind!=='refund')continue;
+        if(t.kind==='expense'&&t.isTemporaryExpense)continue;
+        if(outlook.isCurrent&&Number(String(t.date||'').slice(8,10))>compareCutoff)continue;
+        const category=t.category||'未分類';
+        const value=t.kind==='refund'?-refundAmount(t):effExpense(t);
+        amounts[category]=(amounts[category]||0)+value;
+      }
+      return amounts;
+    };
+    if(outlook.sampleMonths.length===3){
+      const currentCategories=categorisedToDay(cur.transactions);
+      const pastCategories=await Promise.all(outlook.sampleMonths.map(async m=>categorisedToDay(await monthTransactions(m))));
+      const categories=new Set([...Object.keys(currentCategories),...pastCategories.flatMap(x=>Object.keys(x))]);
+      const deltas=[...categories].filter(cat=>cat!=='未分類').map(cat=>{
+        const current=currentCategories[cat]||0;
+        const mean=pastCategories.reduce((total,byCat)=>total+(byCat[cat]||0),0)/3;
+        return {cat,current,mean,diff:current-mean};
+      });
+      // Prioritise material increases, with a decrease as useful context if present.
+      const significant=deltas.filter(x=>x.current>0&&x.diff>=3000).sort((a,b)=>b.diff-a.diff).slice(0,2);
+      for(const x of significant){
+        const tail=outlook.isCurrent?'（各月'+dayOfMonth+'日までの登録分）':'（月全体）';
+        out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
+          text:`${x.cat}は過去3か月の同時点平均 ${formatYen(Math.round(x.mean))} に対し、登録済み ${formatYen(Math.round(x.current))}（+${formatYen(Math.round(x.diff))}）です${tail}。${outlook.isCurrent&&!outlook.coveredToDate?' カード明細未取込分があるため参考比較です。':''}`});
+      }
+      if(!significant.length){
+        const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
+        if(down)out.push({tone:'neutral',text:`${down.cat}は同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です。未取込分がある場合は確定差額ではありません。`});
+      }
+    }
+    // Retain one prior-month signal as context, clearly not a projection.
     if(!outlook.isCurrent){
       const delta=cur.normal-prev.normal;
       if(prev.transactions.some(t=>t.kind==='expense'))
