@@ -204,3 +204,33 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 #annualExpenseCard .annual-cumulative{display:block;white-space:nowrap;font-weight:650;font-variant-numeric:tabular-nums}
 #annualExpenseCard .annual-average{display:block;margin-top:3px;color:var(--muted);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:360px){#annualExpenseCard .annual-average{font-size:10px}}
+
+
+/* Home: compact, accessible spending outlook with colour reserved for meaning. */
+#homeInsights.insight-list{gap:12px}
+.outlook-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.outlook-metric{min-width:0;padding:8px 0}
+.outlook-label{font-size:12px;color:var(--muted);margin-bottom:5px}
+.outlook-metric strong{display:block;font-size:clamp(19px,4vw,25px);line-height:1.35;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.outlook-current-note{margin:0;padding:8px 0 12px;border-bottom:1px solid var(--line);font-weight:650;font-size:13px}
+.outlook-current-note.warn{color:var(--warn)}
+.outlook-current-note.neutral{color:var(--text)}
+.outlook-small{font-size:12px;color:var(--muted);font-weight:400;line-height:1.55}
+.outlook-current-note .outlook-small{display:block;margin-top:4px}
+.outlook-forecast{padding:16px 0 4px}
+.outlook-main-amount{font-size:clamp(26px,7vw,34px);line-height:1.25;font-weight:750;display:block;margin-bottom:6px;font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+.outlook-direction{font-size:14px;font-weight:700;margin-bottom:8px}
+.outlook-direction.good,.outlook-driver-delta.good{color:var(--good)}
+.outlook-direction.warn,.outlook-driver-delta.warn{color:var(--warn)}
+.outlook-direction.neutral,.outlook-driver-delta.neutral{color:var(--muted)}
+.outlook-drivers{border-top:1px solid var(--line);padding-top:14px}
+.outlook-drivers h3{font-size:14px;margin:0 0 10px}
+.outlook-driver{padding:9px 0;border-bottom:1px solid var(--line)}
+.outlook-driver:last-child{border-bottom:0}
+.outlook-driver-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:3px}
+.outlook-driver-head strong{min-width:0;overflow-wrap:anywhere}
+.outlook-driver-delta{white-space:nowrap;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.outlook-detail{padding:10px 0 0;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.outlook-detail summary{cursor:pointer;min-height:30px}
+.outlook-detail p{margin:6px 0;line-height:1.6}
+@media(max-width:360px){.outlook-metrics{gap:8px}.outlook-metric strong{font-size:19px}.outlook-driver-delta{font-size:16px}}
