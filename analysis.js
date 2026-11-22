@@ -258,8 +258,7 @@
     // The forecast is a *conditional* scenario, not a full-coverage total.
     out.forecast=cur.normal+remainingAvg;
     const cc=cardCoverage(month,imports,today);
-    out.coveredToDate=cc.checks.filter(x=>x.closeMonth<= (day<=15?month:month)).length>0 &&
-      cc.checks.slice(0,day<=15?1:2).every(x=>x.imported);
+    out.coveredToDate=cc.checks.slice(0,day<=15?1:2).every(x=>x.imported);
     if(!out.coveredToDate)out.reason='当日までのdカード利用を含む請求CSVが未登録です。';
     return out;
   }
