@@ -279,11 +279,11 @@
         const estimate=formatYen(Math.round(outlook.forecast));
         if(outlook.coveredToDate){
           const gap=outlook.forecast-outlook.baseline;
-          const result=gap>0?`基準平均を約 ${formatYen(Math.round(gap))} 上回る`:`基準平均を約 ${formatYen(Math.round(-gap))} 下回る`;
-          out.push({tone:gap>0?'warn':'good',text:`月末の参考見込みは ${estimate}、${result} 計算です。過去3か月の同日以降の支出を使用した推計です。`});
+          const result=gap>0?`基準平均を約 ${formatYen(Math.round(gap))} 上回る`:gap<0?`基準平均を約 ${formatYen(Math.round(-gap))} 下回る`:'基準平均とほぼ同じ';
+          out.push({tone:gap>0?'warn':'good',text:`月末の参考見込みは ${estimate}、${result}計算です。過去3か月の同日以降の支出を使用した推計です。`});
         }else{
           const change=outlook.forecast-outlook.baseline;
-          const comparison=change>0?`平均より約 ${formatYen(Math.round(change))} 高い`:`平均より約 ${formatYen(Math.round(-change))} 低い`;
+          const comparison=change>0?`平均より約 ${formatYen(Math.round(change))} 高い`:change<0?`平均より約 ${formatYen(Math.round(-change))} 低い`:'平均とほぼ同じ';
           out.push({tone:'neutral',text:`月末の条件付き試算は ${estimate}（${comparison}計算）です。ただし、${outlook.reason} 平均を超える・超えないの見通しは未確定です。`});
         }
       }else if(!outlook.isCurrent){
