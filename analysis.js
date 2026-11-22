@@ -211,18 +211,97 @@
     }
     return sums.length===3?sums.reduce((a,b)=>a+b,0)/3:null;
   }
+  // Forward-looking insights use comparable historical full-month data, not
+  // simple day-of-month multiplication of imported card transactions.
+  // CSV files can arrive weeks after purchase: never imply a green forecast
+  // unless the card cycle through today is represented by an imported file.
+  async function spendingOutlook(month){
+    const currentMonth=DB().currentMonth();
+    const cur=await summary(month);
+    const out={month,actual:cur.normal,baseline:null,forecast:null,remaining:null,
+      sampleMonths:[],coveredToDate:false,reason:null,isCurrent:month===currentMonth};
+    const imports=await DB().getAll('cardImports');
+    const today=DB().ymd();
+    const sample=[];
+    let cursor=DB().prevMonth(month);
+    for(let i=0;i<12&&sample.length<3;i++){
+      const m=cursor;
+      const tx=await monthTransactions(m);
+      const complete=cardCoverage(m,imports,today).complete;
+      // Keep the existing household data-quality safeguards but do not require
+      // a salary (e.g. after retirement) to compare expense patterns.
+      const unclassified=tx.some(t=>t.kind==='expense'&&!t.isOtherPersonExpense&&(!t.category||t.category==='未分類'));
+      if(complete&&tx.some(t=>t.kind==='expense')&&!unclassified){
+        const normal=tx.filter(t=>t.kind==='expense'&&!t.isTemporaryExpense)
+          .reduce((v,t)=>v+effExpense(t),0)
+          -tx.filter(t=>t.kind==='refund').reduce((v,t)=>v+refundAmount(t),0);
+        sample.push({month:m,normal,tx});
+      }
+      cursor=DB().prevMonth(cursor);
+    }
+    if(sample.length<3){out.reason='比較可能な過去月が3か月未満です。';return out;}
+    out.sampleMonths=sample.map(x=>x.month);
+    out.baseline=sample.reduce((v,x)=>v+x.normal,0)/sample.length;
+    out.remaining=out.baseline-cur.normal;
+    if(!out.isCurrent)return out;
+    const day=Number(today.slice(8,10));
+    const lastDay=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
+    // No "future days" after month-end; the remaining-data issue still applies.
+    const cut=Math.min(day,lastDay);
+    const remainingAvg=sample.reduce((v,x)=>{
+      const after=x.tx.filter(t=>Number(String(t.date||'').slice(8,10))>cut);
+      const future=after.filter(t=>t.kind==='expense'&&!t.isTemporaryExpense)
+        .reduce((sum,t)=>sum+effExpense(t),0)
+        -after.filter(t=>t.kind==='refund').reduce((sum,t)=>sum+refundAmount(t),0);
+      return v+future;
+    },0)/sample.length;
+    // The forecast is a *conditional* scenario, not a full-coverage total.
+    out.forecast=cur.normal+remainingAvg;
+    const cc=cardCoverage(month,imports,today);
+    out.coveredToDate=cc.checks.filter(x=>x.closeMonth<= (day<=15?month:month)).length>0 &&
+      cc.checks.slice(0,day<=15?1:2).every(x=>x.imported);
+    if(!out.coveredToDate)out.reason='当日までのdカード利用を含む請求CSVが未登録です。';
+    return out;
+  }
   async function insights(month){
-    const cur=await summary(month),prev=await summary(DB().prevMonth(month));const avg=await threeMonthAverage(month,'normal');const out=[];
-    const nd=cur.normal-prev.normal;
-    if(prev.expense||prev.income) out.push({tone:nd<=0?'good':'warn',text:`通常支出は前月比 ${formatSigned(nd)} です。`});
-    if(avg!=null){const d=cur.normal-avg;out.push({tone:d<=0?'good':'warn',text:`通常支出は直近3か月平均比 ${formatSigned(d)} です。`});}
-    const cats=objDiff(cur.categories,prev.categories).filter(x=>x.key!=='未分類'&&x.delta!==0).slice(0,2);
-    cats.forEach(x=>out.push({tone:x.delta<=0?'good':'warn',text:`${x.key}は前月比 ${formatSigned(x.delta)} です。`}));
-    const merch=objDiff(cur.merchants,prev.merchants).filter(x=>x.delta>0).slice(0,1);merch.forEach(x=>out.push({tone:'warn',text:`${x.key}の利用が前月より ${formatYen(x.delta)} 増えています。`}));
-    return out.slice(0,5);
+    const outlook=await spendingOutlook(month);
+    const cur=await summary(month);
+    const out=[];
+    if(outlook.baseline!=null){
+      const baseline=formatYen(Math.round(outlook.baseline));
+      const delta=outlook.actual-outlook.baseline;
+      out.push({tone:'neutral',text:`通常支出の比較基準は直近の比較可能な3か月平均 ${baseline} です（${outlook.sampleMonths.join('・')}）。`});
+      if(outlook.actual>outlook.baseline){
+        out.push({tone:'warn',text:`登録済み通常支出は、既に基準平均を ${formatYen(Math.round(delta))} 上回っています。`});
+      }else{
+        out.push({tone:'neutral',text:`登録済み通常支出は基準平均まであと ${formatYen(Math.round(-delta))} です。未登録の支出があれば実際の余裕は小さくなります。`});
+      }
+      if(outlook.isCurrent&&outlook.forecast!=null){
+        const estimate=formatYen(Math.round(outlook.forecast));
+        if(outlook.coveredToDate){
+          const gap=outlook.forecast-outlook.baseline;
+          const result=gap>0?`基準平均を約 ${formatYen(Math.round(gap))} 上回る`:`基準平均を約 ${formatYen(Math.round(-gap))} 下回る`;
+          out.push({tone:gap>0?'warn':'good',text:`月末の参考見込みは ${estimate}、${result} 計算です。過去3か月の同日以降の支出を使用した推計です。`});
+        }else{
+          out.push({tone:'neutral',text:`月末の条件付き試算は ${estimate} ですが、${outlook.reason} 超える・超えないの判定は保留します。`});
+        }
+      }else if(!outlook.isCurrent){
+        out.push({tone:'neutral',text:'過去月のため予測は行わず、登録済み実績を表示しています。'});
+      }
+    }else{
+      out.push({tone:'neutral',text:outlook.reason||'比較可能な月が不足しています。'});
+    }
+    const prev=await summary(DB().prevMonth(month));
+    // Historical facts are context, never an end-of-month prediction.
+    if(!outlook.isCurrent){
+      const delta=cur.normal-prev.normal;
+      if(prev.transactions.some(t=>t.kind==='expense'))
+        out.push({tone:delta<=0?'good':'warn',text:`通常支出の前月比は ${formatSigned(delta)} です。`});
+    }
+    return out;
   }
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,insights,formatYen,formatSigned,effExpense};
 })(window);
