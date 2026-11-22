@@ -964,7 +964,7 @@ async function renderHouseholdQuality(){
     report.rows.length+'か月中、分析対象 '+eligible+'か月。dカードの取込状況は請求書の支払月で判定し、実際の利用日による収支は変更しません。';
   $('householdQualityRows').innerHTML=report.rows.map(r=>{
     const card=r.coverage.complete?'カード明細あり':
-      r.coverage.pending?'カード締め待ち／一部未取込':'カード明細未取込';
+      r.coverage.pending?'カード締め待ち／一部未取込':'カード明細未取込（発行前を含む）';
     const months=r.coverage.checks.filter(x=>!x.imported).map(x=>x.paymentMonth+'月支払分').join('、');
     const flags=[!r.income?'収入未登録':null,!r.rent?'家賃未登録':null,
       r.unclassified?'未分類 '+r.unclassified+'件':null].filter(Boolean);
@@ -981,7 +981,8 @@ async function renderHouseholdQuality(){
   $('livingCostMetrics').innerHTML=[
     metric('月平均支出',stats.average,'対象 '+stats.months+'か月'),
     metric('支出中央値',stats.median,'対象月のみ'),
-    metric('仕送り・リフレッシュ費を除く平均',stats.otherAverage,'家賃を含む')
+    metric('仕送り・リフレッシュ費を除く平均',stats.otherAverage,'家賃を含む'),
+    metric('同じ条件の中央値',stats.otherMedian,'対象月のみ')
   ].join('');
   $('livingCostBreakdown').innerHTML=`<p class="muted">対象月：${esc(stats.monthsList.map(m=>String(Number(m.slice(5,7)))+'月').join('、'))}</p>
     <div class="quality-average-rows">
