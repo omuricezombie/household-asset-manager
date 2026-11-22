@@ -96,6 +96,8 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .merchant-edit-row input{box-sizing:border-box;width:100%;min-width:0}
 .merchant-edit-actions{display:flex;align-items:center;gap:8px;margin-top:7px}
 .merchant-edit-actions input{flex:1;min-width:0}
+.merchant-edit-actions select{flex:1;min-width:0;width:auto}
+.merchant-edit-actions button{white-space:nowrap}
 .merchant-edit-actions button{flex:0 0 auto}
 
 /* CSV review: optional merchant correction stays next to category and meal checks */

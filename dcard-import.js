@@ -25,7 +25,7 @@
   function blankRow(r){return !r.some(x=>String(x||'').trim());}
   function normText(v){return String(v??'').normalize('NFKC').replace(/\u3000/g,' ').replace(/\s+/g,' ').trim();}
   function parseMoney(v){const s=normText(v).replace(/,/g,'').replace(/[￥¥円]/g,'');if(!s)return null;const n=Number(s);return Number.isFinite(n)?n:null;}
-  function parseDate(v){const s=normText(v);const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[ T]+\d{1,2}:\d{2}(?::\d{2})?)?$/);if(!m)return null;return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;}
+  function parseDate(v){const s=normText(v);const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[ T]+\d{1,2}:\d{2}(?::\d{2})?)?$/);if(!m)return null;const y=Number(m[1]),mo=Number(m[2]),day=Number(m[3]);const dt=new Date(y,mo-1,day);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==day)return null;return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;}
   function parseTime(v){const s=normText(v);const m=s.match(/(?:^|[ T])(\d{1,2}):(\d{2})(?::\d{2})?$/);if(!m)return null;const h=Number(m[1]),mi=Number(m[2]);if(h>23||mi>59)return null;return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;}
   function inferPaymentMethod(raw){const s=normText(raw);if(/^d払いB?\//i.test(s))return 'dbarai';if(/\/iD(?:\s|$)/i.test(s)||/／ｉＤ/.test(String(raw)))return 'id';return 'dcard';}
   function normalizeMerchant(raw){let s=normText(raw);s=s.replace(/^d払いB?\//i,'');s=s.replace(/\/iD(?:\s|$)/i,'');return s.trim();}
