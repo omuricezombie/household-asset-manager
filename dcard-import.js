@@ -71,6 +71,13 @@
       if(!parseDate(r[idx['ご利用年月日']]) && /カードご利用以外での(?:消費税10%対象の合計|10%消費税額)/.test(compact)){
         excludedRows.push({sourceLine:i+1,reason:'カード利用以外の消費税参考情報'});continue;
       }
+      // Card-plan guidance line; not a transaction or a tax/payment total.
+      if(!parseDate(r[idx['ご利用年月日']])
+        && !normText(r[idx['利用店名']])
+        && parseMoney(r[idx['利用金額']])==null
+        && /dカードGOLDまたはdカード/i.test(compact)){
+        excludedRows.push({sourceLine:i+1,reason:'dカードに関する案内文'});continue;
+      }
       const obj={
         sourceLine:i+1,
         date:parseDate(r[idx['ご利用年月日']]),
