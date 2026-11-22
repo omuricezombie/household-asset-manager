@@ -66,6 +66,7 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .breakdown-mode-selector{display:flex;justify-content:flex-end;gap:4px;margin:0 0 8px}
 .breakdown-mode-selector button{font-size:11px;font-weight:600;padding:5px 9px;border-radius:9px;background:transparent;color:var(--muted)}
 .breakdown-mode-selector button.active{background:var(--bg);color:var(--text);border-color:var(--line)}
+#homeAssetSummary button.metric-tappable{touch-action:pan-y pinch-zoom}
 .asset-breakdown-inline{touch-action:pan-y pinch-zoom;margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:8px 12px}
 .asset-breakdown-inline .section-title-row{font-size:12px;gap:8px}
 .asset-breakdown-inline .section-title-row .muted{font-size:11px}
