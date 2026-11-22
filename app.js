@@ -956,6 +956,43 @@ async function renderChecklist(){const st=await recomputeMonthStatus(selectedMon
 async function completeMonth(){if(!(await flushMonthEndEdits()))return;const st=await recomputeMonthStatus(selectedMonth);if(st.completionRate<100)return toast('未確認項目があります。');st.completedAt=DB.now();await DB.saveMonthStatus(st);toast(`${monthLabel(selectedMonth)}の更新を完了しました。`);await renderHome();}
 
 
+async function renderHouseholdQuality(){
+  const report=await A.householdQualityReport(selectedMonth);
+  const stats=A.livingExpenseAnalysis(report);
+  const eligible=report.rows.filter(r=>r.sampleEligible).length;
+  $('householdQualitySummary').textContent=
+    report.rows.length+'か月中、分析対象 '+eligible+'か月。dカードの取込状況は請求書の支払月で判定し、実際の利用日による収支は変更しません。';
+  $('householdQualityRows').innerHTML=report.rows.map(r=>{
+    const card=r.coverage.complete?'カード明細あり':
+      r.coverage.pending?'カード締め待ち／一部未取込':'カード明細未取込';
+    const months=r.coverage.checks.filter(x=>!x.imported).map(x=>x.paymentMonth+'月支払分').join('、');
+    const flags=[!r.income?'収入未登録':null,!r.rent?'家賃未登録':null,
+      r.unclassified?'未分類 '+r.unclassified+'件':null].filter(Boolean);
+    const label=r.sampleEligible?'分析対象':card;
+    return `<div class="quality-month-row"><div class="quality-month-title"><strong>${esc(monthLabel(r.month))}</strong><span class="badge">${esc(label)}</span></div>
+       <div class="muted">${esc(r.coverage.complete?'dカード：必要な2請求期間を取込済み':'dカード：'+card+(months?'（'+months+'）':''))}</div>
+       <div class="muted">${esc(flags.length?flags.join('／'):'収入・家賃・分類の基本項目を確認')}</div></div>`;
+  }).join('');
+  if(!stats.months){
+    $('livingCostMetrics').innerHTML='<p class="muted">分析対象月がありません。カードの請求期間・収入・家賃・未分類を確認してください。</p>';
+    $('livingCostBreakdown').textContent='';
+    return;
+  }
+  $('livingCostMetrics').innerHTML=[
+    metric('月平均支出',stats.average,'対象 '+stats.months+'か月'),
+    metric('支出中央値',stats.median,'対象月のみ'),
+    metric('仕送り・リフレッシュ費を除く平均',stats.otherAverage,'家賃を含む')
+  ].join('');
+  $('livingCostBreakdown').innerHTML=`<p class="muted">対象月：${esc(stats.monthsList.map(m=>String(Number(m.slice(5,7)))+'月').join('、'))}</p>
+    <div class="quality-average-rows">
+    <div><span>家賃（月平均）</span><strong>${formatYen(stats.rentAverage)}</strong></div>
+    <div><span>仕送り（月平均）</span><strong>${formatYen(stats.remittanceAverage)}</strong></div>
+    <div><span>リフレッシュ費（月平均）</span><strong>${formatYen(stats.refreshAverage)}</strong></div>
+    <div><span>仕送り・リフレッシュ費以外（月平均）</span><strong>${formatYen(stats.otherAverage)}</strong></div>
+    </div>
+    <p class="muted">「仕送り・リフレッシュ費以外」は家賃を含む内訳です。家計判断上これらを不要な支出とはみなしません。中央値は支出全体について計算しています。</p>`;
+}
+
 async function renderAnnualExpense(){
   const report=await A.annualCumulative(selectedMonth);
   $('annualExpenseTitle').textContent=report.year+'年 '+(report.monthsCount===12?'年間合計':'1〜'+Number(selectedMonth.slice(5,7))+'月累計');
@@ -982,7 +1019,7 @@ async function renderStockYearComparison(){
     '<p class="muted">前年差率：'+(x.rate===null?'算定不可':x.rate.toFixed(1)+'%')+'</p>':
     '<p class="muted">'+esc(x.reason)+'</p>';
 }
-async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);const bankDeltas=await Promise.all(months.map(m=>A.bankBalanceDelta(m)));$('historyBankDelta').innerHTML=bankDeltas.map((b,i)=>'<tr><td>'+esc(b.month)+'</td><td>'+(b.available?esc(A.formatSigned(b.delta)):'—')+'</td><td>'+formatYen(sums[i].saving)+'</td></tr>').join('');renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();await renderAnnualExpense();await renderStockYearComparison();}
+async function renderHistory(){const months=[];let m=selectedMonth;for(let i=0;i<6;i++){months.push(m);m=DB.prevMonth(m);}const sums=[];for(const x of months)sums.push(await A.summary(x));$('historyMonthly').innerHTML=sums.map(s=>`<tr><td>${esc(s.month)}</td><td>${formatYen(s.income)}</td><td>${formatYen(s.expense)}</td><td>${formatYen(s.saving)}</td><td>${formatYen(s.assets.total)}</td></tr>`).join('');const cur=sums[0],prev=sums[1];renderMonthlyCashflow(sums);const bankDeltas=await Promise.all(months.map(m=>A.bankBalanceDelta(m)));$('historyBankDelta').innerHTML=bankDeltas.map((b,i)=>'<tr><td>'+esc(b.month)+'</td><td>'+(b.available?esc(A.formatSigned(b.delta)):'—')+'</td><td>'+formatYen(sums[i].saving)+'</td></tr>').join('');renderBars('historyCategories',A.objDiff(cur.categories,prev.categories).slice(0,8),true);const merch=Object.entries(cur.merchants).map(([key,value])=>({key,current:value,delta:value-(prev.merchants[key]||0)})).sort((a,b)=>b.current-a.current).slice(0,8);renderBars('historyMerchants',merch,false);const ml={breakfast:'朝',lunch:'昼',dinner:'夜',snack:'間食・飲料',other:'その他',unclassified:'未分類'};const meal=Object.entries(cur.meals).map(([k,v])=>({key:ml[k]||k,current:v,delta:v-(prev.meals[k]||0)})).filter(x=>x.current||x.delta);renderBars('historyMeals',meal,false);await renderManualCashDateEdits();await renderHistoryMerchantEdits();await renderHistoryOtherExpenses();await renderAnnualExpense();await renderHouseholdQuality();await renderStockYearComparison();}
 async function renderManualCashDateEdits(){
   const transactions=(await A.monthTransactions(selectedMonth)).filter(t=>
     t.kind==='expense'&&t.paymentMethod==='cash'&&t.sourceType==='manual'&&
