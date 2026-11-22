@@ -66,6 +66,11 @@
       const r=rows[i],joined=r.map(normText).join(' ');
       if(joined.includes('キャッシングご返済明細')){inCashAdvanceSection=true;excludedRows.push({sourceLine:i+1,reason:'キャッシング返済明細'});continue;}
       if(inCashAdvanceSection){excludedRows.push({sourceLine:i+1,reason:'キャッシング返済明細'});continue;}
+      // Statement tax notes are informational, not card transactions.
+      const compact=joined.replace(/\s+/g,'');
+      if(!parseDate(r[idx['ご利用年月日']]) && /カードご利用以外での(?:消費税10%対象の合計|10%消費税額)/.test(compact)){
+        excludedRows.push({sourceLine:i+1,reason:'カード利用以外の消費税参考情報'});continue;
+      }
       const obj={
         sourceLine:i+1,
         date:parseDate(r[idx['ご利用年月日']]),
