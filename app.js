@@ -63,6 +63,7 @@ let historyReady=false;
 let monthEndWriteQueue=Promise.resolve();
 let assetBreakdownMode='compact';
 let assetBreakdownRequestId=0;
+let activeAssetBreakdownKind=null;
 const BREAKDOWN_MODE_KEY='ham-asset-breakdown-mode-v1';
 const LOCK_KEY='ham-app-lock-v1';
 const LOCK_ITERATIONS=150000;
@@ -213,6 +214,7 @@ function metric(label,value,delta='',tone='',breakdown=''){
   return `<${tag}${attrs}><div class="label">${esc(label)}</div><div class="value">${typeof value==='number'?formatYen(value):esc(value)}</div>${delta?`<div class="delta ${tone}">${esc(delta)}</div>`:''}</${tag}>`;
 }
 function closeInlineBreakdown(){
+  activeAssetBreakdownKind=null;
   $('assetBreakdownInline').classList.add('hidden');
   $('assetBreakdownInlineRows').innerHTML='';
 }
@@ -265,6 +267,8 @@ async function openAssetBreakdown(kind){
     $('assetBreakdownRows').innerHTML='<p class="muted">読み込み中...</p>';
     if(!dialog.open)dialog.showModal();
   }
+  activeAssetBreakdownKind=kind;
+  updateBreakdownMonthButtons();
   try{
     let rows=[],total=0,unit='yen',foot='';
     if(kind==='points'){
@@ -1194,10 +1198,24 @@ async function addAccountFromDialog(e){e.preventDefault();if(!(await flushMonthE
 async function addPointFromDialog(e){e.preventDefault();if(!(await flushMonthEndEdits()))return;const name=$('pointName').value.trim();if(!name)return toast('ポイント名を入力してください。');const all=await DB.getAll('pointAccounts');if(all.some(x=>x.active!==false&&x.name===name))return toast('同じ名前のポイント項目があります。');await DB.put('pointAccounts',{id:DB.uid('point'),name,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('pointDialog').close();$('pointName').value='';toast('ポイント項目を追加しました。');await renderMonthEnd();}
 async function clearAll(){if(!confirm('v0.2の家計・資産データを全削除します。v0.1旧DBは削除しません。実行しますか？'))return;if(!confirm('元に戻せません。JSONバックアップは保存しましたか？'))return;for(const s of DB.STORES)await DB.clear(s);await DB.seed();toast('v0.2データを削除しました。');await renderAll();}
 
+function updateBreakdownMonthButtons(){
+  const prev=monthShift(selectedMonth,-1),next=monthShift(selectedMonth,1);
+  $$('[data-breakdown-month]').forEach(button=>{
+    const target=button.dataset.breakdownMonth==='prev'?prev:next;
+    button.disabled=target<'2000-01'||target>DB.currentMonth();
+  });
+}
+function refreshVisibleBreakdown(){
+  if(currentScreen!=='home'||!activeAssetBreakdownKind)return;
+  const inline=!$('assetBreakdownInline').classList.contains('hidden');
+  const modal=$('assetBreakdownDialog').open;
+  if(inline||modal)void openAssetBreakdown(activeAssetBreakdownKind);
+}
 async function renderAll(){await renderHome();await renderMonthEnd();await renderHistory();await renderData();}
 
 let swipeTouchStart=null;
 let swipeBusy=false;
+let swipeMetricClickGuard=null;
 function monthShift(month,direction){
   const [year,mon]=month.split('-').map(Number);
   const d=new Date(year,mon-1+direction,1);
@@ -1210,10 +1228,38 @@ async function changeSelectedMonth(target){
     selectedMonth=target;
     $('globalMonth').value=target;
     for(const id of ['cashDate','incomeDate','rentDate','advanceDate'])$(id).value=dateForSelected();
-    if(currentScreen==='home')await renderHome();
+    if(currentScreen==='home'){await renderHome();refreshVisibleBreakdown();}
     if(currentScreen==='history')await renderHistory();
     return true;
   }finally{swipeBusy=false;}
+}
+
+function bindBreakdownSwipe(){
+  // In both layouts the breakdown is its own gesture surface. Prevent the
+  // Home swipe handler from handling the same touch twice.
+  for(const id of ['assetBreakdownInline','assetBreakdownDialog']){
+    const surface=$(id);
+    let start=null;
+    surface.addEventListener('touchstart',e=>{
+      start=null;
+      e.stopPropagation();
+      if(currentScreen!=='home'||!activeAssetBreakdownKind||e.touches.length!==1)return;
+      if(id==='assetBreakdownInline'&&surface.classList.contains('hidden'))return;
+      if(id==='assetBreakdownDialog'&&!surface.open)return;
+      if(e.target.closest('button,input,select,textarea,a,summary,[role="button"]'))return;
+      const t=e.touches[0];
+      start={x:t.clientX,y:t.clientY,time:Date.now()};
+    },{passive:true});
+    surface.addEventListener('touchend',e=>{
+      e.stopPropagation();
+      const origin=start;start=null;
+      if(!origin||currentScreen!=='home'||!activeAssetBreakdownKind||e.changedTouches.length!==1)return;
+      const touch=e.changedTouches[0],dx=touch.clientX-origin.x,dy=touch.clientY-origin.y;
+      if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-origin.time>1300)return;
+      void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));
+    },{passive:true});
+    surface.addEventListener('touchcancel',e=>{start=null;e.stopPropagation();},{passive:true});
+  }
 }
 function bindMonthSwipe(){
   const main=$('appMain');
@@ -1223,10 +1269,13 @@ function bindMonthSwipe(){
     if(currentScreen!=='home'&&currentScreen!=='history')return;
     if(document.body.classList.contains('app-locked')||e.touches.length!==1)return;
     const target=e.target;
-    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker'))return;
+    // Asset cards are buttons, but a horizontal gesture on them must still
+    // navigate months. Other controls remain excluded as before.
+    const metric=target.closest('#homeAssetSummary button[data-asset-breakdown]');
+    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker')&&!metric)return;
     const touch=e.touches[0];
     if(touch.clientX<26||touch.clientX>window.innerWidth-26)return;
-    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now()};
+    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now(),metric};
   },{passive:true});
   main.addEventListener('touchend',e=>{
     if(!swipeTouchStart||e.changedTouches.length!==1)return;
@@ -1234,12 +1283,24 @@ function bindMonthSwipe(){
     if(currentScreen!=='home'&&currentScreen!=='history')return;
     const touch=e.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y;
     if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-start.time>1300)return;
+    if(start.metric)swipeMetricClickGuard={metric:start.metric,time:Date.now()};
     void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));
   },{passive:true});
+  // An asset card's synthetic click after a swipe must not open its details.
+  main.addEventListener('click',e=>{
+    const guard=swipeMetricClickGuard;
+    if(!guard)return;
+    swipeMetricClickGuard=null;
+    if(Date.now()-guard.time<700&&guard.metric.contains(e.target)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },true);
   main.addEventListener('touchcancel',()=>{swipeTouchStart=null;},{passive:true});
 }
 function bind(){
   bindMonthSwipe();
+  bindBreakdownSwipe();
   historicalDefaults();
   updateRecurringCategory();
   $('bulkRecurringKind').onchange=updateRecurringCategory;
@@ -1269,11 +1330,12 @@ function bind(){
   $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
   $$('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode,{remember:true}));
   $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
+  $$('[data-breakdown-month]').forEach(button=>button.onclick=()=>void changeSelectedMonth(monthShift(selectedMonth,button.dataset.breakdownMonth==='prev'?-1:1)));
   selectBreakdownMode(readBreakdownMode());
-  $('assetBreakdownClose').onclick=()=>$('assetBreakdownDialog').close();
+  $('assetBreakdownClose').onclick=()=>{$('assetBreakdownDialog').close();activeAssetBreakdownKind=null;};
   $('assetBreakdownDialog').onclick=e=>{if(e.target===$('assetBreakdownDialog'))$('assetBreakdownDialog').close();};
   $$('[data-nav]').forEach(b=>b.onclick=()=>showScreen(b.dataset.nav));$$('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.subview)openInputPanel(b.dataset.subview);else showScreen(b.dataset.go);});$$('[data-quick]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.quick));$$('[data-input-panel]').forEach(b=>b.onclick=()=>openInputPanel(b.dataset.inputPanel));$$('[data-close-panel]').forEach(b=>b.onclick=()=>{if(currentScreen==='input'&&currentPanel)history.back();else b.closest('.input-panel')?.classList.add('hidden');});
-  $('globalMonth').onchange=async()=>{assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();};
+  $('globalMonth').onchange=async()=>{if(currentScreen!=='home'){assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();}if(currentScreen==='monthend'&&!(await flushMonthEndEdits())){$('globalMonth').value=selectedMonth;return;}selectedMonth=$('globalMonth').value||DB.currentMonth();$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderAll();refreshVisibleBreakdown();};
   for(const id of ['cashAmount','incomeAmount','rentAmount'])setupAmountInput($(id));
   setupAmountInput($('advanceTotal'),updateAdvanceCalc);
   setupAmountInput($('advanceOwn'),updateAdvanceCalc);
