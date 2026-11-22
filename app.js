@@ -52,6 +52,8 @@ const mealOptions=[['','未分類'],['breakfast','朝'],['lunch','昼'],['dinner
 let selectedMonth=DB.currentMonth();
 let preparedCsv=null;
 let csvImportInProgress=false;
+let csvReviewMode='attention';
+let csvReviewSearch='';
 const CSV_DRAFT_KEY='dcardCsvDraft';
 let csvDraftSaveChain=Promise.resolve();
 let csvDraftGeneration=0;
@@ -460,6 +462,7 @@ async function discardCsvDraft(){
   await csvDraftSaveChain.catch(()=>{});
   await DB.del('settings',CSV_DRAFT_KEY);
   preparedCsv=null;
+  csvReviewMode='attention';csvReviewSearch='';
   $('dcardFile').value='';
   $('csvPreview').classList.add('hidden');
   $('csvReview').classList.add('hidden');
@@ -493,6 +496,7 @@ async function resumeCsvDraft(){
   }
   ++csvDraftGeneration;
   preparedCsv=p;
+  csvReviewMode='attention';csvReviewSearch='';
   $('csvPreview').classList.remove('hidden');
   $('csvMerchantEditWrap').open=false;
   renderCsvPrepared();
@@ -523,6 +527,7 @@ async function handleCsvFile(file){
     }
     ++csvDraftGeneration;
     preparedCsv=p;
+    csvReviewMode='attention';csvReviewSearch='';
     $('csvMerchantEditWrap').open=false;
     renderCsvPrepared();
     await scheduleCsvDraftSave({immediate:true});
@@ -646,81 +651,74 @@ function validateAdvanceMatches(p,all){
   return out;
 }
 
+function renderCsvReviewRows(){
+  const p=preparedCsv,el=$('csvReviewRows');
+  if(!p||!el)return;
+  const all=csvReviewMode==='all';
+  const rows=all?p.newRows:p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund');
+  const query=csvReviewSearch.trim().normalize('NFKC').toLowerCase();
+  const matching=query?rows.filter(r=>{
+    const target=[r.date,r.merchantNormalized,r.merchantRaw,r.category,String(r.amount),formatAmount(r.amount)]
+      .map(x=>String(x??'').normalize('NFKC').toLowerCase());
+    return target.some(x=>x.includes(query))||target.some(x=>x.replace(/,/g,'').includes(query.replace(/,/g,'')));
+  }):rows;
+  const invalid=all?[]:p.invalidRows;
+  const validHtml=matching.map(r=>`<div class="review-row" data-review-key="${esc(r.sourceRowKey)}">
+    <div class="review-main"><div><strong>${esc(r.merchantNormalized||r.merchantRaw||'カード利用')}</strong>
+    <span class="muted">${esc(r.date)} / ${r.kind==='refund'?'返金候補':r.category==='未分類'?'カテゴリ未分類':esc(r.category)}</span></div>
+    <strong>${formatYen(r.amount)}</strong></div>
+    <select aria-label="カテゴリ" data-review-category="${esc(r.sourceRowKey)}">${selectOptions(categories,r.category)}</select>
+    ${r.kind==='expense'?`<label class="checkbox-row csv-other-choice"><input type="checkbox" data-review-other="${esc(r.sourceRowKey)}" ${r.isOtherPersonExpense?'checked':''}><span>全額を他人負担（自分の支出から除外）</span></label>`:''}
+    <details class="review-merchant-edit"><summary>店名も修正（必要な場合のみ）</summary>
+    <label>表示用の店舗名<input type="text" maxlength="120" autocomplete="off" value="${esc(r.merchantNormalized)}" data-review-merchant-name></label>
+    <div class="muted">元のCSV店名：${esc(r.merchantRaw)}</div></details>
+    </div>`).join('');
+  const invalidHtml=invalid.map(r=>`<div class="review-row warn"><strong>${esc(r.reason)}</strong><div class="muted">CSV ${r.sourceLine}行目</div></div>`).join('');
+  el.innerHTML=validHtml+invalidHtml||'<p class="muted">該当する明細はありません。</p>';
+  $('csvReviewResultCount').textContent=all?`表示 ${matching.length} / ${rows.length}件`:`要確認 ${rows.length+invalid.length}件`;
+  el.querySelectorAll('[data-review-category]').forEach(select=>select.onchange=()=>{
+    const r=p.newRows.find(x=>x.sourceRowKey===select.dataset.reviewCategory);
+    if(!r)return;
+    r.category=select.value;r.categoryConfirmed=true;
+    if(r.category!=='食費')r.mealType=null;
+    renderCsvMeals();scheduleCsvDraftSave();
+    // Keep the current row visible while editing; the filter updates on tab/search changes.
+    const meta=select.closest('[data-review-key]')?.querySelector('.review-main .muted');
+    if(meta)meta.textContent=r.date+' / '+(r.kind==='refund'?'返金候補':r.category==='未分類'?'カテゴリ未分類':r.category);
+  });
+  el.querySelectorAll('[data-review-other]').forEach(box=>box.onchange=()=>{
+    const r=p.newRows.find(x=>x.sourceRowKey===box.dataset.reviewOther);
+    if(!r||r.kind!=='expense')return;
+    r.isOtherPersonExpense=box.checked;
+    if(box.checked&&p.matchIds)delete p.matchIds[r.sourceRowKey];
+    scheduleCsvDraftSave();
+    void renderCsvAdvanceMatches();
+  });
+}
 function renderCsvOtherExpenses(){
-  // One review surface: category decisions and whole-amount exclusions share each row.
-  // This only changes the prepared draft, not registered transactions.
   const p=preparedCsv,review=$('csvReview');
   if(!p||!review)return;
-  const attachOtherCheckbox=(holder,r)=>{
-    if(r.kind!=='expense')return;
-    const label=document.createElement('label');
-    label.className='checkbox-row';
-    const box=document.createElement('input');
-    box.type='checkbox';
-    box.checked=!!r.isOtherPersonExpense;
-    box.setAttribute('aria-label','全額を他人負担として自分の支出から除外');
-    const explanation=document.createElement('span');
-    explanation.textContent='全額を他人負担（自分の支出から除外）';
-    label.append(box,explanation);
-    box.addEventListener('change',()=>{
-      r.isOtherPersonExpense=box.checked;
-      if(box.checked&&p.matchIds)delete p.matchIds[r.sourceRowKey];
-      scheduleCsvDraftSave();
-      void renderCsvAdvanceMatches();
-    });
-    const merchantEdit=holder.querySelector('.review-merchant-edit');
-    if(merchantEdit)holder.insertBefore(label,merchantEdit);
-    else holder.append(label);
-  };
-  for(const row of review.querySelectorAll('[data-review-key]')){
-    const r=p.newRows.find(x=>x.sourceRowKey===row.dataset.reviewKey);
-    if(r)attachOtherCheckbox(row,r);
-  }
-  const categorized=p.newRows.filter(r=>r.category!=='未分類'&&r.kind!=='refund');
-  if(categorized.length){
-    const details=document.createElement('details');
-    details.className='csv-merchant-review';
-    const summary=document.createElement('summary');
-    summary.textContent='分類済みの明細も確認（'+categorized.length+'件・任意）';
-    details.append(summary);
-    const note=document.createElement('p');
-    note.className='muted';
-    note.textContent='自動分類・前回の分類もここで変更できます。他人負担の明細があればチェックしてください。';
-    details.append(note);
-    for(const r of categorized){
-      const row=document.createElement('div');
-      row.className='review-row';
-      row.dataset.reviewKey=r.sourceRowKey;
-      const heading=document.createElement('div');
-      heading.className='review-main';
-      const description=document.createElement('div');
-      const name=document.createElement('strong');
-      name.textContent=r.merchantNormalized||r.merchantRaw||'カード利用';
-      const meta=document.createElement('span');
-      meta.className='muted';
-      meta.textContent=r.date+' / '+(r.categorySource==='rule'?'前回の分類候補':r.categorySource==='heuristic'?'店舗名からの推定':'分類済み');
-      description.append(name,meta);
-      const amount=document.createElement('strong');
-      amount.textContent=formatYen(r.amount);
-      heading.append(description,amount);
-      row.append(heading);
-      const select=document.createElement('select');
-      select.setAttribute('aria-label','カテゴリ');
-      select.innerHTML=selectOptions(categories,r.category);
-      select.addEventListener('change',()=>{
-        r.category=select.value;
-        r.categoryConfirmed=true;
-        if(r.category!=='食費')r.mealType=null;
-        renderCsvMeals();
-        scheduleCsvDraftSave();
-      });
-      row.append(select);
-      attachOtherCheckbox(row,r);
-      details.append(row);
-    }
-    review.append(details);
-  }
   review.classList.toggle('hidden',!p.newRows.length&&!p.invalidRows.length);
+  if(review.classList.contains('hidden'))return;
+  const attention=p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund').length+p.invalidRows.length;
+  review.innerHTML=`<h3>明細確認</h3>
+    <div class="csv-review-tabs" role="group" aria-label="明細の表示切替">
+      <button type="button" data-csv-review-mode="attention" aria-pressed="${csvReviewMode==='attention'}" class="${csvReviewMode==='attention'?'active':''}">要確認（${attention}）</button>
+      <button type="button" data-csv-review-mode="all" aria-pressed="${csvReviewMode==='all'}" class="${csvReviewMode==='all'?'active':''}">全明細（${p.newRows.length}）</button>
+    </div>
+    <div id="csvReviewSearchWrap" class="${csvReviewMode==='all'?'':'hidden'}">
+      <label>明細を検索<input type="search" id="csvReviewSearch" autocomplete="off" placeholder="店名・日付・金額・カテゴリ" value="${esc(csvReviewSearch)}"></label>
+    </div>
+    <div id="csvReviewResultCount" class="muted" aria-live="polite"></div>
+    <div id="csvReviewRows"></div>`;
+  review.querySelectorAll('[data-csv-review-mode]').forEach(button=>button.onclick=()=>{
+    const mode=button.dataset.csvReviewMode;
+    if(mode===csvReviewMode)return;
+    csvReviewMode=mode;renderCsvOtherExpenses();
+  });
+  const input=$('csvReviewSearch');
+  if(input)input.oninput=()=>{csvReviewSearch=input.value;renderCsvReviewRows();};
+  renderCsvReviewRows();
 }
 async function renderHistoryOtherExpenses(){
   const el=$('historyOtherExpenseList');if(!el)return;
@@ -743,7 +741,6 @@ async function renderHistoryOtherExpenses(){
   });
 }
 function renderCsvPrepared(){const p=preparedCsv;if(!p)return;const excludedRows=p.excludedRows||[],excluded=excludedRows.length,invalid=p.invalidRows.length;const review=p.newRows.filter(r=>r.category==='未分類'||r.kind==='refund').concat(p.invalidRows);const suggestions=p.newRows.filter(r=>r.category!=='未分類'&&(r.categorySource==='rule'||r.categorySource==='heuristic')).length;const excludedSummary=excluded?`<div class="muted">対象外：${esc(excludedRows[0]?.reason||'対象外行')} ${excluded}件</div>`:'';$('csvPreview').innerHTML=`<div class="summary-strip"><div>新規<b>${p.newRows.length}</b></div><div>重複<b>${p.duplicateRows.length}</b></div><div>除外・不正<b>${invalid}</b></div><div>要確認<b>${review.length}</b></div></div><p class="muted">対象期間：${esc(rangeText(p.newRows))}${p.statementAmount!=null?` / 請求合計候補 ${formatYen(p.statementAmount)}`:''}${p.paymentDate?` / 支払日候補 ${esc(p.paymentDate)}`:''}</p><p class="muted">自動分類候補：${suggestions}件（店舗名による推定です。商品内容が異なる場合は分類を変更してください）</p>${excludedSummary}`;
-  if(review.length){$('csvReview').classList.remove('hidden');$('csvReview').innerHTML='<h3>明細確認（要確認）</h3>'+review.map((r,i)=>r.invalid?`<div class="review-row warn"><strong>${esc(r.reason)}</strong><div class="muted">CSV ${r.sourceLine}行目</div></div>`:`<div class="review-row" data-review-key="${esc(r.sourceRowKey)}"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)} / ${r.kind==='refund'?'返金候補':'カテゴリ未分類'}</span></div><strong>${formatYen(r.amount)}</strong></div><select data-category-key="${esc(r.sourceRowKey)}">${selectOptions(categories,r.category)}</select><details class="review-merchant-edit"><summary>店名も修正（必要な場合のみ）</summary><label>表示用の店舗名<input type="text" maxlength="120" autocomplete="off" value="${esc(r.merchantNormalized)}" data-review-merchant-name></label><div class="muted">元のCSV店名：${esc(r.merchantRaw)}</div></details></div>`).join('');$$('[data-category-key]').forEach(s=>s.onchange=()=>{const r=p.newRows.find(x=>x.sourceRowKey===s.dataset.categoryKey);if(r){r.category=s.value;r.categoryConfirmed=true;if(r.category!=='食費')r.mealType=null;renderCsvMeals();scheduleCsvDraftSave();}});}else $('csvReview').classList.add('hidden');
   void renderCsvAdvanceMatches();renderCsvOtherExpenses();renderCsvMerchantEdits();renderCsvMeals();$('csvImportButton').classList.toggle('hidden',p.newRows.length===0);
 }
 function renderCsvMeals(){const p=preparedCsv;if(!p)return;const food=p.newRows.filter(r=>r.category==='食費');if(!food.length){$('csvMeals').classList.add('hidden');return;}$('csvMeals').classList.remove('hidden');$('csvMeals').innerHTML='<h3>食費だけ確認</h3><p class="muted">未分類のままでも登録できます。</p>'+food.map(r=>`<div class="review-row"><div class="review-main"><div><strong>${esc(r.merchantNormalized)}</strong><span class="muted">${esc(r.date)}${r.time?` ${esc(r.time)}`:''}</span></div><strong>${formatYen(r.amount)}</strong></div><div class="meal-buttons">${mealOptions.slice(1).map(([v,l])=>`<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="${v}" class="${r.mealType===v?'active':''}">${l}</button>`).join('')}<button type="button" data-meal-key="${esc(r.sourceRowKey)}" data-meal="none" class="${!r.mealType?'active':''}">後で</button><button type="button" data-food-off="${esc(r.sourceRowKey)}">食費ではない</button></div></div>`).join('');$$('[data-meal-key]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.mealKey);if(r){r.mealType=b.dataset.meal==='none'?null:b.dataset.meal;if(b.dataset.meal!=='none')r.categoryConfirmed=true;renderCsvMeals();scheduleCsvDraftSave();}});$$('[data-food-off]').forEach(b=>b.onclick=()=>{const r=p.newRows.find(x=>x.sourceRowKey===b.dataset.foodOff);if(r){r.category='未分類';r.mealType=null;r.categoryConfirmed=true;renderCsvPrepared();scheduleCsvDraftSave();}});}
