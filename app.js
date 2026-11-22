@@ -1232,6 +1232,34 @@ async function changeSelectedMonth(target){
     return true;
   }finally{swipeBusy=false;}
 }
+
+function bindBreakdownSwipe(){
+  // In both layouts the breakdown is its own gesture surface. Prevent the
+  // Home swipe handler from handling the same touch twice.
+  for(const id of ['assetBreakdownInline','assetBreakdownDialog']){
+    const surface=$(id);
+    let start=null;
+    surface.addEventListener('touchstart',e=>{
+      start=null;
+      e.stopPropagation();
+      if(currentScreen!=='home'||!activeAssetBreakdownKind||e.touches.length!==1)return;
+      if(id==='assetBreakdownInline'&&surface.classList.contains('hidden'))return;
+      if(id==='assetBreakdownDialog'&&!surface.open)return;
+      if(e.target.closest('button,input,select,textarea,a,summary,[role="button"]'))return;
+      const t=e.touches[0];
+      start={x:t.clientX,y:t.clientY,time:Date.now()};
+    },{passive:true});
+    surface.addEventListener('touchend',e=>{
+      e.stopPropagation();
+      const origin=start;start=null;
+      if(!origin||currentScreen!=='home'||!activeAssetBreakdownKind||e.changedTouches.length!==1)return;
+      const touch=e.changedTouches[0],dx=touch.clientX-origin.x,dy=touch.clientY-origin.y;
+      if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-origin.time>1300)return;
+      void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));
+    },{passive:true});
+    surface.addEventListener('touchcancel',e=>{start=null;e.stopPropagation();},{passive:true});
+  }
+}
 function bindMonthSwipe(){
   const main=$('appMain');
   if(!main)return;
@@ -1257,6 +1285,7 @@ function bindMonthSwipe(){
 }
 function bind(){
   bindMonthSwipe();
+  bindBreakdownSwipe();
   historicalDefaults();
   updateRecurringCategory();
   $('bulkRecurringKind').onchange=updateRecurringCategory;
