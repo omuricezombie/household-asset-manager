@@ -2,20 +2,20 @@
 
 個人用のローカルファーストPWA。スマートフォンを中心に、月次家計・支出・資産残高・dカードCSV・履歴／分析を管理します。細かな日次分類を必須にせず、前月値の再利用と月末更新で入力負担を減らします。
 
-**[アプリを開く](https://omuricezombie.github.io/household-asset-manager/)** · **[正式Release v0.2.15](https://github.com/omuricezombie/household-asset-manager/releases/tag/v0.2.15)** · [QA記録と過去の確認手順](README_HUMAN_QA.txt)
+**[アプリを開く](https://omuricezombie.github.io/household-asset-manager/)** · [過去のRelease v0.2.15（初回stable）](https://github.com/omuricezombie/household-asset-manager/releases/tag/v0.2.15) · [QA記録と過去の確認手順](README_HUMAN_QA.txt)
 
 ## 現在の状態
 
 | 項目 | 基準 |
 | --- | --- |
-| 正式版 | **v0.2.15 stable（初回stable）** |
+| 正式版 | **v0.2.35 stable**（2026-11-22時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | 今後の検証・改修用。現在はmainと同じコード |
-| 固定基準 | tag / Release `v0.2.15` → `9a19ebcb6f75777d595c95a58749b15f0bac9729` |
-| 品質 | AI QA PASS・予定されたHuman QA PASS（stable採用時の記録） |
+| candidate | 開発・監査用。v0.2.36-candidate.1で保守監査を実施中（main未反映） |
+| 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
+| 品質 | v0.2.35はAI QA / Human QA PASS。v0.2.36 candidateは監査中でstable未昇格 |
 | 現在の段階 | 実データでの継続使用・評価 |
 
-整理開始時（2026-11-18）のmain / candidate HEADはともに `9a19ebcb6f75777d595c95a58749b15f0bac9729`。確認時点の記録です。改修開始時には実際のHEADを再取得してください。管理資料の更新後も、tagはアプリv0.2.15の固定基準として維持します。
+v0.2.35正式昇格時（2026-11-22）のmain / candidate HEADは `2f247a87f321bec2deb19fc86f3adcf02dbf98a3` でした。現在はcandidateに保守修正があるため、正式版を取得する際はmainかそのcommitを使用してください。最新状態はNotion開発正本とGitHubの実HEADを照合します。
 
 ## 実装済みの主な機能
 
@@ -41,7 +41,7 @@
 
 ### 保存とバックアップ
 
-- 家計データは利用端末・ブラウザのIndexedDB `householdAssetManagerDB_v2` に保存します。`schemaVersion: 2`、アプリ版 `0.2.15`。
+- 家計データは利用端末・ブラウザのIndexedDB `householdAssetManagerDB_v2` に保存します。`schemaVersion: 2`、正式アプリ版 `0.2.35`。
 - CSVは端末内で処理します。家計データをGitHubへ保存・同期する機能や別端末との自動同期はありません。
 - 「データ」→「JSONバックアップを保存」で書き出します。復元は同画面の「JSONバックアップを復元」からファイルを選びます。
 - 復元は現在のv0.2データをバックアップ内容で置き換えます。形式・schemaVersion・件数・SHA-256整合性を検査し、確認後に復元します。復元前にも現状をバックアップしてください。
@@ -58,7 +58,7 @@
 | rollback | 対象版の品質・保存データ互換性を確認して使用 |
 | 過去のcandidate | 開発履歴。正常動作確認済みstableと同一視しない |
 
-**v0.2.15は初回stableのため、直前stableへのrollback先はありません。** 今後の復旧基準がv0.2.15です。同じschemaVersionだけで将来版との互換性を保証しません。
+**現行stable v0.2.35の直前stableはv0.2.34（commit `09d5e70a82a1cd73ea77107d041a80ce98573e59`）です。** 固定rollbackはv0.2.16 tag / Releaseを維持します。同じschemaVersionだけで将来版との互換性を保証しません。
 
 コード取得はReleaseの「Source code (zip)」またはGitで行えます。
 
@@ -70,7 +70,7 @@ git rev-parse HEAD
 # 期待値: 9a19ebcb6f75777d595c95a58749b15f0bac9729
 ```
 
-これはコードの取得手順です。端末の家計データや本番Pagesを自動復元する操作ではありません。本番復旧時はJSONバックアップを確保し、互換性・Service Worker・静的ファイル一式を確認して、同じPages URLで復旧します。Service Worker cache基準は `household-asset-manager-v0.2.15` です。
+これはコードの取得手順です。端末の家計データや本番Pagesを自動復元する操作ではありません。本番復旧時はJSONバックアップを確保し、互換性・Service Worker・静的ファイル一式を確認して、同じPages URLで復旧します。v0.2.35 stableのService Worker cache基準は `household-asset-manager-v0.2.35` です。
 
 ## 開発・管理
 
@@ -78,6 +78,6 @@ git rev-parse HEAD
 
 詳細な仕様・判断・QA・ロードマップは開発管理Notionを正本とし、このREADMEには利用と復旧に必要な概要を保持します。Notion本文・個人情報は公開資料へ複製しません。既存QA資料には過去版の手順も含まれるため、冒頭の状態・実施結果を優先してください。
 
-次の候補は内部資金移動処理です。まずはv0.2.15の実運用確認を優先し、不具合・入力負担があればそちらから改善します。
+次工程は実データが蓄積した月次家計の品質・カバレッジ確認と、実用性の高い分析・内部資金移動の優先順位検討です。新規機能はcandidateで差分開発とQAを行います。
 
 実CSV・本番JSON・口座情報・秘密情報は登録禁止です。`.gitignore`は誤登録を減らす補助であり、commit前に差分を確認してください。新規commitのauthor / committerはGitHub noreplyアドレスを明示し、生成後の実メタデータを監査します。
