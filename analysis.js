@@ -128,7 +128,7 @@
     for(let m=1;m<=last;m++){
       const month=year+'-'+String(m).padStart(2,'0'),tx=all.filter(t=>t.month===month);
       const coverage=cardCoverage(month,imports,today);
-      const unclassified=tx.filter(t=>['expense','refund'].includes(t.kind)&&(!t.category||t.category==='未分類'));
+      const unclassified=tx.filter(t=>(t.kind==='refund'||(t.kind==='expense'&&!t.isOtherPersonExpense))&&(!t.category||t.category==='未分類'));
       const income=tx.some(t=>t.kind==='income'),rent=tx.some(t=>t.kind==='expense'&&t.category==='家賃');
       const expense=tx.filter(t=>t.kind==='expense').reduce((sum,t)=>sum+effExpense(t),0)
         -tx.filter(t=>t.kind==='refund').reduce((sum,t)=>sum+refundAmount(t),0);
