@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0231">
+  <link rel="stylesheet" href="styles.css?v=0232">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.31</p>
+      <p class="sub">v0.2.32</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -146,17 +146,7 @@
         <p id="csvDraftSaveStatus" class="muted hidden" role="status" aria-live="polite"></p>
         <div id="csvPreview" class="hidden"></div>
         <div id="csvAdvanceMatches" class="hidden"></div>
-        <details id="csvOtherExpenseWrap" class="hidden csv-merchant-review">
-          <summary>他人負担の明細を自分の支出から除外（任意）</summary>
-          <p class="muted">カード利用明細は保存し、自己負担の支出・カテゴリ集計から除外します。立替返金や未回収管理は行いません。</p>
-          <div id="csvOtherExpenseList"></div>
-        </details>
         <div id="csvReview" class="hidden"></div>
-        <details id="csvSuggestedReview" class="hidden csv-merchant-review">
-          <summary>自動分類の候補を確認・修正（<span id="csvSuggestedCount">0</span>件・任意）</summary>
-          <p class="muted">前回の分類または店舗名からの推定です。異なる商品を購入した場合はここで修正できます。確認しなくても取込できます。</p>
-          <div id="csvSuggestedList"></div>
-        </details>
         <div id="csvMeals" class="hidden"></div>
         <details id="csvMerchantEditWrap" class="hidden csv-merchant-review">
           <summary>店名の確認・修正（任意）</summary>
@@ -398,9 +388,9 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0231"></script>
-  <script src="dcard-import.js?v=0231"></script>
-  <script src="analysis.js?v=0231"></script>
-  <script src="app.js?v=0231"></script>
+  <script src="db.js?v=0232"></script>
+  <script src="dcard-import.js?v=0232"></script>
+  <script src="analysis.js?v=0232"></script>
+  <script src="app.js?v=0232"></script>
 </body>
 </html>
