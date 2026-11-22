@@ -312,6 +312,7 @@
     };
     if(outlook.sampleMonths.length===3){
       const currentCategories=categorisedToDay(cur.transactions);
+      const previousCategories=categorisedToDay(prev.transactions);
       const pastCategories=await Promise.all(outlook.sampleMonths.map(async m=>categorisedToDay(await monthTransactions(m))));
       const categories=new Set([...Object.keys(currentCategories),...pastCategories.flatMap(x=>Object.keys(x))]);
       const deltas=[...categories].filter(cat=>cat!=='未分類').map(cat=>{
@@ -323,8 +324,11 @@
       const significant=deltas.filter(x=>x.current>0&&x.diff>=3000).sort((a,b)=>b.diff-a.diff).slice(0,2);
       for(const x of significant){
         const tail=outlook.isCurrent?'（各月'+dayOfMonth+'日までの登録分）':'（月全体）';
+        const prior=previousCategories[x.cat]||0;
+        const priorDelta=x.current-prior;
+        const priorText=prev.transactions.length?` 前月同日比 ${formatSigned(Math.round(priorDelta))}。`:'';
         out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
-          text:`${x.cat}は過去3か月の同時点平均 ${formatYen(Math.round(x.mean))} に対し、登録済み ${formatYen(Math.round(x.current))}（+${formatYen(Math.round(x.diff))}）です${tail}。${outlook.isCurrent&&!outlook.coveredToDate?' カード明細未取込分があるため参考比較です。':''}`});
+          text:`${x.cat}は過去3か月の同時点平均 ${formatYen(Math.round(x.mean))} に対し、登録済み ${formatYen(Math.round(x.current))}（平均比 ${formatSigned(Math.round(x.diff))}）です${tail}。${priorText}${outlook.isCurrent&&!outlook.coveredToDate?' カード明細未取込分があるため参考比較です。':''}`});
       }
       if(!significant.length){
         const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
