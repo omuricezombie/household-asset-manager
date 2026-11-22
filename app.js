@@ -1200,7 +1200,7 @@ async function clearAll(){if(!confirm('v0.2の家計・資産データを全削�
 
 function updateBreakdownMonthButtons(){
   const prev=monthShift(selectedMonth,-1),next=monthShift(selectedMonth,1);
-  $('[data-breakdown-month]').forEach(button=>{
+  $$('[data-breakdown-month]').forEach(button=>{
     const target=button.dataset.breakdownMonth==='prev'?prev:next;
     button.disabled=target<'2000-01'||target>DB.currentMonth();
   });
@@ -1286,7 +1286,7 @@ function bind(){
   $('homeAssetSummary').onclick=e=>{const target=e.target.closest('[data-asset-breakdown]');if(target)void openAssetBreakdown(target.dataset.assetBreakdown);};
   $$('[data-breakdown-mode]').forEach(button=>button.onclick=()=>selectBreakdownMode(button.dataset.breakdownMode,{remember:true}));
   $('assetBreakdownInlineClose').onclick=()=>{assetBreakdownRequestId++;closeInlineBreakdown();};
-  $('[data-breakdown-month]').forEach(button=>button.onclick=()=>void changeSelectedMonth(monthShift(selectedMonth,button.dataset.breakdownMonth==='prev'?-1:1)));
+  $$('[data-breakdown-month]').forEach(button=>button.onclick=()=>void changeSelectedMonth(monthShift(selectedMonth,button.dataset.breakdownMonth==='prev'?-1:1)));
   selectBreakdownMode(readBreakdownMode());
   $('assetBreakdownClose').onclick=()=>{$('assetBreakdownDialog').close();activeAssetBreakdownKind=null;};
   $('assetBreakdownDialog').onclick=e=>{if(e.target===$('assetBreakdownDialog'))$('assetBreakdownDialog').close();};
