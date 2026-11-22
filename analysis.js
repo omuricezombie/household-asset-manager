@@ -269,22 +269,22 @@
     if(outlook.baseline!=null){
       const baseline=formatYen(Math.round(outlook.baseline));
       const delta=outlook.actual-outlook.baseline;
-      out.push({tone:'neutral',text:`通常支出の比較基準は直近の比較可能な3か月平均 ${baseline} です（${outlook.sampleMonths.join('・')}）。`});
+      out.push({tone:'neutral',text:`通常支出の過去3か月平均：${baseline}。`});
       if(outlook.actual>outlook.baseline){
-        out.push({tone:'warn',text:`登録済み通常支出は、既に基準平均を ${formatYen(Math.round(delta))} 上回っています。`});
+        out.push({tone:'warn',text:`今月の通常支出は、登録済み分だけで平均を ${formatYen(Math.round(delta))} 超えています。`});
       }else{
-        out.push({tone:'neutral',text:`登録済み通常支出は基準平均まであと ${formatYen(Math.round(-delta))} です。未登録の支出があれば実際の余裕は小さくなります。`});
+        out.push({tone:'neutral',text:`今月の登録済み通常支出は ${formatYen(Math.round(outlook.actual))}。平均まであと ${formatYen(Math.round(-delta))} です（未登録分は含まず）。`});
       }
       if(outlook.isCurrent&&outlook.forecast!=null){
         const estimate=formatYen(Math.round(outlook.forecast));
         if(outlook.coveredToDate){
           const gap=outlook.forecast-outlook.baseline;
           const result=gap>0?`基準平均を約 ${formatYen(Math.round(gap))} 上回る`:gap<0?`基準平均を約 ${formatYen(Math.round(-gap))} 下回る`:'基準平均とほぼ同じ';
-          out.push({tone:gap>0?'warn':'good',text:`月末の参考見込みは ${estimate}、${result}計算です。過去3か月の同日以降の支出を使用した推計です。`});
+          out.push({tone:gap>0?'warn':'good',text:`月末の参考試算：${estimate}（${result}計算）。過去3か月の残りの日付の支出を加えています。`});
         }else{
           const change=outlook.forecast-outlook.baseline;
           const comparison=change>0?`平均より約 ${formatYen(Math.round(change))} 高い`:change<0?`平均より約 ${formatYen(Math.round(-change))} 低い`:'平均とほぼ同じ';
-          out.push({tone:'neutral',text:`月末の条件付き試算は ${estimate}（${comparison}計算）です。ただし、${outlook.reason} 平均を超える・超えないの見通しは未確定です。`});
+          out.push({tone:'neutral',text:`月末の参考試算：${estimate}（${comparison}計算）。dカード明細に未取込期間があるため、実際に平均を超えるかはまだ判断できません。`});
         }
       }else if(!outlook.isCurrent){
         out.push({tone:'neutral',text:'過去月のため予測は行わず、登録済み実績を表示しています。'});
@@ -328,11 +328,11 @@
         const priorDelta=x.current-prior;
         const priorText=prev.transactions.length?` 前月同日比 ${formatSigned(Math.round(priorDelta))}。`:'';
         out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
-          text:`${x.cat}は過去3か月の同時点平均 ${formatYen(Math.round(x.mean))} に対し、登録済み ${formatYen(Math.round(x.current))}（平均比 ${formatSigned(Math.round(x.diff))}）です${tail}。${priorText}${outlook.isCurrent&&!outlook.coveredToDate?' カード明細未取込分があるため参考比較です。':''}`});
+          text:`${x.cat}：今月 ${formatYen(Math.round(x.current))}、同時点の過去3か月平均より ${formatYen(Math.round(x.diff))} 多い登録額です。${priorText}${x.cat==='家賃'?'固定費の支払額・計上時期の違いも確認してください。':''}`});
       }
       if(!significant.length){
         const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
-        if(down)out.push({tone:'neutral',text:`${down.cat}は同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です。未取込分がある場合は確定差額ではありません。`});
+        if(down)out.push({tone:'neutral',text:`${down.cat}：同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です（未取込分は反映されていません）。`});
       }
     }
     // Retain one prior-month signal as context, clearly not a projection.
