@@ -326,12 +326,12 @@ async function renderHomeSpendingInsights(){
   const alreadyOver=gap>0;
   const hasForecast=outlook.isCurrent&&outlook.forecast!=null;
   const estimateGap=hasForecast?outlook.forecast-outlook.baseline:null;
-  const estimateTone=outlook.coveredToDate?(estimateGap>0?'warn':'good'):'neutral';
+  const estimateTone=outlook.coveredToDate&&estimateGap>0?'warn':'neutral';
   const direction=estimateGap>0?'高い':estimateGap<0?'低い':'ほぼ同じ';
   const difference=estimateGap===0?'平均とほぼ同じ':('平均より約'+yen(Math.abs(estimateGap))+' '+direction);
   const baselineCard=`<div class="outlook-metrics">
       <div class="outlook-metric"><div class="outlook-label">過去3か月平均</div><strong>${yen(outlook.baseline)}</strong></div>
-      <div class="outlook-metric"><div class="outlook-label">今月の登録額</div><strong>${yen(outlook.actual)}</strong></div>
+      <div class="outlook-metric"><div class="outlook-label">${outlook.isCurrent?'今月':'対象月'}の登録額</div><strong>${yen(outlook.actual)}</strong></div>
     </div>`;
   const currentNote=`<p class="outlook-current-note ${alreadyOver?'warn':'neutral'}">${alreadyOver
     ?'登録済みの支出だけで平均を'+yen(gap)+'超過'
@@ -350,7 +350,7 @@ async function renderHomeSpendingInsights(){
     ${categories.map(x=>{
       const increase=x.type==='category-increase';
       const covered=x.covered;
-      const cls=increase&&covered?'warn':!increase&&covered?'good':'neutral';
+      const cls=increase&&covered?'warn':'neutral';
       const comparison=increase?'増加':'減少';
       const sign=increase?'+':'−';
       return `<div class="outlook-driver">
