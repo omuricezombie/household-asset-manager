@@ -177,7 +177,7 @@ async function renderHome(){
   const walletDetail=walletValue==null?'月末更新で残高を登録':wallet?.liveCash?.isEstimated?'現金移動を自動反映':'最終確認残高';
   const pointText=points.rows.some(x=>x.snapshot)?points.total.toLocaleString('ja-JP')+' pt':'未登録';
   $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn','total'),metric('流動資産',cur.assets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
-  const ins=await A.insights(selectedMonth);$('homeInsights').innerHTML=ins.length?ins.map(x=>`<div class="insight ${x.tone}">${esc(x.text)}</div>`).join(''):'<p class="muted">比較データがたまると、前月比や3か月平均との差を表示します。</p>';
+  await renderHomeSpendingInsights();
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
 }
 /* Read-only SVG/HTML summaries. All money values come from existing Analysis.summary. */
@@ -313,6 +313,64 @@ async function openAssetBreakdown(kind){
     if(requestId===assetBreakdownRequestId)$((compact?'assetBreakdownInlineRows':'assetBreakdownRows')).innerHTML='<p class="muted">内訳を読み込めませんでした。再度お試しください。</p>';
   }
 }
+async function renderHomeSpendingInsights(){
+  const outlook=await A.spendingOutlook(selectedMonth);
+  const findings=await A.insights(selectedMonth);
+  const root=$('homeInsights');
+  if(outlook.baseline==null){
+    root.innerHTML='<p class="muted">'+esc(outlook.reason||'比較できる過去のデータが不足しています。')+'</p>';
+    return;
+  }
+  const yen=n=>formatYen(Math.round(n));
+  const gap=outlook.actual-outlook.baseline;
+  const alreadyOver=gap>0;
+  const hasForecast=outlook.isCurrent&&outlook.forecast!=null;
+  const estimateGap=hasForecast?outlook.forecast-outlook.baseline:null;
+  const estimateTone=outlook.coveredToDate?(estimateGap>0?'warn':'good'):'neutral';
+  const direction=estimateGap>0?'高い':estimateGap<0?'低い':'ほぼ同じ';
+  const difference=estimateGap===0?'平均とほぼ同じ':('平均より約'+yen(Math.abs(estimateGap))+' '+direction);
+  const baselineCard=`<div class="outlook-metrics">
+      <div class="outlook-metric"><div class="outlook-label">過去3か月平均</div><strong>${yen(outlook.baseline)}</strong></div>
+      <div class="outlook-metric"><div class="outlook-label">今月の登録額</div><strong>${yen(outlook.actual)}</strong></div>
+    </div>`;
+  const currentNote=`<p class="outlook-current-note ${alreadyOver?'warn':'neutral'}">${alreadyOver
+    ?'登録済みの支出だけで平均を'+yen(gap)+'超過'
+    :'登録済みの支出は平均まであと'+yen(-gap)}<span class="outlook-small">（未登録分を含みません）</span></p>`;
+  const forecastCard=hasForecast?`<div class="outlook-forecast">
+      <div class="outlook-label">月末の参考試算</div>
+      <strong class="outlook-main-amount">${yen(outlook.forecast)}</strong>
+      <div class="outlook-direction ${estimateTone}">${esc(difference)}${outlook.coveredToDate?'見込み':'計算'}</div>
+      <p class="outlook-small">${outlook.coveredToDate
+        ?'過去3か月の残りの日付の支出から算出した参考値です。'
+        :'dカードの未取込期間があるため、平均を超えるかどうかは未確定です。'}</p>
+    </div>`:'<p class="outlook-small">過去月のため月末試算は行いません。</p>';
+  const categories=findings.filter(x=>x.type==='category-increase'||x.type==='category-decrease');
+  const categoryHtml=categories.length?`<section class="outlook-drivers">
+    <h3>支出が変化している項目</h3>
+    ${categories.map(x=>{
+      const increase=x.type==='category-increase';
+      const covered=x.covered;
+      const cls=increase&&covered?'warn':!increase&&covered?'good':'neutral';
+      const comparison=increase?'増加':'減少';
+      const sign=increase?'+':'−';
+      return `<div class="outlook-driver">
+        <div class="outlook-driver-head"><strong>${esc(x.category)}</strong>
+          <span class="outlook-driver-delta ${cls}">${sign}${yen(Math.abs(x.delta))}</span></div>
+        <div class="outlook-small">同じ日付までの過去3か月平均との差（${comparison}）</div>
+        ${x.previousDelta==null?'':`<div class="outlook-small">前月同日比 ${esc(A.formatSigned(Math.round(x.previousDelta)))}</div>`}
+        ${x.category==='家賃'?'<div class="outlook-small">固定費の金額や計上時期の違いも確認してください。</div>':''}
+      </div>`;
+    }).join('')}
+  </section>`:'';
+  const note=outlook.coveredToDate?'':'<p class="outlook-small">明細未取込のためカテゴリ別の増減も暫定比較です。</p>';
+  const sampleMonths=outlook.sampleMonths.map(m=>monthLabel(m)).join('・');
+  root.innerHTML=baselineCard+currentNote+forecastCard+categoryHtml+(categories.length?note:'')+
+    `<details class="outlook-detail"><summary>計算方法と比較対象月</summary>
+      <p>比較した月：${esc(sampleMonths)}</p>
+      <p>通常支出は臨時支出を除いた自己負担額です。月末の参考試算は今月の登録済み額に、過去3か月で今日以降に発生した支出の平均を加えます。未来の確定金額ではありません。</p>
+    </details>`;
+}
+
 async function renderHomeAlerts(){
   const alerts=[];const today=new Date(),day=today.getDate(),reminder=(await DB.get('settings','reminderDay'))?.value||10;const pm=DB.prevMonth(DB.currentMonth());
   if(day>=reminder){const st=await recomputeMonthStatus(pm,false);if(st.completionRate<100){const missing=Object.entries(st.completionItems).filter(([,v])=>!v).map(([k])=>itemLabel(k));alerts.push(`<div class="alert warn"><strong>${monthLabel(pm)}分の更新が残っています</strong><div class="muted">未確認：${esc(missing.join(' / '))}</div><button data-reminder-month="${pm}">月末更新を開く</button></div>`);}}
