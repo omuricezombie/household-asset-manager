@@ -996,13 +996,18 @@ async function renderHouseholdQuality(){
 
 async function renderAnnualExpense(){
   const report=await A.annualCumulative(selectedMonth);
+  const quality=await A.householdQualityReport(selectedMonth);
+  const incomplete=quality.rows.some(row=>!row.sampleEligible);
+  const average=value=>formatYen(Math.round(value/report.monthsCount));
   $('annualExpenseTitle').textContent=report.year+'年 '+(report.monthsCount===12?'年間合計':'1〜'+Number(selectedMonth.slice(5,7))+'月累計');
   $('annualExpenseTotals').innerHTML=[
-    metric('収入累計',report.income,''),
-    metric('支出累計',report.expense,''),
-    metric('収支累計',report.saving,'')
+    metric('収入累計',report.income,'月平均 '+average(report.income)),
+    metric('支出累計',report.expense,'月平均 '+average(report.expense)),
+    metric('収支累計',report.saving,'月平均 '+average(report.saving))
   ].join('');
-  $('annualExpenseNote').textContent='登録済みの取引による累計です（'+report.monthsWithEntries+'/'+report.monthsCount+'か月に収支取引あり）。未登録月があっても0円として扱うため、データが揃っていない場合は確定年間額ではありません。他人負担と立替の自己負担額の扱いは月次集計と同じです。';
+  $('annualExpenseNote').textContent='月平均は1〜'+Number(selectedMonth.slice(5,7))+'月の'+report.monthsCount+'か月で累計を割った単純平均（円未満四捨五入）です。'+
+    (incomplete?'データ充足条件を満たさない月があるため、累計・平均とも暫定値です。':'データ充足の基本条件は満たしていますが、現金支出等の未登録までは検知できません。')+
+    ' 収支取引がある月は'+report.monthsWithEntries+'/'+report.monthsCount+'か月。未登録月は0円として計算します。分析対象月だけの平均・中央値は上の「生活費の実力分析」で確認してください。';
   const incomeRows=Object.entries(report.incomeCategories).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
   $('annualIncomeCategories').innerHTML=incomeRows.length?incomeRows.map(([kind,amount])=>'<tr><td>'+esc(kind)+'</td><td>'+formatYen(amount)+'</td><td>'+(report.income>0?(amount/report.income*100).toFixed(1)+'%':'—')+'</td></tr>').join(''):'<tr><td colspan="3">収入の登録がありません。</td></tr>';
   const rows=Object.entries(report.categories).filter(([,value])=>value!==0).sort((a,b)=>b[1]-a[1]);
