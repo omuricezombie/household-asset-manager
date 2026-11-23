@@ -124,15 +124,67 @@ function fairy(age,view,mood){
   if(adult)s+=path('M128 43 Q153 51 146 102 Q134 97 134 84Z','#74567c',P.dark,2)+sparkle(145,32,'#fff5bf');
   s+=circ(98,118,4,'#fff6df');
  }else if(view==='side'){
-  s+=path(adult?'M112 93 Q181 5 180 103 Q173 152 119 133Z':'M108 92 Q169 25 170 117 Q149 139 117 127Z','#b7ebf1','#859bc8');
-  s+=path(adult?'M81 112 Q72 143 70 164 Q104 177 122 160 L112 110Z':'M81 120 Q73 140 79 160 L117 160 L114 120Z','#c7e7d9',P.dark);
-  s+=line('M95 160 L92 178 M111 159 L115 178',P.dark,7);
-  s+=path(adult?'M70 58 Q65 17 101 15 Q130 21 127 72 L117 106 L99 88Z':'M73 61 Q73 30 100 28 Q123 35 124 79 L111 98Z','#84648e',P.dark);
-  s+=path('M58 69 Q54 47 83 44 Q114 48 112 74 Q108 99 83 101 Q70 103 65 87 L51 79Z','#ffe7ce','#d4b6a3');
-  s+=eye(75,68,mood,.9)+ell(53,79,4,3,'#d8a798')+line('M55 87 Q64 94 71 87','#936d76',2);
-  s+=path('M70 55 Q74 42 101 47 L108 61 Q96 57 86 52 L69 63Z','#84648e','none');
-  s+=line('M84 115 L67 132',P.dark,7);
-  if(adult)s+=path('M115 54 Q138 93 121 119', 'none','#73557c',7);
+  // A real chibi human profile facing left, rather than a head facing sideways on a front-facing stick body.
+  // Draw from rear to front: wings -> far limbs -> slender side-view outfit -> hair -> neck/face -> near arm.
+  const hair=adult?'#73547d':'#986d91';
+  const skin='#ffe7ce',skinLine='#d2b5a5',dress=adult?'#a9d6cf':'#c7e7d9';
+  // Wings emerge at the shoulder blades (x118,y111); do not float alongside the head.
+  s+=path(adult?
+    'M117 110 Q138 63 166 67 Q172 102 148 126 Q133 141 118 120Z':
+    baby?'M116 112 Q132 87 148 95 Q150 117 126 132 L115 122Z':
+    'M116 110 Q140 74 159 83 Q164 113 137 135 L116 121Z',
+    '#b8e8f4','#82a5c9',3);
+  s+=path(adult?'M122 112 Q149 91 159 85 M121 119 Q139 124 146 130':
+    'M122 111 Q133 108 143 99','none','#ffffffb5',2);
+  if(adult)s+=path('M118 108 Q149 92 147 67 Q169 89 150 130Z','#e6c0f6','#a68ec9',2);
+  // Far leg and arm are behind the dress.
+  s+=line(adult?'M111 148 L117 169':'M108 148 L113 167',P.dark,6);
+  s+=ell(adult?119:115,172,7,4,'#f5d9c8');
+  s+=line(adult?'M115 112 Q125 122 122 139':'M113 113 Q125 122 119 136',P.dark,6);
+  s+=circ(120,138,4.1,skin);
+  // Torso is narrow in profile, with a side-view skirt extending toward the back.
+  s+=path(adult?
+    'M89 108 Q99 103 113 109 L119 130 Q120 144 130 159 Q105 169 82 160 Q89 142 88 127Z':
+    baby?'M89 111 Q101 107 112 113 L116 138 Q122 150 119 156 Q102 163 83 155 Q90 139 87 127Z':
+    'M89 109 Q102 105 115 111 L118 131 Q121 145 125 158 Q103 165 82 156 Q88 139 87 125Z',
+    dress,P.dark,3.2);
+  s+=path(adult?'M90 142 Q107 149 120 143':'M91 144 Q106 151 116 144','none','#f7f5e5',3.2);
+  if(adult)s+=path('M84 157 Q106 167 132 158','none','#82bdb9',4);
+  // Near leg falls from the forward edge of the skirt, not from the middle of a front-facing body.
+  s+=line(adult?'M92 157 L88 173':'M94 156 L91 172',P.dark,7);
+  s+=ell(adult?88:91,175,9,4.3,'#f5d9c8');
+  // Layered hair creates the back of the skull; the neck connects the profile to the torso.
+  s+=path(adult?
+    'M63 71 Q60 28 91 19 Q124 16 127 55 Q137 87 121 118 Q111 117 105 104 L85 98Z':
+    baby?'M66 70 Q65 36 92 31 Q124 30 125 64 Q131 95 113 109 L89 101Z':
+    'M64 70 Q63 32 91 25 Q127 23 129 62 Q133 95 115 113 L89 103Z',
+    hair,P.dark,3.2);
+  s+=path('M91 93 Q92 109 102 113 L109 105 L107 91Z',skin,skinLine,2.5);
+  // Continuous forehead -> small nose -> mouth -> chin -> cheek -> ear-side profile.
+  s+=path(adult?
+    'M78 48 Q94 42 105 51 Q115 63 107 84 Q103 96 91 102 Q76 105 66 96 Q60 89 57 83 L52 79 Q57 74 62 71 Q62 57 78 48Z':
+    baby?'M79 52 Q94 46 105 56 Q112 66 105 85 Q101 95 90 100 Q75 102 65 94 Q60 88 59 82 L55 79 Q61 75 63 71 Q64 57 79 52Z':
+    'M78 50 Q96 43 107 54 Q116 68 106 87 Q101 98 89 102 Q74 104 64 94 Q60 88 57 83 L54 80 Q60 75 63 71 Q63 58 78 50Z',
+    skin,skinLine,2.8);
+  // Fringe bends with the cranium and never forms a protruding beak.
+  s+=path(adult?
+    'M63 70 Q65 43 87 37 Q104 35 111 54 Q96 48 88 47 Q77 57 65 59Z':
+    baby?'M63 71 Q65 47 88 43 Q104 44 108 57 Q91 50 82 54 Q75 65 63 65Z':
+    'M63 71 Q65 43 88 39 Q104 38 110 57 Q95 49 86 52 Q77 64 63 63Z',
+    hair,'none',0);
+  s+=eye(adult?78:79,adult?74:75,mood,.96);
+  s+=ell(67,87,5.5,3.2,'#f2b1b9');
+  // Tiny human nose and subtle smile: face never becomes a large protruding muzzle.
+  s+=circ(55,80,1.6,'#c18f83');
+  s+=line('M60 90 Q66 96 72 91','#956f78',2);
+  // Small ear and an identifiable, near-side shoulder/arm.
+  s+=ell(104,79,5,7,skin,skinLine,1.6);
+  s+=path(adult?'M91 112 Q82 125 79 137':'M92 113 Q84 124 82 136','none',P.dark,7);
+  s+=circ(adult?78:81,138,4.4,skin);
+  if(adult){
+    s+=path('M119 60 Q134 91 115 121','none',hair,8);
+    s+=sparkle(158,58,'#fff6bd');
+  }
  }else{
   s+=path(adult?'M86 94 Q17 18 16 126 Q49 156 84 135Z':'M83 101 Q26 43 29 126 Q48 142 83 135Z','#b5eaf5','#8295c8',3)+
     path(adult?'M114 94 Q183 18 184 126 Q151 156 116 135Z':'M117 101 Q174 43 171 126 Q152 142 117 135Z','#b5eaf5','#8295c8',3);
