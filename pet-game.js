@@ -381,12 +381,13 @@
       '・Lv.'+Number(p.finalLevel||1)+'・愛情度'+Math.floor(p.affection)+'/100</small>'+
       '<small>'+safeText(p.finalPersonality||petPersonality(p).name)+'｜'+safeText(String(p.completedAt||'').slice(0,10))+'</small></div></div>').join('');
   }
+  function prefersReducedMotion(){return typeof window.matchMedia==='function'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
   function stopFacing(){if(facingTimer){clearInterval(facingTimer);facingTimer=null;}}
   function setFacingTimer(){
     stopFacing();
-    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked'))return;
+    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked')||prefersReducedMotion())return;
     facingTimer=setInterval(()=>{
-      if(mood!=='idle')return;
+      if(mood!=='idle'||prefersReducedMotion())return;
       faceStep=(faceStep+1)%FACING.length;
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
