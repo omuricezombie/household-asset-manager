@@ -250,7 +250,7 @@
       .map(([category,amount])=>({category,amount,share:current.expense>0?amount/current.expense:0}));
     const assetDelta=await bankBalanceDelta(month);
     return {month,completed:!!status?.completedAt,completedAt:status?.completedAt||null,
-      csvComplete:coverage.complete,coverage,unclassified,provisional:!coverage.complete||unclassified>0,
+      csvComplete:coverage.complete,coverage,unclassified,provisional:!status?.completedAt||!coverage.complete||unclassified>0,
       income:current.income,expense:current.expense,normal:current.normal,temporary:current.temporary,
       saving:current.saving,previousExpense:previous.expense,previousSaving:previous.saving,
       previousAvailable:previous.transactions.some(t=>['income','expense','refund'].includes(t.kind)),
