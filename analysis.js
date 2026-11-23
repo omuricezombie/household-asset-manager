@@ -298,13 +298,14 @@
     const prev=await summary(DB().prevMonth(month));
     const dayOfMonth=Number(DB().ymd().slice(8,10));
     const compareCutoff=outlook.isCurrent?dayOfMonth:31;
-    const categorisedToDay=tx=>{
+    const fixedMonthlyCategories=new Set(['家賃','仕送り']);
+    const categorisedToDay=(tx,fullFixedMonth=false)=>{
       const amounts={};
       for(const t of tx){
         if(t.kind!=='expense'&&t.kind!=='refund')continue;
         if(t.kind==='expense'&&t.isTemporaryExpense)continue;
-        if(outlook.isCurrent&&Number(String(t.date||'').slice(8,10))>compareCutoff)continue;
         const category=t.category||'未分類';
+        if(outlook.isCurrent&&Number(String(t.date||'').slice(8,10))>compareCutoff&&!(fullFixedMonth&&fixedMonthlyCategories.has(category)))continue;
         const value=t.kind==='refund'?-refundAmount(t):effExpense(t);
         amounts[category]=(amounts[category]||0)+value;
       }
@@ -312,13 +313,13 @@
     };
     if(outlook.sampleMonths.length===3){
       const currentCategories=categorisedToDay(cur.transactions);
-      const previousCategories=categorisedToDay(prev.transactions);
-      const pastCategories=await Promise.all(outlook.sampleMonths.map(async m=>categorisedToDay(await monthTransactions(m))));
+      const previousCategories=categorisedToDay(prev.transactions,true);
+      const pastCategories=await Promise.all(outlook.sampleMonths.map(async m=>categorisedToDay(await monthTransactions(m),true)));
       const categories=new Set([...Object.keys(currentCategories),...pastCategories.flatMap(x=>Object.keys(x))]);
       const deltas=[...categories].filter(cat=>cat!=='未分類').map(cat=>{
         const current=currentCategories[cat]||0;
         const mean=pastCategories.reduce((total,byCat)=>total+(byCat[cat]||0),0)/3;
-        return {cat,current,mean,diff:current-mean};
+        return {cat,current,mean,diff:current-mean,comparisonMode:fixedMonthlyCategories.has(cat)?'monthly':'same-day'};
       });
       // Prioritise material increases, with a decrease as useful context if present.
       const significant=deltas.filter(x=>x.current>0&&x.diff>=3000).sort((a,b)=>b.diff-a.diff).slice(0,2);
@@ -326,15 +327,15 @@
         const tail=outlook.isCurrent?'（各月'+dayOfMonth+'日までの登録分）':'（月全体）';
         const prior=previousCategories[x.cat]||0;
         const priorDelta=x.current-prior;
-        const priorText=prev.transactions.length?` 前月同日比 ${formatSigned(Math.round(priorDelta))}。`:'';
+        const priorText=prev.transactions.length?` ${x.comparisonMode==='monthly'?'前月額比':'前月同日比'} ${formatSigned(Math.round(priorDelta))}。`:'';
         out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
-          type:'category-increase',category:x.cat,current:x.current,average:x.mean,delta:x.diff,previousDelta:prev.transactions.length?priorDelta:null,
+          type:'category-increase',category:x.cat,current:x.current,average:x.mean,delta:x.diff,comparisonMode:x.comparisonMode,previousDelta:prev.transactions.length?priorDelta:null,
           covered:outlook.coveredToDate||!outlook.isCurrent,
           text:`${x.cat}：今月 ${formatYen(Math.round(x.current))}、同時点の過去3か月平均より ${formatYen(Math.round(x.diff))} 多い登録額です。${priorText}${x.cat==='家賃'?'固定費の支払額・計上時期の違いも確認してください。':''}`});
       }
       if(!significant.length){
         const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
-        if(down)out.push({tone:'neutral',type:'category-decrease',category:down.cat,current:down.current,average:down.mean,delta:down.diff,covered:outlook.coveredToDate||!outlook.isCurrent,
+        if(down)out.push({tone:'neutral',type:'category-decrease',category:down.cat,current:down.current,average:down.mean,delta:down.diff,comparisonMode:down.comparisonMode,covered:outlook.coveredToDate||!outlook.isCurrent,
           text:`${down.cat}：同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です（未取込分は反映されていません）。`});
       }
     }
