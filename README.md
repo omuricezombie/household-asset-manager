@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.6**：妖精風の横顔・胴体・手足・羽の配置を再設計（AI QA PASS／Human QA待ち） |
+| candidate | **v0.2.46-candidate.7**：外部美術知見に基づく妖精の首元微調整・ジャンプの予備動作／着地・方向切替演出（AI QA PASS／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.6：静的27/27、SVG差分60/60、妖精横姿24/24 PASS。candidate.5は5種族の差は一定評価、妖精の横向きはHuman QA未合格／新版Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.7：静的33/33・動作模擬6/6・SVG 60/60 PASS、妖精幼体の横姿は描画画像を確認済み／Android Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -247,3 +247,14 @@ git rev-parse HEAD
 - **版・キャッシュ**：画面表示・APP_VERSION・Service Worker cacheを `v0.2.46-candidate.6`、静的アセット参照を `?v=0246c6` に更新。
 - **AI QA**：JavaScript構文・DOMとアセット参照・SW・保存互換等27/27 PASS、SVG差分・生成60/60 PASS、妖精3段階×左右×4表情24/24 PASS。**Android実機での横姿の自然さはHuman QA待ち**。前版で確認済みの家計・育成・保存のテストは変更箇所がないため再実施しない。
 - **開発状態**：本番stableはv0.2.45を維持。candidate.6はHuman QA前にmainへマージせず、前candidate.5の外観不具合修正を実機で確認してから採用判断する。
+
+
+### v0.2.46-candidate.7：外部専門知見を反映した美術・モーション改修
+
+- **外部参考と設計判断**：IIT Bombay / D'Source「Character Design for Animation – Model Sheet」 https://www.dsource.in/course/character-design-animation/model-sheet および「Attributes and Proportions」https://www.dsource.in/course/character-design-animation/attributes-and-proportions の比率・量感・ターンアラウンドの考え方を採用。Walt Disney Animation Studios「Animation」https://www.disneyanimation.com/process/animation/ と Animation Mentor「Tutorial: Building Appealing Character Poses for Animation」https://www.animationmentor.com/blog/tutorial-building-appealing-character-poses-for-animation/ の予備動作・余韻・シルエット・アピールに関する原則を参照。MDNの https://developer.mozilla.org/ja/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion で動きを抑える設定を確認。既存キャラクターの模倣や素材流用はせず、制作技法のみ取り入れた。
+- **描画の美術QA**：妖精の幼体の左横姿をSVGから画像へ実際に変換して点検。頭・顔・首・肩の接続について、首の三角形状と輪郭線の存在感が強いと判断し、首元の線を短く単純化。元の口元・顔・翼の位置や衣装は維持。候補版.6との描画比較では妖精の左右×3成長段階の計6姿だけ変更、ほか54姿は不変。これまでのSVG構文QAのみでは美術品質を保証できないことを明記。
+- **動きの改善**：相棒の部屋・ホームのCSS待機アニメーションを、静止→沈み込み（予備動作）→弧を描く跳躍→着地での沈み込み→小さなリバウンド→静止の流れに更新。短い移動と静止を維持し、家計画面で注意を引きすぎない演出とする。方向転換時には新しいSVGが軽く馴染む0.32秒の収束アニメーションを追加。実機での自然さは引き続きHuman QAの対象。
+- **動きを減らす設定**：従来のCSS `prefers-reduced-motion` に加え、`pet-game.js` の方向転換タイマーもユーザーの `prefers-reduced-motion: reduce` を尊重。すでに起動したタイマーも発火時に設定を確認し、向きの切替・新しいSVGの生成を停止する。
+- **ファイル・版管理**：改修 `pet-art.js`（妖精横姿のみ）・`pet-game.css`（待機/方向転換アニメーション）・`pet-game.js`（動きを減らす設定）、バージョン/キャッシュ整合の `index.html`・`db.js`・`service-worker.js`、本README。画面表示・APP_VERSION・Service Worker cacheを `v0.2.46-candidate.7`、JS/CSSクエリを `?v=0246c7` に統一。
+- **既存処理の保護**：家計収支、分類、CSV、月次報酬、愛情度、成長段階、キャラクターID、図鑑、バックアップ、IndexedDB保存ロジックは今回変更なし。DB_VERSION=1／SCHEMA_VERSION=2／backupFormatVersion=1維持。
+- **AI QA**：JS構文/アセット版/保存互換/アニメーションキーフレーム整合等の静的33/33 PASS。方向転換・操作画面移動・モーション軽減設定の模擬6/6 PASS。5種×3段階×4方向のSVG生成60/60 PASS。現行candidate.7の**Android実機での画像の自然さ・アニメーションの感触はHuman QA未実施**。本番stable v0.2.45は変更しない。
