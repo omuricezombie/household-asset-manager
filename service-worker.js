@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.46-candidate.13';
-const FILES=['./','./index.html','./styles.css?v=0246c13','./db.js?v=0246c13','./dcard-import.js?v=0246c13','./analysis.js?v=0246c13','./pet-game.css?v=0246c13','./pet-art.js?v=0246c13','./assets/pet-concept-atlas.webp?v=0246c13','./assets/pet-yokai-concept.webp?v=0246c13','./pet-illustration.js?v=0246c13','./assets/pet-growth-atlas.webp?v=0246c13','./pet-game.js?v=0246c13','./app.js?v=0246c13','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.46-candidate.14';
+const FILES=['./','./index.html','./styles.css?v=0246c14','./db.js?v=0246c14','./dcard-import.js?v=0246c14','./analysis.js?v=0246c14','./pet-game.css?v=0246c14','./pet-art.js?v=0246c14','./assets/pet-concept-atlas.webp?v=0246c14','./assets/pet-yokai-concept.webp?v=0246c14','./pet-illustration.js?v=0246c14','./assets/pet-growth-atlas.webp?v=0246c14','./assets/pet-rear-atlas.webp?v=0246c14','./pet-game.js?v=0246c14','./app.js?v=0246c14','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(

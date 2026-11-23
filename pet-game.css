@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c12");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c14");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c12");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c14");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c12");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c14");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -421,3 +421,18 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-character .pet-illustration,
   .pet-character .pet-art-emote{animation:none!important;transition:none!important}
 }
+
+
+/* candidate.14 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
+.pet-character .pet-art-back .pet-art-image{
+  background-image:url("./assets/pet-rear-atlas.webp?v=0246c14");
+  background-size:300% 500%;background-repeat:no-repeat;
+}
+.pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
+.pet-art-back.pet-art-teen .pet-art-image{background-position-x:50%}
+.pet-art-back.pet-art-adult .pet-art-image{background-position-x:100%}
+.pet-art-back.pet-art-animal .pet-art-image{background-position-y:0%}
+.pet-art-back.pet-art-fantasy .pet-art-image{background-position-y:25%}
+.pet-art-back.pet-art-fairy .pet-art-image{background-position-y:50%}
+.pet-art-back.pet-art-yokai .pet-art-image{background-position-y:75%}
+.pet-art-back.pet-art-dino .pet-art-image{background-position-y:100%}

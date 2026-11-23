@@ -1,6 +1,6 @@
 /* Illustration-first companion renderer. No persistence or household calculations.
    Front and angled: adopted baby sprites, new teen/adult illustrations.
-   Back view: existing hand-drawn SVG until a matching rear-view illustration exists. */
+   Back view: separate atlas for five families and three growth stages. */
 (function(global){
   'use strict';
   const HAM=global.HAM=global.HAM||{};
@@ -14,11 +14,9 @@
     if(!stages.includes(stage))stage='baby';
     if(!directions.includes(direction))direction='front';
     if(!moods.includes(mood))mood='idle';
-    // Preserve real rear view while its new illustrated counterpart is being developed.
-    if(direction==='back')return HAM.PetArt.draw({type,stage,direction,mood,affection,trait});
-    const pos=direction==='front'?'front':'side',older=stage!=='baby';
+    const pos=direction==='back'?'back':direction==='front'?'front':'side',older=stage!=='baby';
     const classes=['pet-art','pet-illustration','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
-    if(older)classes.push('pet-art-growth');
+    if(older&&pos!=='back')classes.push('pet-art-growth');
     if(direction==='right')classes.push('pet-art-mirror');
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
