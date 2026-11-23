@@ -62,6 +62,8 @@ let toastTimer=null;
 let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
+const ACTIVE_TAB_SESSION_KEY='ham-active-tab-v1';
+const MAIN_TABS=new Set(['home','input','monthend','history','data','pet']);
 let monthEndWriteQueue=Promise.resolve();
 let assetBreakdownMode='compact';
 let assetBreakdownRequestId=0;
@@ -91,6 +93,19 @@ function monthLabel(m){const [y,mo]=m.split('-');return `${y}年${Number(mo)}月
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function selectOptions(values,current=''){return values.map(v=>{const [value,label]=Array.isArray(v)?v:[v,v];return `<option value="${esc(value)}" ${String(value)===String(current)?'selected':''}>${esc(label)}</option>`}).join('');}
 
+// Keep the active main tab across a same-tab reload without altering the household DB.
+function rememberActiveTab(name){
+  if(!MAIN_TABS.has(name))return;
+  try{sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY,name);}catch(err){/* storage may be blocked */ }
+}
+function readRefreshTab(){
+  let name=history.state?.hamNav==='screen'?history.state.screen:null;
+  if(!MAIN_TABS.has(name)){
+    try{name=sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY);}catch(err){name=null;}
+  }
+  if(!MAIN_TABS.has(name)||(name==='pet'&&!HAM.PetGame?.isEnabled()))return 'home';
+  return name;
+}
 async function showScreen(name,{push=true,panel=null}={}){
   if(name==='pet'&&!HAM.PetGame?.isEnabled())name='home';
   if(currentScreen==='monthend' && !(await flushMonthEndEdits())){
@@ -100,6 +115,7 @@ async function showScreen(name,{push=true,panel=null}={}){
   if(name==='input'&&currentScreen!=='input'&&push)resetInputToCurrentMonth();
   if(name!=='home'){assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();}
   currentScreen=name;
+  rememberActiveTab(name);
   currentPanel=name==='input'?panel:null;
   $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
   $$('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
@@ -120,9 +136,15 @@ function openInputPanel(name,{push=true}={}){
   const panel=$(`input-${name}`)?name:null;
   showScreen('input',{push,panel});
 }
-function setupNavigationHistory(){
-  history.replaceState({hamNav:'exit-guard'},'',location.href);
-  history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
+function setupNavigationHistory(initialScreen='home'){
+  // Reload preserves the existing history entry, so Android Back still reaches
+  // the actual previous in-app screen rather than an extra exit confirmation.
+  if(history.state?.hamNav==='screen'){
+    history.replaceState({hamNav:'screen',screen:initialScreen,panel:null},'',location.href);
+  }else{
+    history.replaceState({hamNav:'exit-guard'},'',location.href);
+    history.pushState({hamNav:'screen',screen:initialScreen,panel:null},'',location.href);
+  }
   historyReady=true;
   window.addEventListener('popstate',async e=>{
     const st=e.state;
@@ -1812,7 +1834,7 @@ function setupLock(){
 
 async function init(){
   try{
-    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
+    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();const refreshTab=readRefreshTab();setupNavigationHistory(refreshTab);await renderAll();if(refreshTab!=='home')await showScreen(refreshTab,{push:false});else rememberActiveTab('home');await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
   }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
