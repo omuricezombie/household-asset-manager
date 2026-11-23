@@ -215,6 +215,53 @@
   // simple day-of-month multiplication of imported card transactions.
   // CSV files can arrive weeks after purchase: never imply a green forecast
   // unless the card cycle through today is represented by an imported file.
+  // Read-only retrospective. An explicit month-end completion is distinct
+  // from statement coverage; historical averages use covered comparison months.
+  async function monthlyReview(month){
+    const current=await summary(month),previous=await summary(DB().prevMonth(month));
+    const status=await DB().getMonthStatus(month);
+    const today=DB().ymd(),imports=await DB().getAll('cardImports');
+    const coverage=cardCoverage(month,imports,today);
+    const unclassified=current.transactions.filter(t=>
+      (t.kind==='refund'||(t.kind==='expense'&&!t.isOtherPersonExpense))&&
+      (!t.category||t.category==='未分類')).length;
+    const sample=[];
+    let cursor=DB().prevMonth(month);
+    for(let i=0;i<12&&sample.length<3;i++){
+      const c=cardCoverage(cursor,imports,today);
+      const tx=await monthTransactions(cursor);
+      const unclassifiedPast=tx.some(t=>
+        (t.kind==='refund'||(t.kind==='expense'&&!t.isOtherPersonExpense))&&
+        (!t.category||t.category==='未分類'));
+      if(c.complete&&!unclassifiedPast&&tx.some(t=>t.kind==='expense')){
+        sample.push(await summary(cursor));
+      }
+      cursor=DB().prevMonth(cursor);
+    }
+    const normalAvg=sample.length===3?sample.reduce((sum,r)=>sum+r.normal,0)/3:null;
+    const categoryChanges=sample.length===3?Object.entries(current.categories)
+      .filter(([cat,v])=>cat!=='未分類'&&v>0)
+      .map(([category,amount])=>{
+        const average=sample.reduce((sum,r)=>sum+(r.categories[category]||0),0)/3;
+        return {category,amount,average,diff:amount-average};
+      }).sort((a,b)=>b.diff-a.diff):[];
+    const topCategories=Object.entries(current.categories)
+      .filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,4)
+      .map(([category,amount])=>({category,amount,share:current.expense>0?amount/current.expense:0}));
+    const assetDelta=await bankBalanceDelta(month);
+    return {month,completed:!!status?.completedAt,completedAt:status?.completedAt||null,
+      csvComplete:coverage.complete,coverage,unclassified,provisional:!coverage.complete||unclassified>0,
+      income:current.income,expense:current.expense,normal:current.normal,temporary:current.temporary,
+      saving:current.saving,previousExpense:previous.expense,previousSaving:previous.saving,
+      expenseDelta:current.expense-previous.expense,savingDelta:current.saving-previous.saving,
+      topCategories,sampleMonths:sample.map(x=>x.month),normalAverage:normalAvg,
+      normalDelta:normalAvg===null?null:current.normal-normalAvg,
+      categoryIncreases:categoryChanges.filter(x=>x.diff>=3000).slice(0,3),
+      categoryDecreases:categoryChanges.filter(x=>x.diff<=-3000).sort((a,b)=>a.diff-b.diff).slice(0,2),
+      bankDelta:assetDelta.available?assetDelta.delta:null,
+      bankDeltaReason:assetDelta.available?null:assetDelta.reason};
+  }
+
   async function spendingOutlook(month){
     const currentMonth=DB().currentMonth();
     const cur=await summary(month);
@@ -350,5 +397,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,monthlyReview,insights,formatYen,formatSigned,effExpense};
 })(window);
