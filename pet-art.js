@@ -159,7 +159,7 @@ function fairy(age,view,mood){
     baby?'M66 70 Q65 36 92 31 Q124 30 125 64 Q131 95 113 109 L89 101Z':
     'M64 70 Q63 32 91 25 Q127 23 129 62 Q133 95 115 113 L89 103Z',
     hair,P.dark,3.2);
-  s+=path('M91 93 Q92 109 102 113 L109 105 L107 91Z',skin,skinLine,2.5);
+  s+=path('M94 95 Q96 103 102 112 L107 107 L106 94Z',skin,'none',0);
   // Continuous forehead -> small nose -> mouth -> chin -> cheek -> ear-side profile.
   s+=path(adult?
     'M78 48 Q94 42 105 51 Q115 63 107 84 Q103 96 91 102 Q76 105 66 96 Q60 89 57 83 L52 79 Q57 74 62 71 Q62 57 78 48Z':
