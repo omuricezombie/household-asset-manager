@@ -366,6 +366,7 @@
     if($('petActiveArea'))$('petActiveArea').classList.toggle('hidden',!p);
     if($('petArchive'))$('petArchive').classList.toggle('hidden',!p||level()<MATURITY_LEVEL);
     if($('petRestart'))$('petRestart').classList.toggle('hidden',!p);
+    if($('petRecalculate'))$('petRecalculate').disabled=!p;
     if($('petCurrentType'))$('petCurrentType').textContent=p?
       p.name+'｜'+PET_TYPES.find(x=>x.id===p.type).label+'｜'+({baby:'幼体',teen:'中間体',adult:'成体'})[petStage()]:'';
     if($('petTypeChoices'))$('petTypeChoices').innerHTML=p?'':PET_TYPES.map(t=>
@@ -387,7 +388,7 @@
   function stopFacing(){if(facingTimer){clearInterval(facingTimer);facingTimer=null;}}
   function setFacingTimer(){
     stopFacing();
-    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden)return;
+    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked'))return;
     facingTimer=setInterval(()=>{
       if(mood!=='idle')return;
       faceStep=(faceStep+1)%FACING.length;
