@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.8**：5タイプ全横向きをマンガ風の斜め姿に再設計・見本切替追加（AI QA PASS／Human QA待ち） |
+| candidate | **v0.2.46-candidate.9**：イラスト先行の4タイプ比較試作をアプリ内に追加（本体の育成キャラは変更なし／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.8：静的34/34・全SVG60/60・見本切替模擬11/11 PASS、妖精・恐竜幼体の新斜め姿は実画像で点検／Android Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.9：4タイプ×2方向の画像素材、GitHub binary SHA、HTML/CSS/SW版・旧ギャラリー維持を静的確認／新イラストの実機Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -271,3 +271,15 @@ git rev-parse HEAD
 - **変更したファイル**：`pet-art.js`（5種の横向き描画）、`pet-game.js`（見本切替・方向コメント）、`pet-game.css`（ボタン）、`index.html`（切替UI・版）、`db.js`（版）、`service-worker.js`（キャッシュ・版）、`README.md`。`app.js`、家計集計`analysis.js`、CSV取込`dcard-import.js`、IndexedDBスキーマ・バックアップ処理は変更しない。
 - **版・キャッシュ**：画面表示／APP_VERSION／Service Worker cache `v0.2.46-candidate.8`、全JS/CSSアセット参照`?v=0246c8`。DB_VERSION=1、SCHEMA_VERSION=2、backupFormatVersion=1のまま。
 - **AI QA**：構文・画面ID・版/キャッシュ・保存互換・既存家計への非干渉など静的 **34/34 PASS**、5種×3段階×4方向のSVG生成とタグ検証 **60/60 PASS**、画面の見本切替/データ不変の模擬 **11/11 PASS**。実機Human QAでは、正面／斜め見本5種とキャラの動きの自然さ、ホームでの表示を代表確認。v0.2.45 stable はmainで保全、Human QA前に昇格しない。
+
+
+### v0.2.46-candidate.9：イラスト先行・横向き4タイプ試作
+
+- **目的**：candidate.8の横向きに対し、妖怪はある程度成立、動物風・架空の生き物・妖精風・恐竜は惜しいとのAndroid実機評価を受け、SVGの座標調整だけを繰り返す方法から「イラストを先に描き、その絵を評価してから実装方式を決める」方式へ変更。
+- **試作**：新しいオリジナルイラストを生成し、4タイプ×正面・漫画的斜め向きの計8カットを作成。透過WebPの軽量アトラス `assets/pet-concept-atlas.webp`（320×720px、24,744bytes）に整理。画像周辺の不要な色のにじみを除去し、GitHub上のblob SHA `006eca56f807e78b818e7492798f311ea75b65e6` と照合。
+- **表示方式**：相棒画面に折りたたみの「新しいイラスト先行試作（4タイプ）」を追加。背景画像の座標切り替えで8カットを正面・斜め向きのペアとして表示。新画像の読み込みは自repo内のみであり外部API・外部画像URLは不要。
+- **安全な試作運用**：既存の育成中キャラクターの描画（`pet-art.js`）、ホームの常駐、成長3段階、愛情度・性格、月次報酬の個体紐付け、図鑑、家計計算・CSV・IndexedDB・バックアップは**一切変更しない**。妖怪も現行の姿を維持。新素材を自動適用せず、採用可否は画像を評価してから決める。
+- **実装ファイル**：新規画像 `assets/pet-concept-atlas.webp`、`index.html`（折りたたみ比較画面）、`pet-game.css`（アトラスの描画）、`service-worker.js`（新素材をキャッシュ）、`db.js`（表示版のみ）、README。ゲームのJS・家計集計・保存関連ロジックに変更なし。
+- **版**：UI/APP_VERSION/SW CACHEは `v0.2.46-candidate.9`、JS/CSS参照は `?v=0246c9`、画像アトラスも `?v=0246c9` として一括キャッシュ。DB_VERSION=1・SCHEMA_VERSION=2・backupFormatVersion=1を維持。
+- **QA**：GitHubの画像blob SHA一致、4タイプ・8コマのプレビュー位置、HTMLタグバランス、CSS背景指定、Service Workerプリキャッシュ、画面版・DB版、既存の5タイプ見本の保持を静的確認。Android実機で新イラストの表示や美術的な好ましさを確認するHuman QAは未実施。アトラスはあくまで幼体の試作で、成長後/後ろ姿/動作フレームはまだ制作していない。
+- **次工程**：この新イラストが可愛さ・横向きの自然さ・種族差を満たすか評価した後、採用する場合のみ成長段階とアニメーション差分の制作、画像形式とキャッシュ設計、描画切替の移行QAに進む。現在のstable v0.2.45は一切変更せず、Human QA前にmainへマージしない。
