@@ -71,7 +71,7 @@
     }
     if(Number(value.version)>=2){
       s.activePet=normalizePet(value.activePet);
-      s.collection=Array.isArray(value.collection)?value.collection.slice(0,200).filter(x=>x&&typeof x==='object'&&PET_TYPES.some(t=>t.id===x.type)).map(x=>({
+      s.collection=Array.isArray(value.collection)?value.collection.filter(x=>x&&typeof x==='object'&&PET_TYPES.some(t=>t.id===x.type)).map(x=>({
         ...normalizePet(x),earnedPoints:cap(x.earnedPoints,100000000),
         finalLevel:cap(x.finalLevel,1000),completedAt:String(x.completedAt||''),
         finalPersonality:String(x.finalPersonality||'')
@@ -331,11 +331,12 @@
     await render();
   }
   async function choosePet(type){
-    if(active()||!PET_TYPES.some(t=>t.id===type))return;
+    if(!state.enabled||active()||!PET_TYPES.some(t=>t.id===type))return;
     const p=newPet(type);
     const name=$('petNameInput')?.value.trim();
     if(name)p.name=name.slice(0,30);
     state.activePet=p;
+    if($('petNameInput'))$('petNameInput').value='';
     if(!state.startedMonth)state.startedMonth=p.startedMonth;
     faceStep=0;mood='idle';
     await persist();
