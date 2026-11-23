@@ -92,6 +92,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function selectOptions(values,current=''){return values.map(v=>{const [value,label]=Array.isArray(v)?v:[v,v];return `<option value="${esc(value)}" ${String(value)===String(current)?'selected':''}>${esc(label)}</option>`}).join('');}
 
 async function showScreen(name,{push=true,panel=null}={}){
+  if(name==='pet'&&!HAM.PetGame?.isEnabled())name='home';
   if(currentScreen==='monthend' && !(await flushMonthEndEdits())){
     if(!push&&historyReady)history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
     return false;
@@ -111,6 +112,7 @@ async function showScreen(name,{push=true,panel=null}={}){
   if(currentPanel==='cash')$('cashAmount').focus();
   if(currentPanel==='advance'){renderAdvanceCardTransactions();renderManualAdvancePaymentEdits();}
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
+  HAM.PetGame?.onScreen(name);
   if(push&&historyReady) history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
   return true;
 }
@@ -1810,7 +1812,7 @@ function setupLock(){
 
 async function init(){
   try{
-    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
+    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
   }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
