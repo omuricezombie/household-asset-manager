@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0246c8">
-  <link rel="stylesheet" href="pet-game.css?v=0246c8">
+  <link rel="stylesheet" href="styles.css?v=0246c9">
+  <link rel="stylesheet" href="pet-game.css?v=0246c9">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.46-candidate.8</p>
+      <p class="sub">v0.2.46-candidate.9</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -396,6 +396,17 @@
         </div>
         <div id="petStarterGallery" class="pet-type-choices"></div>
       </details>
+      <details class="card pet-art-concept-section">
+        <summary><strong>新しいイラスト先行試作（4タイプ）</strong></summary>
+        <p class="muted">現在の相棒や育成データを変えずに見比べるための試作です。左が正面、右がマンガ風の斜め向き。成長後の絵や動きはまだ適用していません。</p>
+        <div class="pet-concept-gallery" aria-label="新しいキャラクターイラスト試作">
+          <div class="pet-concept-entry"><strong>動物風</strong><div class="pet-concept-pair"><div class="pet-concept-frame pet-concept-row-0 pet-concept-front" role="img" aria-label="動物風、正面の新しいイラスト"></div><div class="pet-concept-frame pet-concept-row-0 pet-concept-side" role="img" aria-label="動物風、斜め向きの新しいイラスト"></div></div></div>
+          <div class="pet-concept-entry"><strong>架空の生き物</strong><div class="pet-concept-pair"><div class="pet-concept-frame pet-concept-row-1 pet-concept-front" role="img" aria-label="架空の生き物、正面の新しいイラスト"></div><div class="pet-concept-frame pet-concept-row-1 pet-concept-side" role="img" aria-label="架空の生き物、斜め向きの新しいイラスト"></div></div></div>
+          <div class="pet-concept-entry"><strong>妖精風</strong><div class="pet-concept-pair"><div class="pet-concept-frame pet-concept-row-2 pet-concept-front" role="img" aria-label="妖精風、正面の新しいイラスト"></div><div class="pet-concept-frame pet-concept-row-2 pet-concept-side" role="img" aria-label="妖精風、斜め向きの新しいイラスト"></div></div></div>
+          <div class="pet-concept-entry"><strong>恐竜</strong><div class="pet-concept-pair"><div class="pet-concept-frame pet-concept-row-3 pet-concept-front" role="img" aria-label="恐竜、正面の新しいイラスト"></div><div class="pet-concept-frame pet-concept-row-3 pet-concept-side" role="img" aria-label="恐竜、斜め向きの新しいイラスト"></div></div></div>
+        </div>
+        <p class="muted pet-concept-note">妖怪は現行のイラストを維持するため試作対象外です。採用前のデザイン確認用であり、育成中の姿には反映しません。</p>
+      </details>
       <div class="card">
         <h2>解放した遊び</h2>
         <div id="petCatalog" class="pet-catalog"></div>
@@ -475,11 +486,11 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0246c8"></script>
-  <script src="dcard-import.js?v=0246c8"></script>
-  <script src="analysis.js?v=0246c8"></script>
-  <script src="pet-art.js?v=0246c8"></script>
-  <script src="pet-game.js?v=0246c8"></script>
-  <script src="app.js?v=0246c8"></script>
+  <script src="db.js?v=0246c9"></script>
+  <script src="dcard-import.js?v=0246c9"></script>
+  <script src="analysis.js?v=0246c9"></script>
+  <script src="pet-art.js?v=0246c9"></script>
+  <script src="pet-game.js?v=0246c9"></script>
+  <script src="app.js?v=0246c9"></script>
 </body>
 </html>
