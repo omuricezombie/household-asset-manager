@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   const HAM=global.HAM=global.HAM||{};
-  const APP_VERSION='0.2.41-candidate.1';
+  const APP_VERSION='0.2.41';
   const SCHEMA_VERSION=2;
   const DB_NAME='householdAssetManagerDB_v2';
   const DB_VERSION=1;
