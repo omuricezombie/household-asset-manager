@@ -347,8 +347,13 @@ async function renderHomeMonthlyReview(){
     :'登録済みの家計収支は'+yen(-r.saving)+'のマイナスです。'}
     ${leadingCategory?'支出で最も大きいのは'+esc(leadingCategory.category)+'（'+yen(leadingCategory.amount)+'）です。':''}
     ${r.normalDelta===null?'':'通常支出は過去3比較月の平均より'+(r.normalDelta>0?yen(r.normalDelta)+'多い':r.normalDelta<0?yen(-r.normalDelta)+'少ない':'同水準')+'登録額です。'}</p>`;
+  const qualityWarnings=[
+    !r.completed?'月末更新の完了操作が記録されていません':null,
+    !r.csvComplete?'dカードの必要な請求期間が揃っていません':null,
+    r.unclassified?'自己負担の未分類が'+r.unclassified+'件あります':null
+  ].filter(Boolean);
   const quality=r.provisional
-    ?`<p class="review-quality">月末更新の完了記録はありますが、${esc(!r.csvComplete?'dカードの2請求期間が未取込':'')} ${esc(r.unclassified?'自己負担の未分類が'+r.unclassified+'件あります':'')}。以下は登録済みデータによる暫定振り返りです。</p>`
+    ?`<p class="review-quality"><strong>暫定振り返り</strong>：${esc(qualityWarnings.join('／'))}。登録済みデータによる集計です。</p>`
     :'<p class="outlook-small">月末更新済み・カードの必要な請求期間を確認済み。登録されていない支出まで保証するものではありません。</p>';
   $('homeReviewContent').innerHTML=quality+overview+
     `<div class="review-metrics">
