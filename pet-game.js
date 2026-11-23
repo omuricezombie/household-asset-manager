@@ -363,6 +363,13 @@
       '<span class="pet-choice-preview">'+characterHtml(false,{type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0},'front')+'</span>'+
       '<strong>'+t.label+'</strong><small>'+t.hint+'</small></button>').join('');
   }
+  function renderStarterGallery(){
+    const container=$('petStarterGallery');if(!container)return;
+    container.innerHTML=PET_TYPES.map(t=>'<div class="pet-choice pet-starter-card">'+
+      '<span class="pet-choice-preview">'+characterHtml(false,{
+        type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0
+      },'front')+'</span><strong>'+safeText(t.label)+'</strong></div>').join('');
+  }
   function renderArchives(){
     if(!$('petArchiveList'))return;
     if(!state.collection.length){
@@ -431,6 +438,7 @@
       paintCharacter();
       renderStats();
       renderCompanionChoices();
+      renderStarterGallery();
       renderArchives();
       speak(moodMessage());
       if($('petStartMonth'))$('petStartMonth').textContent=active()?.startedMonth||'-';
