@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.2**：顔パーツ配置修正・キャラクター直接なで・ページ更新時のタブ復元（AI QA PASS／Human QA待ち） |
+| candidate | **v0.2.46-candidate.3**：背景なしホーム常駐マスコット・相棒の部屋とホームでの横移動／ジャンプ（AI QA PASS／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.2：既存QAに加え静的21/21・操作/タブ復元模擬15/15 PASS／Android Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.3：静的20/20・常駐/ON-OFF模擬9/9 PASS、旧candidate.2 Android確認済み／新版Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -203,3 +203,13 @@ git rev-parse HEAD
 - アプリのページ更新後に「ホーム」へ戻ってしまう従来挙動を修正。現在のメインタブを `sessionStorage` に保存し、再読み込み時に表示を復元。既存の `history.state` に画面状態があればその履歴エントリを再利用し、更新のたびに余分な戻る履歴を積まない。育成OFFの場合は相棒タブではなくホームに安全に戻す。変更は画面状態のみで、家計データやIndexedDBスキーマは不変。
 - `index.html` UI・`db.js` APP_VERSION：`v0.2.46-candidate.2`、`service-worker.js` CACHE：`household-asset-manager-v0.2.46-candidate.2`、JS/CSS参照：`?v=0246c2`。
 - **AI QA**：JS構文・参照バージョン・DOM/CSS・家計保存互換等の静的21/21 PASS、タブ記憶・再読み込み時の履歴維持・直接タップ・重複抑止・キーボード操作等の模擬15/15 PASS。実ブラウザでの更新／戻る／顔配置／指なでのHuman QAは未実施。v0.2.45 stableは不変、candidateはmain未マージ。
+
+
+### v0.2.46-candidate.3：ホーム常駐の相棒・動きの強化
+
+- Androidでcandidate.2の操作が問題ないことを確認したうえで、背景付きの訪問ボタンを廃止し、**キャラクター単体の透明な小型表示**に変更。育成ONの間、ホームでは基本的に常駐。履歴・分析は従来どおり低頻度訪問。入力・月末更新・ロック中・モーダル表示中には表示しない。
+- ホームでは14秒周期で短い横移動・小ジャンプ・静止を組み合わせ、相棒の部屋では15秒周期の左右移動とジャンプを追加。食事・なでる等の行動時は既存の反応を優先。動きが苦手な場合に備え、OSの`prefers-reduced-motion`でアニメーションを無効にする。
+- ホーム初期表示とアプリのロック解除後に相棒を表示するため、`app.js`の表示ライフサイクルの接続のみ調整。既存のタブ復元・Android戻る、家計計算、IndexedDB保存形式、育成報酬・愛情度ロジックには変更なし。
+- UI/APP_VERSION/SW_CACHEを`v0.2.46-candidate.3`、JS/CSSキャッシュクエリを`?v=0246c3`へ変更。変更ファイルは`pet-game.js`・`pet-game.css`・`app.js`・`index.html`・`db.js`・`service-worker.js`・`README.md`。
+- AI QA：構文・版/アセット・常駐/モーダル・動き・保存互換性等20/20 PASS、ON/OFFと画面遷移の模擬9/9 PASS。CSSの実描画／Android実機での動作と操作干渉はHuman QA待ち。v0.2.45 stableは維持し、mainへのPRはまだ行わない。
+- キャラクターの色・輪郭・顔・世界観などの大きな方向性は本格的なグラフィック調整前に確認すると効率がよい。外観の細部と演出の仕上げは機能動作安定後に進める。
