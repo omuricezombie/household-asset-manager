@@ -319,7 +319,7 @@ async function renderHomeReviewOrInsights(){
   $('homeReviewCard').classList.toggle('hidden',!finished);
   $('homeInsightCard').classList.toggle('hidden',finished);
   if(finished){await renderHomeMonthlyReview();return;}
-  $('homeInsightHeading').textContent=selectedMonth===DB.currentMonth()?'今月の気づき・月末見通し':'対象月の途中経過';
+  $('homeInsightHeading').textContent=selectedMonth===DB.currentMonth()?'月途中の参考情報・月末見通し':'対象月の途中経過';
   await renderHomeSpendingInsights();
 }
 async function renderHomeMonthlyReview(){
@@ -339,10 +339,16 @@ async function renderHomeMonthlyReview(){
     ...r.categoryIncreases.map(x=>`<div class="review-category"><span>${esc(x.category)}：過去平均より増加</span><strong>+${yen(x.diff)}</strong></div>`),
     ...r.categoryDecreases.map(x=>`<div class="review-category"><span>${esc(x.category)}：過去平均より減少</span><strong>−${yen(-x.diff)}</strong></div>`)
   ].join('');
+  const leadingCategory=r.topCategories[0];
+  const overview=`<p class="review-overview">${r.saving>=0
+    ?'登録済みの家計収支は'+yen(r.saving)+'のプラスです。'
+    :'登録済みの家計収支は'+yen(-r.saving)+'のマイナスです。'}
+    ${leadingCategory?'支出で最も大きいのは'+esc(leadingCategory.category)+'（'+yen(leadingCategory.amount)+'）です。':''}
+    ${r.normalDelta===null?'':'通常支出は過去3比較月の平均より'+(r.normalDelta>0?yen(r.normalDelta)+'多い':r.normalDelta<0?yen(-r.normalDelta)+'少ない':'同水準')+'登録額です。'}</p>`;
   const quality=r.provisional
     ?`<p class="review-quality">月末更新の完了記録はありますが、${esc(!r.csvComplete?'dカードの2請求期間が未取込':'')} ${esc(r.unclassified?'自己負担の未分類が'+r.unclassified+'件あります':'')}。以下は登録済みデータによる暫定振り返りです。</p>`
     :'<p class="outlook-small">月末更新済み・カードの必要な請求期間を確認済み。登録されていない支出まで保証するものではありません。</p>';
-  $('homeReviewContent').innerHTML=quality+
+  $('homeReviewContent').innerHTML=quality+overview+
     `<div class="review-metrics">
       <div><span>収入</span><strong>${yen(r.income)}</strong></div>
       <div><span>支出</span><strong>${yen(r.expense)}</strong></div>
@@ -352,8 +358,7 @@ async function renderHomeMonthlyReview(){
       <h3>家計全体</h3>
       <div class="review-compare"><span>通常支出</span><strong>${yen(r.normal)}</strong></div>
       <div class="review-compare"><span>臨時支出</span><strong>${yen(r.temporary)}</strong></div>
-      ${trend('前月比：支出',r.expenseDelta)}
-      ${trend('前月比：収支',r.savingDelta)}
+      ${r.previousAvailable?trend('前月比：支出',r.expenseDelta)+trend('前月比：収支',r.savingDelta):'<p class="outlook-small">前月の家計取引がないため、前月比は表示しません。</p>'}
       ${comparison}
     </div>
     <div class="review-section">
