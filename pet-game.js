@@ -129,34 +129,42 @@
     if(!state.enabled){hideVisitor();if(current==='pet'&&navigate)void navigate('home');}
   }
   function isEnabled(){return !!(state&&state.enabled);}
-  function points(){return Object.values(state.awards).reduce((sum,x)=>sum+(Number(x.points)||0),0);}
+  function points(){return petPoints();}
   function level(p=points()){
     let lv=1;while(lv<LEVEL_THRESHOLDS.length&&p>=LEVEL_THRESHOLDS[lv])lv++;
     return lv;
   }
-  function personality(){
-    const sum=Object.values(state.traits).reduce((a,b)=>a+b,0);
-    if(sum<3)return {id:'curious',name:'まだ探検中'};
-    const top=Object.keys(state.traits).sort((a,b)=>state.traits[b]-state.traits[a])[0];
-    return {id:top,name:({pet:'甘えんぼ',food:'食いしんぼ',play:'元気いっぱい',calm:'のんびり'})[top]};
-  }
-  function hasCategoryAward(categories){
-    return Object.values(state.awards).some(a=>a.items.some(x=>categories.includes(x.category)));
-  }
+  function personality(){return petPersonality(active());}
+  function hasCategoryAward(categories){return activeRewardFor(categories);}
   function actionAvailable(action){
-    return level()>=action.level&&(!action.categories||hasCategoryAward(action.categories));
+    return !!active()&&level()>=action.level&&(!action.categories||hasCategoryAward(action.categories));
   }
-  function todayReset(){if(state.daily.date!==thisDay())state.daily={date:thisDay(),used:0,traitsUsed:0};}
-  function affectionTier(){return state.affection>=70?'bonded':state.affection>=30?'friendly':'shy';}
-  function characterHtml(small=false){
-    const trait=personality().id, tier=affectionTier();
-    const decorate=hasCategoryAward(['衣料費','美容費']), room=hasCategoryAward(['日用品','家電']);
-    return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+'" data-trait="'+safeText(trait)+'" data-bond="'+tier+'" role="img" aria-label="相棒のキャラクター">'+
+  function todayReset(){
+    const p=active();
+    if(p&&p.daily.date!==thisDay())p.daily={date:thisDay(),used:0,traitsUsed:0};
+  }
+  function affectionTier(pet=active()){return (pet?.affection||0)>=70?'bonded':(pet?.affection||0)>=30?'friendly':'shy';}
+  const FACING=['front','left','back','right','front'];
+  function facing(){return FACING[faceStep%FACING.length];}
+  function characterHtml(small=false,pet=active()){
+    if(!pet)return '';
+    const trait=petPersonality(pet).id,tier=affectionTier(pet),type=pet.type;
+    const stage=petStage(pet),decorate=activeRewardFor(['衣料費','美容費'],pet);
+    const room=activeRewardFor(['日用品','家電'],pet);
+    return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+'" data-trait="'+safeText(trait)+
+      '" data-bond="'+tier+'" data-type="'+safeText(type)+'" data-growth="'+stage+'" data-facing="'+facing()+
+      '" role="img" aria-label="'+safeText(pet.name)+'">'+
       '<span class="pet-shadow"></span><span class="pet-tail"></span>'+
+      '<span class="pet-wing pet-wing-left"></span><span class="pet-wing pet-wing-right"></span>'+
       '<span class="pet-ear pet-ear-left"></span><span class="pet-ear pet-ear-right"></span>'+
-      '<span class="pet-body"><span class="pet-face"><span class="pet-eye pet-eye-left"></span><span class="pet-eye pet-eye-right"></span>'+
-      '<span class="pet-cheek pet-cheek-left"></span><span class="pet-cheek pet-cheek-right"></span><span class="pet-mouth"></span></span>'+
+      '<span class="pet-antenna pet-antenna-left"></span><span class="pet-antenna pet-antenna-right"></span>'+
+      '<span class="pet-horn"></span><span class="pet-spikes"></span>'+
+      '<span class="pet-body"><span class="pet-back-mark"></span><span class="pet-face">'+
+      '<span class="pet-eye pet-eye-left"></span><span class="pet-eye pet-eye-right"></span>'+
+      '<span class="pet-cheek pet-cheek-left"></span><span class="pet-cheek pet-cheek-right"></span>'+
+      '<span class="pet-mouth"></span><span class="pet-nose"></span></span>'+
       '<span class="pet-decor">'+(decorate?'✿':tier==='bonded'?'♥':'')+'</span></span>'+
+      '<span class="pet-arm pet-arm-left"></span><span class="pet-arm pet-arm-right"></span>'+
       '<span class="pet-foot pet-foot-left"></span><span class="pet-foot pet-foot-right"></span>'+
       (room&&!small?'<span class="pet-sparkle">✧</span>':'')+'</span>';
   }
@@ -165,8 +173,9 @@
     if(mood==='food')return 'おいしいものが大好き！';
     if(mood==='play')return 'まだまだ遊べそう！';
     if(mood==='calm')return 'まったり過ごしている。';
-    if(state.affection>=70)return 'あなたを見つけると、嬉しそうに近づいてくる。';
-    if(state.affection>=30)return '少しずつ仲良くなってきたね。';
+    if(!active())return 'まずは一緒に過ごす相棒を選ぼう。';
+    if(active().affection>=70)return 'あなたを見つけると、嬉しそうに近づいてくる。';
+    if(active().affection>=30)return '少しずつ仲良くなってきたね。';
     return 'のんびり過ごしている。';
   }
   function paintCharacter(){
@@ -180,18 +189,19 @@
     if(el)el.textContent=text||moodMessage();
   }
   async function interact(id){
-    if(!isEnabled())return;
+    if(!isEnabled()||!active())return;
     const item=ACTIONS.find(x=>x.id===id);
     if(!item||!actionAvailable(item))return;
     todayReset();
-    const gained=Math.min(item.gain,Math.max(0,DAILY_CAP-state.daily.used),Math.max(0,100-state.affection));
-    state.daily.used+=gained;state.affection+=gained;
-    if(state.daily.traitsUsed<12){
-      for(const k of Object.keys(state.traits))state.traits[k]=Math.round(state.traits[k]*0.985*100)/100;
-      state.traits[item.type]+=1;
-      state.daily.traitsUsed++;
+    const p=active();
+    const gained=Math.min(item.gain,Math.max(0,DAILY_CAP-p.daily.used),Math.max(0,100-p.affection));
+    p.daily.used+=gained;p.affection+=gained;
+    if(p.daily.traitsUsed<12){
+      for(const k of Object.keys(p.traits))p.traits[k]=Math.round(p.traits[k]*0.985*100)/100;
+      p.traits[item.type]+=1;
+      p.daily.traitsUsed++;
     }
-    state.lastAction=DB.now();mood=item.type;
+    p.lastAction=DB.now();mood=item.type;
     await persist();
     paintCharacter();speak(item.reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
