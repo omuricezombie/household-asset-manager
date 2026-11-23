@@ -147,6 +147,37 @@
     clearTimeout(actionTimer);
     actionTimer=setTimeout(()=>{mood='idle';paintCharacter();speak(moodMessage());},1700);
   }
+  // Pointer events cover a tap or a sliding finger gesture on the character.
+  // One gesture triggers exactly one "pet" action; dragging does not farm affection.
+  function bindDirectPetting(){
+    const stage=$('petAvatar');
+    if(!stage)return;
+    stage.setAttribute('role','button');
+    stage.setAttribute('tabindex','0');
+    stage.setAttribute('aria-label','キャラクターを直接なでる');
+    let activePointer=null;
+    stage.addEventListener('pointerdown',e=>{
+      if(!isEnabled()||e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
+      if(!e.target.closest('.pet-character'))return;
+      activePointer=e.pointerId;
+      e.preventDefault();
+      stage.classList.add('pet-stroking');
+      try{stage.setPointerCapture(e.pointerId);}catch(err){/* capture may be unavailable */ }
+      void interact('pet');
+    });
+    const release=e=>{
+      if(e.pointerId!==activePointer)return;
+      activePointer=null;
+      stage.classList.remove('pet-stroking');
+    };
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(type,release);
+    stage.addEventListener('keydown',e=>{
+      if(isEnabled()&&!e.repeat&&(e.key==='Enter'||e.key===' ')){
+        e.preventDefault();
+        void interact('pet');
+      }
+    });
+  }
   function prepareMonthlyRecords(all,imports){
     const byMonth={};
     for(const tx of all){
@@ -300,6 +331,7 @@
     state=normalize(stored&&stored.value);
     setVisible();
     if($('petEnabled'))$('petEnabled').addEventListener('change',e=>{void setEnabled(e.target.checked);});
+    bindDirectPetting();
     if($('petActions'))$('petActions').addEventListener('click',e=>{
       const b=e.target.closest('[data-pet-action]');if(b)void interact(b.dataset.petAction);
     });
