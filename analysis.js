@@ -253,6 +253,7 @@
       csvComplete:coverage.complete,coverage,unclassified,provisional:!coverage.complete||unclassified>0,
       income:current.income,expense:current.expense,normal:current.normal,temporary:current.temporary,
       saving:current.saving,previousExpense:previous.expense,previousSaving:previous.saving,
+      previousAvailable:previous.transactions.some(t=>['income','expense','refund'].includes(t.kind)),
       expenseDelta:current.expense-previous.expense,savingDelta:current.saving-previous.saving,
       topCategories,sampleMonths:sample.map(x=>x.month),normalAverage:normalAvg,
       normalDelta:normalAvg===null?null:current.normal-normalAvg,
