@@ -147,13 +147,13 @@
   function affectionTier(pet=active()){return (pet?.affection||0)>=70?'bonded':(pet?.affection||0)>=30?'friendly':'shy';}
   const FACING=['front','left','back','right','front'];
   function facing(){return FACING[faceStep%FACING.length];}
-  function characterHtml(small=false,pet=active()){
+  function characterHtml(small=false,pet=active(),direction=facing()){
     if(!pet)return '';
     const trait=petPersonality(pet).id,tier=affectionTier(pet),type=pet.type;
     const stage=petStage(pet),decorate=activeRewardFor(['衣料費','美容費'],pet);
     const room=activeRewardFor(['日用品','家電'],pet);
     return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+'" data-trait="'+safeText(trait)+
-      '" data-bond="'+tier+'" data-type="'+safeText(type)+'" data-growth="'+stage+'" data-facing="'+facing()+
+      '" data-bond="'+tier+'" data-type="'+safeText(type)+'" data-growth="'+stage+'" data-facing="'+safeText(direction)+
       '" role="img" aria-label="'+safeText(pet.name)+'">'+
       '<span class="pet-shadow"></span><span class="pet-tail"></span>'+
       '<span class="pet-wing pet-wing-left"></span><span class="pet-wing pet-wing-right"></span>'+
@@ -370,7 +370,7 @@
       p.name+'｜'+PET_TYPES.find(x=>x.id===p.type).label+'｜'+({baby:'幼体',teen:'中間体',adult:'成体'})[petStage()]:'';
     if($('petTypeChoices'))$('petTypeChoices').innerHTML=p?'':PET_TYPES.map(t=>
       '<button type="button" class="pet-choice" data-pet-type="'+t.id+'">'+
-      '<span class="pet-choice-preview">'+characterHtml(false,{type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0})+'</span>'+
+      '<span class="pet-choice-preview">'+characterHtml(false,{type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0},'front')+'</span>'+
       '<strong>'+t.label+'</strong><small>'+t.hint+'</small></button>').join('');
   }
   function renderArchives(){
@@ -379,7 +379,7 @@
       $('petArchiveList').innerHTML='<p class="muted">成体まで育てて図鑑に保存すると、ここに歴代の相棒が並びます。</p>';return;
     }
     $('petArchiveList').innerHTML=state.collection.map((p,i)=>
-      '<div class="pet-archive-entry"><span class="pet-archive-preview">'+characterHtml(false,p)+'</span>'+
+      '<div class="pet-archive-entry"><span class="pet-archive-preview">'+characterHtml(false,p,'front')+'</span>'+
       '<div><strong>'+safeText(p.name)+'</strong><small>'+safeText(PET_TYPES.find(t=>t.id===p.type)?.label||'相棒')+
       '・Lv.'+Number(p.finalLevel||1)+'・愛情度'+Math.floor(p.affection)+'/100</small>'+
       '<small>'+safeText(p.finalPersonality||petPersonality(p).name)+'｜'+safeText(String(p.completedAt||'').slice(0,10))+'</small></div></div>').join('');
