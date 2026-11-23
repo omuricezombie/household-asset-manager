@@ -1719,6 +1719,7 @@ function hideLock(){
   $('lockOverlay').classList.add('hidden');
   $('lockPin').value='';
   recordUnlockActivity({force:true});
+  if(currentScreen==='home')HAM.PetGame?.onScreen('home');
 }
 async function unlockApp(e){
   e.preventDefault();
@@ -1834,7 +1835,7 @@ function setupLock(){
 
 async function init(){
   try{
-    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();const refreshTab=readRefreshTab();setupNavigationHistory(refreshTab);await renderAll();if(refreshTab!=='home')await showScreen(refreshTab,{push:false});else rememberActiveTab('home');await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
+    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();const refreshTab=readRefreshTab();setupNavigationHistory(refreshTab);await renderAll();if(refreshTab!=='home')await showScreen(refreshTab,{push:false});else rememberActiveTab('home');await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');if(currentScreen==='home')HAM.PetGame?.onScreen('home');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
   }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
