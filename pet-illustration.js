@@ -22,7 +22,7 @@
     if(direction==='right')classes.push('pet-art-mirror');
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
-      '" aria-hidden="true"><span class="pet-art-emote" aria-hidden="true"></span></span>';
+      '" aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
   }
   HAM.PetIllustration={draw,types:species.slice(),stages:stages.slice()};
 })(window);
