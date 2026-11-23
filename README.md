@@ -24,12 +24,12 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（main、現行本番） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.12**：採用済みイラストの反応アニメーション改善（画質・背面・専用パーツ動作は未完成）。前版v0.2.46-candidate.11で採用済み幼体画像を本体採用、5タイプの中間体・成体画像と表情演出を追加（後ろ姿は旧SVG暫定／Human QA待ち） |
+| candidate | **v0.2.46-candidate.13**：自動方向転換で旧SVG背面へ切り替わる現象を暫定抑止。採用済み正面・左右斜め画像で表示を統一。背面15カット・高解像度・個別パーツ動作は未完成（Human QA待ち） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.12：今回のAI QAは別途記録。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.13：静的整合11/11 PASS。Androidの今回分Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
-v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.12`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
+v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.13`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
 
 ## 実装済みの主な機能
 
