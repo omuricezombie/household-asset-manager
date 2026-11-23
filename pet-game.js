@@ -47,7 +47,7 @@
         if(!/^\d{4}-\d{2}$/.test(k)||!v||typeof v!=='object')continue;
         const items=Array.isArray(v.items)?v.items.filter(x=>x&&CATEGORY_LIST.includes(x.category)).map(x=>({
           category:x.category,points:Math.max(0,Number(x.points)||0),
-          target:Math.max(0,Number(x.target)||0),kind:x.kind==='maintain'?'maintain':'new'
+          target:Math.max(0,Number(x.target)||0),best:Math.max(0,Number(x.best==null?x.target:x.best)||0),kind:x.kind==='maintain'?'maintain':'new'
         })):[];
         s.awards[k]={points:Math.max(0,Number(v.points)||0),bonus:Math.max(0,Number(v.bonus)||0),
           items,earnedAt:String(v.earnedAt||'')};
@@ -188,10 +188,11 @@
         if(values.filter(v=>v>0).length<2||average<1500)continue;
         const old=prev&&prev.items.find(x=>x.category===cat);
         if(old&&amount<=old.target*1.05){
-          const better=amount<=old.target*0.92&&old.target-amount>=500;
-          items.push({category:cat,points:better?150:100,target:Math.min(old.target,amount),kind:'maintain'});
+          const previousBest=Number.isFinite(old.best)?old.best:old.target;
+          const better=amount<=previousBest*0.92&&previousBest-amount>=500;
+          items.push({category:cat,points:better?150:100,target:old.target,best:Math.min(previousBest,amount),kind:'maintain'});
         }else if(average-amount>=500&&amount<=average*0.92){
-          items.push({category:cat,points:100,target:amount,kind:'new'});
+          items.push({category:cat,points:100,target:amount,best:amount,kind:'new'});
         }
       }
     }
