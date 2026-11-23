@@ -82,7 +82,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 /* Animation staging: rest -> anticipation (squash) -> arc -> landing (squash) -> recovery.
    This keeps motion legible at both room and home sizes and limits visual distraction. */
 @keyframes pet-room-wander{
-  0%,11%,29%,55%,83%,100%{transform:translate(0,0) scale(1)}
+  0%,11%,55%,100%{transform:translate(0,0) scale(1)}
   13%{transform:translate(0,3px) scale(1.04,.96)}
   18%{transform:translate(-13px,-13px) rotate(-3deg) scale(.98,1.045)}
   22%{transform:translate(-19px,3px) rotate(1deg) scale(1.05,.94)}
@@ -94,7 +94,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   66%{transform:translate(18px,-12px) rotate(3deg) scale(.98,1.05)}
   70%{transform:translate(21px,3px) rotate(-1deg) scale(1.045,.94)}
   73%{transform:translate(20px,-2px) scale(.99,1.02)}
-  77%{transform:translate(20px,0) scale(1)}
+  77%,83%{transform:translate(20px,0) scale(1)}
   88%{transform:translate(8px,0) scale(1)}
   94%{transform:translate(0,0) scale(1)}
 }
