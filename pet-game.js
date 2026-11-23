@@ -146,7 +146,9 @@
     if(p&&p.daily.date!==thisDay())p.daily={date:thisDay(),used:0,traitsUsed:0};
   }
   function affectionTier(pet=active()){return (pet?.affection||0)>=70?'bonded':(pet?.affection||0)>=30?'friendly':'shy';}
-  const FACING=['front','left','back','right','front'];
+  // Until the rear atlas matches the adopted illustrations, avoid the old-SVG rear in automatic turns.
+  // Direct draw(direction='back') remains available for QA and future rear-art integration.
+  const FACING=['front','left','front','right'];
   function facing(){return FACING[faceStep%FACING.length];}
   function characterHtml(small=false,pet=active(),direction=facing()){
     if(!pet)return '';
@@ -398,7 +400,7 @@
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
           el.dataset.facing=facing();
-          // Redraw the dedicated cartoon three-quarter or back silhouette.
+          // Only illustrated front/three-quarter sprites are used in automatic turns.
           const svg=el.querySelector('.pet-art');
           if(svg&&active())svg.outerHTML=HAM.PetIllustration.draw({
             type:active().type,stage:petStage(),direction:facing(),
