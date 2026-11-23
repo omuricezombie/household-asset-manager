@@ -152,7 +152,7 @@
     if(!pet)return '';
     const trait=petPersonality(pet).id,tier=affectionTier(pet),type=pet.type;
     const stage=petStage(pet);
-    const art=HAM.PetArt.draw({type,stage,direction,mood,affection:pet.affection,trait});
+    const art=HAM.PetIllustration.draw({type,stage,direction,mood,affection:pet.affection,trait});
     return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+
       '" data-trait="'+safeText(trait)+'" data-bond="'+tier+
       '" data-type="'+safeText(type)+'" data-growth="'+stage+
@@ -400,7 +400,7 @@
           el.dataset.facing=facing();
           // Redraw the dedicated cartoon three-quarter or back silhouette.
           const svg=el.querySelector('.pet-art');
-          if(svg&&active())svg.outerHTML=HAM.PetArt.draw({
+          if(svg&&active())svg.outerHTML=HAM.PetIllustration.draw({
             type:active().type,stage:petStage(),direction:facing(),
             mood,affection:active().affection,trait:personality().id
           });
