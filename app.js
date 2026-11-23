@@ -352,12 +352,13 @@ async function renderHomeSpendingInsights(){
       const covered=x.covered;
       const cls=increase&&covered?'warn':'neutral';
       const comparison=increase?'増加':'減少';
+      const monthly=x.comparisonMode==='monthly';
       const sign=increase?'+':'−';
       return `<div class="outlook-driver">
         <div class="outlook-driver-head"><strong>${esc(x.category)}</strong>
           <span class="outlook-driver-delta ${cls}">${sign}${yen(Math.abs(x.delta))}</span></div>
-        <div class="outlook-small">同じ日付までの過去3か月平均との差（${comparison}）</div>
-        ${x.previousDelta==null?'':`<div class="outlook-small">前月同日比 ${esc(A.formatSigned(Math.round(x.previousDelta)))}</div>`}
+        <div class="outlook-small">${monthly?'過去3か月の月額平均':'同じ日付までの過去3か月平均'}との差（${comparison}）</div>
+        ${x.previousDelta==null?'':`<div class="outlook-small">${monthly?'前月額比':'前月同日比'} ${esc(A.formatSigned(Math.round(x.previousDelta)))}</div>`}
         ${x.category==='家賃'?'<div class="outlook-small">固定費の金額や計上時期の違いも確認してください。</div>':''}
       </div>`;
     }).join('')}
