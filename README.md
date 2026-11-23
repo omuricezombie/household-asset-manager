@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.5**：5種族の専用SVG素体・自然な横／後ろ姿・各段階の成長差（AI QA PASS／Human QA待ち） |
+| candidate | **v0.2.46-candidate.6**：妖精風の横顔・胴体・手足・羽の配置を再設計（AI QA PASS／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.5：静的36/36・SVG 60/60・描画／向き模擬12/12 PASS。旧candidate.4はやり直し動作確認済み、外観Human QA不合格／新版Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.6：静的27/27、SVG差分60/60、妖精横姿24/24 PASS。candidate.5は5種族の差は一定評価、妖精の横向きはHuman QA未合格／新版Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -237,3 +237,13 @@ git rev-parse HEAD
 - HTML UI／DB APP_VERSION／service worker cache：\`v0.2.46-candidate.5\`、JS/CSSクエリ：\`?v=0246c5\`。\`pet-art.js\` は \`pet-game.js\` より先に読み込み、Service Workerのプリキャッシュにも含める。
 - **QA**：JS構文・DOM参照・アセット順／キャッシュ・DB保存形式不変・バックアップ互換など静的36/36 PASS（標準SVG名前空間を通信先と誤認しない修正済み条件）。5タイプ×3段階×4向きのSVG構造チェック60/60 PASS。初期相棒・5種見本・前後左右の実描画切替・現役データ不変など模擬12/12 PASS。新しい画像表示の**Android実機 Human QAは未実施**。
 - **既存データ保護**：\`petGameStateV1\` の読み書き、DB_VERSION=1、SCHEMA_VERSION=2、backupFormatVersion=1は変更なし。現行stable v0.2.45をmainで保持、candidate.5はHuman QA合格までmainに入れない。
+
+
+### v0.2.46-candidate.6：妖精風の横向き専用描画を重点修正
+
+- **実機フィードバック**：candidate.5で種族の差は一定評価されたが、妖精の横向きが不自然との指摘。顔だけ横を向き、体が正面寄り、頭・首・胴体のつながり、手足と翼の位置に違和感があった。
+- **今回の修正**：`pet-art.js` の妖精風 `view==='side'` の描画だけを差し替え。顔と髪の輪郭を横顔として連続させ、首を胴体につなげる。肩幅を狭くして横向きの衣装を描き、手前／奥の手足を描き分ける。羽は背中側の肩甲骨付近から生える位置に移動し、頭から離して小さめに整理。幼体・中間体・成体それぞれに適用し、右側は左横向き専用図形の鏡像を使用。
+- **変更しないもの**：妖精の正面・後ろ、動物風・架空の生き物・妖怪・恐竜、色や名前、成長条件、月次報酬・愛情度、育成やり直し・図鑑、家計計算・CSV・IndexedDB schema・JSONバックアップ。差分確認では5種×3段階×4方向の計60描画のうち、変更は妖精×3段階×左右の**6描画のみ**、残り54描画は完全一致。
+- **版・キャッシュ**：画面表示・APP_VERSION・Service Worker cacheを `v0.2.46-candidate.6`、静的アセット参照を `?v=0246c6` に更新。
+- **AI QA**：JavaScript構文・DOMとアセット参照・SW・保存互換等27/27 PASS、SVG差分・生成60/60 PASS、妖精3段階×左右×4表情24/24 PASS。**Android実機での横姿の自然さはHuman QA待ち**。前版で確認済みの家計・育成・保存のテストは変更箇所がないため再実施しない。
+- **開発状態**：本番stableはv0.2.45を維持。candidate.6はHuman QA前にmainへマージせず、前candidate.5の外観不具合修正を実機で確認してから採用判断する。
