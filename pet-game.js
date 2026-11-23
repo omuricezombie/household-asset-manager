@@ -2,7 +2,8 @@
 (function(global){
   'use strict';
   const HAM=global.HAM, DB=HAM.DB, A=HAM.Analysis;
-  const KEY='petGameStateV1', DAILY_CAP=10;
+  const KEY='petGameStateV1', DAILY_CAP=10, MATURITY_LEVEL=6;
+  const PET_TYPES=[{id:'animal',label:'動物風',hint:'人なつっこい小動物'},{id:'fantasy',label:'架空の生き物',hint:'不思議な耳と小さな翼'},{id:'fairy',label:'妖精風',hint:'羽と光をまとった子'},{id:'yokai',label:'妖怪',hint:'少し不思議で愛嬌たっぷり'},{id:'dino',label:'恐竜',hint:'小さなトゲと大きなしっぽ'}];
   const CATEGORY_LIST=['食費','日用品','衣料費','交通費','通信・光熱費','サブスク','美容費','娯楽費','趣味費','漫画・本','リフレッシュ費','交際費','洗濯','貸本','家電','医療','教育費','仕送り','家賃','その他'];
   const DEFAULT_CATEGORIES=['食費','日用品','衣料費','交通費','通信・光熱費','サブスク','美容費','娯楽費','趣味費','漫画・本','リフレッシュ費','交際費','洗濯','貸本'];
   const LEVEL_THRESHOLDS=[0,100,250,450,700,1000,1400,1900,2500,3200,4000,5000];
@@ -21,40 +22,90 @@
     {id:'storybook',label:'絵本遊び',icon:'▣',level:1,type:'calm',gain:2,categories:['趣味費','漫画・本','娯楽費'],reply:'物語に夢中になっている。'}
   ];
   let state=null, navigate=null, current='home', mood='idle', redrawBusy=false, rerender=false;
-  let visitTimer=null, lastVisit=0, actionTimer=null, saveChain=Promise.resolve(), initialized=false;
+  let visitTimer=null, lastVisit=0, actionTimer=null, facingTimer=null, faceStep=0, saveChain=Promise.resolve(), initialized=false;
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const thisDay=()=>DB.ymd();
   function fresh(){
-    return {version:1,enabled:false,startedMonth:null,affection:0,
-      traits:{pet:0,food:0,play:0,calm:0},daily:{date:'',used:0,traitsUsed:0},
-      awards:{},categories:DEFAULT_CATEGORIES.slice(),lastAction:null};
+    return {version:2,enabled:false,startedMonth:null,activePet:null,collection:[],
+      awards:{},categories:DEFAULT_CATEGORIES.slice()};
+  }
+  function newPet(type){
+    if(!PET_TYPES.some(x=>x.id===type))throw new Error('不明なキャラクタータイプ');
+    return {id:DB.uid?DB.uid('pet'):'pet-'+Date.now()+'-'+Math.random().toString(36).slice(2),
+      type,name:PET_TYPES.find(x=>x.id===type).label+'の相棒',
+      startedMonth:DB.currentMonth(),bornAt:DB.now(),affection:0,
+      traits:{pet:0,food:0,play:0,calm:0},
+      daily:{date:'',used:0,traitsUsed:0},lastAction:null};
+  }
+  const cap=(value,max)=>Math.max(0,Math.min(max,Number(value)||0));
+  function normalizePet(p){
+    if(!p||typeof p!=='object')return null;
+    const type=PET_TYPES.some(x=>x.id===p.type)?p.type:'fantasy';
+    const traits={pet:0,food:0,play:0,calm:0};
+    for(const k of Object.keys(traits))traits[k]=cap(p.traits?.[k],10000);
+    return {id:String(p.id||('pet-'+Date.now())),type,
+      name:String(p.name||PET_TYPES.find(x=>x.id===type).label+'の相棒').slice(0,30),
+      startedMonth:/^\d{4}-\d{2}$/.test(String(p.startedMonth||''))?p.startedMonth:DB.currentMonth(),
+      bornAt:String(p.bornAt||DB.now()),affection:cap(p.affection,100),traits,
+      daily:{date:String(p.daily?.date||''),used:cap(p.daily?.used,DAILY_CAP),
+        traitsUsed:cap(p.daily?.traitsUsed,12)},lastAction:typeof p.lastAction==='string'?p.lastAction:null};
   }
   function normalize(value){
     const s=fresh();
     if(!value||typeof value!=='object')return s;
     s.enabled=value.enabled===true;
     if(/^\d{4}-\d{2}$/.test(String(value.startedMonth||'')))s.startedMonth=value.startedMonth;
-    s.affection=Math.max(0,Math.min(100,Number(value.affection)||0));
-    for(const k of Object.keys(s.traits))s.traits[k]=Math.max(0,Math.min(10000,Number(value.traits&&value.traits[k])||0));
-    if(value.daily&&typeof value.daily==='object'){
-      s.daily={date:String(value.daily.date||''),used:Math.max(0,Math.min(DAILY_CAP,Number(value.daily.used)||0)),
-        traitsUsed:Math.max(0,Math.min(12,Number(value.daily.traitsUsed)||0))};
-    }
     if(Array.isArray(value.categories))s.categories=[...new Set(value.categories.filter(x=>CATEGORY_LIST.includes(x)))];
     if(value.awards&&typeof value.awards==='object'&&!Array.isArray(value.awards)){
       for(const [k,v] of Object.entries(value.awards)){
         if(!/^\d{4}-\d{2}$/.test(k)||!v||typeof v!=='object')continue;
         const items=Array.isArray(v.items)?v.items.filter(x=>x&&CATEGORY_LIST.includes(x.category)).map(x=>({
-          category:x.category,points:Math.max(0,Number(x.points)||0),
-          target:Math.max(0,Number(x.target)||0),best:Math.max(0,Number(x.best==null?x.target:x.best)||0),kind:x.kind==='maintain'?'maintain':'new'
+          category:x.category,points:cap(x.points,100000),
+          target:cap(x.target,1000000000),best:cap(x.best==null?x.target:x.best,1000000000),
+          kind:x.kind==='maintain'?'maintain':'new'
         })):[];
-        s.awards[k]={points:Math.max(0,Number(v.points)||0),bonus:Math.max(0,Number(v.bonus)||0),
-          items,earnedAt:String(v.earnedAt||'')};
+        s.awards[k]={points:cap(v.points,1000000),bonus:cap(v.bonus,1000000),
+          items,earnedAt:String(v.earnedAt||''),petId:typeof v.petId==='string'?v.petId:null};
       }
     }
-    s.lastAction=typeof value.lastAction==='string'?value.lastAction:null;
+    if(Number(value.version)>=2){
+      s.activePet=normalizePet(value.activePet);
+      s.collection=Array.isArray(value.collection)?value.collection.slice(0,200).filter(x=>x&&typeof x==='object'&&PET_TYPES.some(t=>t.id===x.type)).map(x=>({
+        ...normalizePet(x),earnedPoints:cap(x.earnedPoints,100000000),
+        finalLevel:cap(x.finalLevel,1000),completedAt:String(x.completedAt||''),
+        finalPersonality:String(x.finalPersonality||'')
+      })):[];
+    }else{
+      // Preserve the actual candidate.1-3 companion and its awarded points.
+      if(s.startedMonth||cap(value.affection,100)>0||Object.keys(s.awards).length){
+        s.activePet=normalizePet({id:'legacy-companion',type:'fantasy',
+          startedMonth:s.startedMonth||DB.currentMonth(),bornAt:DB.now(),
+          affection:value.affection,traits:value.traits,daily:value.daily,lastAction:value.lastAction});
+        for(const reward of Object.values(s.awards))reward.petId=s.activePet.id;
+      }
+    }
     return s;
+  }
+  function active(){return state?.activePet||null;}
+  function petPoints(pet=active()){
+    if(!pet)return 0;
+    return Object.values(state.awards).reduce((sum,a)=>sum+(a.petId===pet.id?cap(a.points,1000000):0),0);
+  }
+  function stageForLevel(lv){return lv>=MATURITY_LEVEL?'adult':lv>=3?'teen':'baby';}
+  function petStage(pet=active()){
+    if(!pet)return 'baby';
+    return stageForLevel(level(petPoints(pet)));
+  }
+  function petPersonality(pet){
+    if(!pet)return {id:'curious',name:'まだ探検中'};
+    const sum=Object.values(pet.traits).reduce((a,b)=>a+b,0);
+    if(sum<3)return {id:'curious',name:'まだ探検中'};
+    const top=Object.keys(pet.traits).sort((a,b)=>pet.traits[b]-pet.traits[a])[0];
+    return {id:top,name:({pet:'甘えんぼ',food:'食いしんぼ',play:'元気いっぱい',calm:'のんびり'})[top]};
+  }
+  function activeRewardFor(categories,pet=active()){
+    return !!pet&&Object.values(state.awards).some(a=>a.petId===pet.id&&a.items.some(x=>categories.includes(x.category)));
   }
   function persist(){
     const snapshot=JSON.parse(JSON.stringify(state));
