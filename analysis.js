@@ -211,18 +211,143 @@
     }
     return sums.length===3?sums.reduce((a,b)=>a+b,0)/3:null;
   }
+  // Forward-looking insights use comparable historical full-month data, not
+  // simple day-of-month multiplication of imported card transactions.
+  // CSV files can arrive weeks after purchase: never imply a green forecast
+  // unless the card cycle through today is represented by an imported file.
+  async function spendingOutlook(month){
+    const currentMonth=DB().currentMonth();
+    const cur=await summary(month);
+    const out={month,actual:cur.normal,baseline:null,forecast:null,remaining:null,
+      sampleMonths:[],coveredToDate:false,reason:null,isCurrent:month===currentMonth};
+    const imports=await DB().getAll('cardImports');
+    const today=DB().ymd();
+    const sample=[];
+    let cursor=DB().prevMonth(month);
+    for(let i=0;i<12&&sample.length<3;i++){
+      const m=cursor;
+      const tx=await monthTransactions(m);
+      const complete=cardCoverage(m,imports,today).complete;
+      // Keep the existing household data-quality safeguards but do not require
+      // a salary (e.g. after retirement) to compare expense patterns.
+      const unclassified=tx.some(t=>t.kind==='expense'&&!t.isOtherPersonExpense&&(!t.category||t.category==='未分類'));
+      if(complete&&tx.some(t=>t.kind==='expense')&&!unclassified){
+        const normal=tx.filter(t=>t.kind==='expense'&&!t.isTemporaryExpense)
+          .reduce((v,t)=>v+effExpense(t),0)
+          -tx.filter(t=>t.kind==='refund').reduce((v,t)=>v+refundAmount(t),0);
+        sample.push({month:m,normal,tx});
+      }
+      cursor=DB().prevMonth(cursor);
+    }
+    if(sample.length<3){out.reason='比較可能な過去月が3か月未満です。';return out;}
+    out.sampleMonths=sample.map(x=>x.month);
+    out.baseline=sample.reduce((v,x)=>v+x.normal,0)/sample.length;
+    out.remaining=out.baseline-cur.normal;
+    if(!out.isCurrent)return out;
+    const day=Number(today.slice(8,10));
+    const lastDay=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
+    // No "future days" after month-end; the remaining-data issue still applies.
+    const cut=Math.min(day,lastDay);
+    const remainingAvg=sample.reduce((v,x)=>{
+      const after=x.tx.filter(t=>Number(String(t.date||'').slice(8,10))>cut);
+      const future=after.filter(t=>t.kind==='expense'&&!t.isTemporaryExpense)
+        .reduce((sum,t)=>sum+effExpense(t),0)
+        -after.filter(t=>t.kind==='refund').reduce((sum,t)=>sum+refundAmount(t),0);
+      return v+future;
+    },0)/sample.length;
+    // The forecast is a *conditional* scenario, not a full-coverage total.
+    out.forecast=cur.normal+remainingAvg;
+    const cc=cardCoverage(month,imports,today);
+    out.coveredToDate=cc.checks.slice(0,day<=15?1:2).every(x=>x.imported);
+    if(!out.coveredToDate)out.reason='当日までのdカード利用を含む請求CSVが未登録です。';
+    return out;
+  }
   async function insights(month){
-    const cur=await summary(month),prev=await summary(DB().prevMonth(month));const avg=await threeMonthAverage(month,'normal');const out=[];
-    const nd=cur.normal-prev.normal;
-    if(prev.expense||prev.income) out.push({tone:nd<=0?'good':'warn',text:`通常支出は前月比 ${formatSigned(nd)} です。`});
-    if(avg!=null){const d=cur.normal-avg;out.push({tone:d<=0?'good':'warn',text:`通常支出は直近3か月平均比 ${formatSigned(d)} です。`});}
-    const cats=objDiff(cur.categories,prev.categories).filter(x=>x.key!=='未分類'&&x.delta!==0).slice(0,2);
-    cats.forEach(x=>out.push({tone:x.delta<=0?'good':'warn',text:`${x.key}は前月比 ${formatSigned(x.delta)} です。`}));
-    const merch=objDiff(cur.merchants,prev.merchants).filter(x=>x.delta>0).slice(0,1);merch.forEach(x=>out.push({tone:'warn',text:`${x.key}の利用が前月より ${formatYen(x.delta)} 増えています。`}));
-    return out.slice(0,5);
+    const outlook=await spendingOutlook(month);
+    const cur=await summary(month);
+    const out=[];
+    if(outlook.baseline!=null){
+      const baseline=formatYen(Math.round(outlook.baseline));
+      const delta=outlook.actual-outlook.baseline;
+      out.push({tone:'neutral',text:`通常支出の過去3か月平均：${baseline}。`});
+      if(outlook.actual>outlook.baseline){
+        out.push({tone:'warn',text:`今月の通常支出は、登録済み分だけで平均を ${formatYen(Math.round(delta))} 超えています。`});
+      }else{
+        out.push({tone:'neutral',text:`今月の登録済み通常支出は ${formatYen(Math.round(outlook.actual))}。平均まであと ${formatYen(Math.round(-delta))} です（未登録分は含まず）。`});
+      }
+      if(outlook.isCurrent&&outlook.forecast!=null){
+        const estimate=formatYen(Math.round(outlook.forecast));
+        if(outlook.coveredToDate){
+          const gap=outlook.forecast-outlook.baseline;
+          const result=gap>0?`基準平均を約 ${formatYen(Math.round(gap))} 上回る`:gap<0?`基準平均を約 ${formatYen(Math.round(-gap))} 下回る`:'基準平均とほぼ同じ';
+          out.push({tone:gap>0?'warn':'good',text:`月末の参考試算：${estimate}（${result}計算）。過去3か月の残りの日付の支出を加えています。`});
+        }else{
+          const change=outlook.forecast-outlook.baseline;
+          const comparison=change>0?`平均より約 ${formatYen(Math.round(change))} 高い`:change<0?`平均より約 ${formatYen(Math.round(-change))} 低い`:'平均とほぼ同じ';
+          out.push({tone:'neutral',text:`月末の参考試算：${estimate}（${comparison}計算）。dカード明細に未取込期間があるため、実際に平均を超えるかはまだ判断できません。`});
+        }
+      }else if(!outlook.isCurrent){
+        out.push({tone:'neutral',text:'過去月のため予測は行わず、登録済み実績を表示しています。'});
+      }
+    }else{
+      out.push({tone:'neutral',text:outlook.reason||'比較可能な月が不足しています。'});
+    }
+    // Identify what changed, not just whether the monthly total changed.
+    // Compare expenses through the same calendar day; full-month comparisons
+    // unfairly treat incomplete current months as spending reductions.
+    const prev=await summary(DB().prevMonth(month));
+    const dayOfMonth=Number(DB().ymd().slice(8,10));
+    const compareCutoff=outlook.isCurrent?dayOfMonth:31;
+    const categorisedToDay=tx=>{
+      const amounts={};
+      for(const t of tx){
+        if(t.kind!=='expense'&&t.kind!=='refund')continue;
+        if(t.kind==='expense'&&t.isTemporaryExpense)continue;
+        if(outlook.isCurrent&&Number(String(t.date||'').slice(8,10))>compareCutoff)continue;
+        const category=t.category||'未分類';
+        const value=t.kind==='refund'?-refundAmount(t):effExpense(t);
+        amounts[category]=(amounts[category]||0)+value;
+      }
+      return amounts;
+    };
+    if(outlook.sampleMonths.length===3){
+      const currentCategories=categorisedToDay(cur.transactions);
+      const previousCategories=categorisedToDay(prev.transactions);
+      const pastCategories=await Promise.all(outlook.sampleMonths.map(async m=>categorisedToDay(await monthTransactions(m))));
+      const categories=new Set([...Object.keys(currentCategories),...pastCategories.flatMap(x=>Object.keys(x))]);
+      const deltas=[...categories].filter(cat=>cat!=='未分類').map(cat=>{
+        const current=currentCategories[cat]||0;
+        const mean=pastCategories.reduce((total,byCat)=>total+(byCat[cat]||0),0)/3;
+        return {cat,current,mean,diff:current-mean};
+      });
+      // Prioritise material increases, with a decrease as useful context if present.
+      const significant=deltas.filter(x=>x.current>0&&x.diff>=3000).sort((a,b)=>b.diff-a.diff).slice(0,2);
+      for(const x of significant){
+        const tail=outlook.isCurrent?'（各月'+dayOfMonth+'日までの登録分）':'（月全体）';
+        const prior=previousCategories[x.cat]||0;
+        const priorDelta=x.current-prior;
+        const priorText=prev.transactions.length?` 前月同日比 ${formatSigned(Math.round(priorDelta))}。`:'';
+        out.push({tone:outlook.coveredToDate||!outlook.isCurrent?'warn':'neutral',
+          type:'category-increase',category:x.cat,current:x.current,average:x.mean,delta:x.diff,previousDelta:prev.transactions.length?priorDelta:null,
+          covered:outlook.coveredToDate||!outlook.isCurrent,
+          text:`${x.cat}：今月 ${formatYen(Math.round(x.current))}、同時点の過去3か月平均より ${formatYen(Math.round(x.diff))} 多い登録額です。${priorText}${x.cat==='家賃'?'固定費の支払額・計上時期の違いも確認してください。':''}`});
+      }
+      if(!significant.length){
+        const down=deltas.filter(x=>x.mean>=3000&&x.diff<=-3000).sort((a,b)=>a.diff-b.diff)[0];
+        if(down)out.push({tone:'neutral',type:'category-decrease',category:down.cat,current:down.current,average:down.mean,delta:down.diff,covered:outlook.coveredToDate||!outlook.isCurrent,
+          text:`${down.cat}：同時点の過去3か月平均より ${formatYen(Math.round(-down.diff))} 少ない登録額です（未取込分は反映されていません）。`});
+      }
+    }
+    // Retain one prior-month signal as context, clearly not a projection.
+    if(!outlook.isCurrent){
+      const delta=cur.normal-prev.normal;
+      if(prev.transactions.some(t=>t.kind==='expense'))
+        out.push({tone:delta<=0?'good':'warn',text:`通常支出の前月比は ${formatSigned(delta)} です。`});
+    }
+    return out;
   }
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,insights,formatYen,formatSigned,effExpense};
 })(window);
