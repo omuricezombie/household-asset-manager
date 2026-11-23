@@ -177,7 +177,7 @@ async function renderHome(){
   const walletDetail=walletValue==null?'月末更新で残高を登録':wallet?.liveCash?.isEstimated?'現金移動を自動反映':'最終確認残高';
   const pointText=points.rows.some(x=>x.snapshot)?points.total.toLocaleString('ja-JP')+' pt':'未登録';
   $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn','total'),metric('流動資産',cur.assets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
-  await renderHomeSpendingInsights();
+  await renderHomeReviewOrInsights();
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
 }
 /* Read-only SVG/HTML summaries. All money values come from existing Analysis.summary. */
@@ -312,6 +312,66 @@ async function openAssetBreakdown(kind){
     console.error(e);
     if(requestId===assetBreakdownRequestId)$((compact?'assetBreakdownInlineRows':'assetBreakdownRows')).innerHTML='<p class="muted">内訳を読み込めませんでした。再度お試しください。</p>';
   }
+}
+async function renderHomeReviewOrInsights(){
+  const status=await DB.getMonthStatus(selectedMonth);
+  const finished=!!status?.completedAt;
+  $('homeReviewCard').classList.toggle('hidden',!finished);
+  $('homeInsightCard').classList.toggle('hidden',finished);
+  if(finished){await renderHomeMonthlyReview();return;}
+  $('homeInsightHeading').textContent=selectedMonth===DB.currentMonth()?'月途中の参考情報・月末見通し':'対象月の途中経過';
+  await renderHomeSpendingInsights();
+}
+async function renderHomeMonthlyReview(){
+  const r=await A.monthlyReview(selectedMonth);
+  const yen=n=>formatYen(Math.round(n));
+  const signed=n=>A.formatSigned(Math.round(n));
+  const trend=(label,value)=>`<div class="review-compare"><span>${esc(label)}</span><strong>${esc(signed(value))}</strong></div>`;
+  const categories=r.topCategories.map(x=>`<div class="review-category">
+    <span>${esc(x.category)}</span><strong>${yen(x.amount)} <small>${(x.share*100).toFixed(1)}%</small></strong>
+  </div>`).join('');
+  const comparison=r.normalAverage===null
+    ?'<p class="muted">比較できる過去月が3か月未満のため、平均比較は表示しません。</p>'
+    :`<div class="review-compare"><span>通常支出：過去3か月平均</span><strong>${yen(r.normalAverage)}</strong></div>
+    ${trend('通常支出の平均との差',r.normalDelta)}
+    <p class="outlook-small">比較対象：${esc(r.sampleMonths.map(monthLabel).join('・'))}</p>`;
+  const changes=[
+    ...r.categoryIncreases.map(x=>`<div class="review-category"><span>${esc(x.category)}：過去平均より増加</span><strong>+${yen(x.diff)}</strong></div>`),
+    ...r.categoryDecreases.map(x=>`<div class="review-category"><span>${esc(x.category)}：過去平均より減少</span><strong>−${yen(-x.diff)}</strong></div>`)
+  ].join('');
+  const leadingCategory=r.topCategories[0];
+  const overview=`<p class="review-overview">${r.saving>=0
+    ?'登録済みの家計収支は'+yen(r.saving)+'のプラスです。'
+    :'登録済みの家計収支は'+yen(-r.saving)+'のマイナスです。'}
+    ${leadingCategory?'支出で最も大きいのは'+esc(leadingCategory.category)+'（'+yen(leadingCategory.amount)+'）です。':''}
+    ${r.normalDelta===null?'':'通常支出は過去3比較月の平均より'+(r.normalDelta>0?yen(r.normalDelta)+'多い':r.normalDelta<0?yen(-r.normalDelta)+'少ない':'同水準')+'登録額です。'}</p>`;
+  const quality=r.provisional
+    ?`<p class="review-quality">月末更新の完了記録はありますが、${esc(!r.csvComplete?'dカードの2請求期間が未取込':'')} ${esc(r.unclassified?'自己負担の未分類が'+r.unclassified+'件あります':'')}。以下は登録済みデータによる暫定振り返りです。</p>`
+    :'<p class="outlook-small">月末更新済み・カードの必要な請求期間を確認済み。登録されていない支出まで保証するものではありません。</p>';
+  $('homeReviewContent').innerHTML=quality+overview+
+    `<div class="review-metrics">
+      <div><span>収入</span><strong>${yen(r.income)}</strong></div>
+      <div><span>支出</span><strong>${yen(r.expense)}</strong></div>
+      <div><span>収支</span><strong>${signed(r.saving)}</strong></div>
+    </div>
+    <div class="review-section">
+      <h3>家計全体</h3>
+      <div class="review-compare"><span>通常支出</span><strong>${yen(r.normal)}</strong></div>
+      <div class="review-compare"><span>臨時支出</span><strong>${yen(r.temporary)}</strong></div>
+      ${r.previousAvailable?trend('前月比：支出',r.expenseDelta)+trend('前月比：収支',r.savingDelta):'<p class="outlook-small">前月の家計取引がないため、前月比は表示しません。</p>'}
+      ${comparison}
+    </div>
+    <div class="review-section">
+      <h3>支出の主な内訳</h3>${categories||'<p class="muted">支出の登録がありません。</p>'}
+    </div>
+    ${changes?`<div class="review-section"><h3>前の月々と比べて変わった費目</h3>${changes}
+      <p class="outlook-small">登録済みの月額と過去3比較月の月額平均による差です。支払日では判定せず、必要性や使いすぎを自動判断しません。</p></div>`:''}
+    <div class="review-section"><h3>資産との関係</h3>
+      ${r.bankDelta===null?`<p class="muted">${esc(r.bankDeltaReason||'銀行残高を比較できません。')}</p>`
+      :`<div class="review-compare"><span>銀行預金の前月比</span><strong>${signed(r.bankDelta)}</strong></div>
+       ${trend('銀行増減 − 家計収支',r.bankDelta-r.saving)}`}
+      <p class="outlook-small">銀行増減には内部資金移動も含まれます。評価額の変動や総資産の増減と、家計収支を混同しないでください。</p>
+    </div>`;
 }
 async function renderHomeSpendingInsights(){
   const outlook=await A.spendingOutlook(selectedMonth);

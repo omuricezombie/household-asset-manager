@@ -234,3 +234,18 @@ button.metric-tappable:active{border-color:var(--line);transform:none}
 .outlook-detail summary{cursor:pointer;min-height:30px}
 .outlook-detail p{margin:6px 0;line-height:1.6}
 @media(max-width:360px){.outlook-metrics{gap:8px}.outlook-metric strong{font-size:19px}.outlook-driver-delta{font-size:16px}}
+
+
+/* Completed month review: concise retrospective, never a running forecast. */
+.review-quality{padding:10px 12px;border-left:3px solid var(--warn);border-radius:8px;background:var(--card);font-size:12px;line-height:1.6;margin:0 0 12px}
+.review-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px 0}
+.review-metrics>div{min-width:0}
+.review-metrics span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.review-metrics strong{font-size:clamp(15px,3.3vw,22px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.4}
+.review-section{border-top:1px solid var(--line);padding:14px 0 4px}
+.review-section h3{margin:0 0 10px;font-size:14px}
+.review-compare,.review-category{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px;line-height:1.5}
+.review-compare span,.review-category span{min-width:0;overflow-wrap:anywhere}
+.review-compare strong,.review-category strong{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;font-size:13px;flex-shrink:0}
+.review-category small{font-size:11px;font-weight:400;color:var(--muted);margin-left:3px}
+@media(max-width:390px){.review-metrics{gap:3px}.review-metrics strong{font-size:15px}.review-category strong,.review-compare strong{font-size:12px}}
