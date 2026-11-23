@@ -329,3 +329,51 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.10: same-cell-width original yokai illustrations in a separate 2-frame strip. */
 .pet-concept-yokai{background-image:url("./assets/pet-yokai-concept.webp?v=0246c10");background-size:200% 100%;background-position-y:0%}
+
+/* Illustration-first characters: the same image atlas is used for room, home, selection and archive.
+   Only the back view still uses the previous SVG while matching rear art is in development. */
+.pet-character .pet-art.pet-illustration{
+  position:absolute;top:-12px;left:-7px;width:160px;height:180px;
+  pointer-events:none;overflow:visible;background:none;filter:none;
+}
+.pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
+.pet-art-baby:not(.pet-art-yokai) .pet-art-image{
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c11");background-size:200% 400%;
+}
+.pet-art-baby.pet-art-yokai .pet-art-image{
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c11");background-size:200% 100%;
+}
+.pet-art-growth .pet-art-image{
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c11");background-size:400% 500%;
+}
+.pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
+.pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
+.pet-art-teen.pet-art-front .pet-art-image{background-position-x:0%}
+.pet-art-teen.pet-art-side .pet-art-image{background-position-x:33.333333%}
+.pet-art-adult.pet-art-front .pet-art-image{background-position-x:66.666667%}
+.pet-art-adult.pet-art-side .pet-art-image{background-position-x:100%}
+.pet-art-animal.pet-art-baby .pet-art-image{background-position-y:0%}
+.pet-art-fantasy.pet-art-baby .pet-art-image{background-position-y:33.333333%}
+.pet-art-fairy.pet-art-baby .pet-art-image{background-position-y:66.666667%}
+.pet-art-dino.pet-art-baby .pet-art-image{background-position-y:100%}
+.pet-art-yokai.pet-art-baby .pet-art-image{background-position-y:0%}
+.pet-art-animal.pet-art-growth .pet-art-image{background-position-y:0%}
+.pet-art-fantasy.pet-art-growth .pet-art-image{background-position-y:25%}
+.pet-art-fairy.pet-art-growth .pet-art-image{background-position-y:50%}
+.pet-art-yokai.pet-art-growth .pet-art-image{background-position-y:75%}
+.pet-art-dino.pet-art-growth .pet-art-image{background-position-y:100%}
+/* The wrapper receives the turn animation; reflecting its child cannot be overridden by that animation. */
+.pet-art-mirror .pet-art-image{transform:scaleX(-1)}
+.pet-character .pet-art-emote{
+  display:block;position:absolute;top:10px;right:0;font-size:18px;font-weight:700;
+  color:#ea729e;text-shadow:0 1px 2px white;pointer-events:none;
+}
+.pet-character.pet-mood-pet .pet-art-emote::before{content:'♥'}
+.pet-character.pet-mood-food .pet-art-emote::before{content:'✦'}
+.pet-character.pet-mood-play .pet-art-emote::before{content:'♪'}
+.pet-character.pet-mood-calm .pet-art-emote::before{content:'☾'}
+.pet-character[data-bond="bonded"].pet-mood-idle .pet-art-emote::before{content:'♡';font-size:13px;opacity:.75}
+.pet-character .pet-art.pet-illustration .pet-art-image{image-rendering:auto}
+@media(prefers-reduced-motion:reduce){
+  .pet-character .pet-art.pet-illustration,.pet-character .pet-art-emote{animation:none!important}
+}
