@@ -309,15 +309,19 @@
     hideVisitor();
     if(!state.enabled||!['home','history'].includes(name))return;
     if(document.body.classList.contains('app-locked')||document.querySelector('dialog[open]'))return;
-    if(Date.now()-lastVisit<30*60*1000||Math.random()>0.22)return;
-    lastVisit=Date.now();
+    const homeCompanion=name==='home';
+    // Keep a small, background-free companion on Home. Visits to History stay rare.
+    if(!homeCompanion&&(Date.now()-lastVisit<30*60*1000||Math.random()>0.22))return;
+    if(!homeCompanion)lastVisit=Date.now();
     const visitor=document.createElement('button');
-    visitor.type='button';visitor.id='petVisitor';visitor.className='pet-visitor';
+    visitor.type='button';visitor.id='petVisitor';
+    visitor.className='pet-visitor '+(homeCompanion?'pet-home-companion':'pet-guest-companion');
     visitor.setAttribute('aria-label','相棒の部屋へ移動');
-    visitor.innerHTML='<span class="pet-visitor-icon">♡</span>'+characterHtml(true);
+    visitor.setAttribute('title','相棒の部屋へ');
+    visitor.innerHTML=characterHtml(true);
     visitor.onclick=()=>{hideVisitor();if(navigate)void navigate('pet');};
     document.body.appendChild(visitor);
-    visitTimer=setTimeout(hideVisitor,6500);
+    if(!homeCompanion)visitTimer=setTimeout(hideVisitor,6500);
   }
   function onScreen(name){
     current=name;
