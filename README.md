@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.1**：任意の育成ゲーム追加（AI QA PASS／Human QA未実施） |
+| candidate | **v0.2.46-candidate.2**：顔パーツ配置修正・キャラクター直接なで・ページ更新時のタブ復元（AI QA PASS／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.1：静的整合32/32、模擬動作14/14 PASS／Android Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.2：既存QAに加え静的21/21・操作/タブ復元模擬15/15 PASS／Android Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -194,3 +194,12 @@ git rev-parse HEAD
 - レベルで動き・食事・遊びが増え、特定分類の節約達成で特別な触れ合い・装飾が解放。ホーム／履歴でのマスコット訪問はまれに出現し、入力中・月末更新中は出現しない。
 - 既存のIndexedDB `settings` ストア内 `petGameStateV1` に独立保存。DB_VERSION=1・SCHEMA_VERSION=2・backupFormatVersion=1は維持。既存JSONバックアップに含まれ、旧バックアップも復元可能。実ユーザーの家計データはGitHubに登録しない。
 - **品質状態：静的整合32/32・模擬動作14/14・維持基準回帰7/7 PASS、Human QA未実施のためstable未昇格。** QA合格後にPRでmainへ反映。現行stable v0.2.45（main commit `3d9d9baed9a90aa3154b62003b24458bca74be6d`）を変更しない。固定rollback v0.2.16を維持。
+
+
+### v0.2.46-candidate.2：初回Androidフィードバックに基づく改善
+
+- v0.2.46-candidate.1のAndroid Chrome実機で相棒画面と基本動作を確認（ユーザー申告「基本動作はよさそう」）。顔の左目・頬が胴体からはみ出した原因は `pet-face` の絶対配置に明示的な領域がなく、子パーツの座標基準が失われたこと。 `pet-game.css` で `pet-face` を胴体全面の相対基準に固定して修正。
+- キャラクターへの直接タップ・指のなで動作で、既存の「なでる」アクションを発火。Pointer Eventsで1回の触れ合いを1回だけ計上し、タッチ操作の終了／取消時に状態を解放。キーボードでもEnter／Spaceで操作可能。既存の「なでる」ボタンは継続。
+- アプリのページ更新後に「ホーム」へ戻ってしまう従来挙動を修正。現在のメインタブを `sessionStorage` に保存し、再読み込み時に表示を復元。既存の `history.state` に画面状態があればその履歴エントリを再利用し、更新のたびに余分な戻る履歴を積まない。育成OFFの場合は相棒タブではなくホームに安全に戻す。変更は画面状態のみで、家計データやIndexedDBスキーマは不変。
+- `index.html` UI・`db.js` APP_VERSION：`v0.2.46-candidate.2`、`service-worker.js` CACHE：`household-asset-manager-v0.2.46-candidate.2`、JS/CSS参照：`?v=0246c2`。
+- **AI QA**：JS構文・参照バージョン・DOM/CSS・家計保存互換等の静的21/21 PASS、タブ記憶・再読み込み時の履歴維持・直接タップ・重複抑止・キーボード操作等の模擬15/15 PASS。実ブラウザでの更新／戻る／顔配置／指なでのHuman QAは未実施。v0.2.45 stableは不変、candidateはmain未マージ。
