@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c11");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c12");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c11");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c12");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c11");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c12");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
