@@ -354,3 +354,70 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 @media(prefers-reduced-motion:reduce){
   .pet-character .pet-art.pet-illustration,.pet-character .pet-art-emote{animation:none!important}
 }
+
+
+/* Candidate.12: illustration-layer performance-safe reactions.
+   The pose belongs to the illustration wrapper; mirrored bitmap stays mirrored.
+   Temporary interactions never alter pet state or financial data. */
+.pet-character .pet-illustration{
+  transform-origin:50% 82%;
+  will-change:auto;
+}
+.pet-character.pet-mood-idle .pet-illustration{
+  animation:pet-art-idle 7.2s ease-in-out infinite;
+}
+.pet-character.pet-mood-pet .pet-illustration{
+  animation:pet-art-petted .7s ease-in-out 2;
+}
+.pet-character.pet-mood-food .pet-illustration{
+  animation:pet-art-nibble .46s ease-in-out 3;
+}
+.pet-character.pet-mood-play .pet-illustration{
+  animation:pet-art-excited .54s ease-in-out 3;
+}
+.pet-character.pet-mood-calm .pet-illustration{
+  animation:pet-art-settle 2.4s ease-in-out infinite;
+}
+.pet-character[data-type="fantasy"].pet-mood-idle .pet-illustration,
+.pet-character[data-type="fairy"].pet-mood-idle .pet-illustration{
+  animation-duration:8.4s;
+}
+.pet-character.pet-mood-pet .pet-art-emote,
+.pet-character.pet-mood-food .pet-art-emote,
+.pet-character.pet-mood-play .pet-art-emote,
+.pet-character.pet-mood-calm .pet-art-emote{
+  animation:pet-art-emote-appear .5s ease-out both;
+}
+@keyframes pet-art-idle{
+  0%,17%,37%,60%,78%,100%{transform:translateY(0) rotate(0deg) scale(1)}
+  26%{transform:translateY(-2px) rotate(-1.2deg) scale(1.008)}
+  69%{transform:translateY(-1px) rotate(1deg) scale(1.008)}
+}
+@keyframes pet-art-petted{
+  0%,100%{transform:translateY(0) rotate(0deg) scale(1)}
+  22%{transform:translateY(3px) rotate(-3deg) scale(1.04,.96)}
+  55%{transform:translateY(-3px) rotate(2deg) scale(.98,1.03)}
+  78%{transform:translateY(1px) rotate(-1deg)}
+}
+@keyframes pet-art-nibble{
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(0,3px) scale(1.025,.975)}
+  55%{transform:translate(0,-2px) scale(.99,1.015)}
+}
+@keyframes pet-art-excited{
+  0%,100%{transform:translateY(0) rotate(0deg)}
+  22%{transform:translateY(3px) rotate(-5deg) scale(1.03,.97)}
+  58%{transform:translateY(-5px) rotate(4deg) scale(.98,1.02)}
+}
+@keyframes pet-art-settle{
+  0%,100%{transform:rotate(-1deg) translateY(0)}
+  50%{transform:rotate(1deg) translateY(-2px)}
+}
+@keyframes pet-art-emote-appear{
+  from{opacity:0;transform:translateY(5px) scale(.7)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .pet-character .pet-illustration,
+  .pet-character .pet-art-emote{animation:none!important;transition:none!important}
+}
