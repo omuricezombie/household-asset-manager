@@ -363,6 +363,14 @@
           <h2>相棒の部屋</h2><button type="button" class="text-btn" data-go="home">ホームへ</button>
         </div>
         <p class="muted pet-game-intro">家計の月次成果で新しい遊びや表情を解放。愛情度は毎日の触れ合いで育ち、放置しても下がりません。</p>
+        <div id="petChooser" class="hidden">
+          <h3>最初の相棒を選ぶ</h3>
+          <p class="muted">5タイプから1匹を選びます。途中でタイプを変更したいときは育成をやり直します。過去の月次報酬は再取得できません。</p>
+          <label for="petNameInput">名前（任意）<input id="petNameInput" maxlength="30" placeholder="あとから変えない相棒の名前"></label>
+          <div id="petTypeChoices" class="pet-type-choices"></div>
+        </div>
+        <div id="petActiveArea" class="hidden">
+        <p id="petCurrentType" class="pet-current-type"></p>
         <div class="pet-game-dashboard">
           <div class="pet-score-card"><span>家計の成長</span><strong id="petLevel">Lv. 1</strong><div class="pet-meter"><i id="petProgressBar"></i></div><span id="petScore">0 pt</span> <span id="petProgressText"></span></div>
           <div class="pet-score-card"><span>愛情度</span><strong id="petAffection">0/100</strong><div class="pet-meter pet-heart"><i id="petAffectionBar"></i></div><span>性格：<b id="petPersonality">まだ探検中</b></span></div>
@@ -372,11 +380,22 @@
         <p class="muted">キャラクターを直接タップ・指でなでても反応します。</p>
         <p id="petDailyCap" class="muted">触れ合いは何度でもできます。</p>
         <div id="petActions" class="pet-actions"></div>
+        <div class="pet-life-actions">
+          <button type="button" id="petArchive" class="primary hidden">成長した相棒を図鑑へ保存する</button>
+          <button type="button" id="petRestart" class="danger hidden">この相棒の育成をやり直す</button>
+        </div>
+        <p class="muted">成体になってもそのまま一緒に過ごせます。図鑑へ保存するのは、自分で選んだときだけです。</p>
+        </div>
       </div>
       <div class="card">
         <h2>解放した遊び</h2>
         <div id="petCatalog" class="pet-catalog"></div>
         <p class="muted">レベル報酬のほか、食費・趣味費など特定分類の節約報酬で開く行動もあります。衣料費などの報酬で見た目も少し変化します。</p>
+      </div>
+      <div class="card">
+        <h2>歴代の相棒図鑑</h2>
+        <p class="muted">成体になった子は、いつでも姿や性格を見返せるように保存できます。図鑑はやり直しても残ります。</p>
+        <div id="petArchiveList" class="pet-archive-list"></div>
       </div>
       <div class="card">
         <div class="section-title-row"><h2>月次の育成報酬</h2><button type="button" id="petRefresh">再確認</button></div>
