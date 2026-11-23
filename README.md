@@ -1,6 +1,6 @@
 ### v0.2.46-candidate.14：後ろ姿15カットをcandidateに組み込み（2026-11-24）
 
-- 5種族×幼体・中間体・成体の背面15カットを新規WebP（960×1800px、1コマ320×360px）としてGitHubに追加。Git blob SHA b35e819f7df8ac104584cca0fb4e1f8f66e79a7d。
+- 5種族×幼体・中間体・成体の背面15カットを新規WebP（960×1800px、1コマ320×360px）としてGitHubに追加。Git blob SHA b35e819f7df8ac104584cca0fb4e1f8f66e79a7d。GitHub再取得一致確認済み。
 - 旧SVG背面フォールバックを廃止し、正面・左斜め・背面・右斜めの自動方向転換を復帰。正面・斜め画像は無変更。
 - UI/APP_VERSION/SWキャッシュ・参照クエリをcandidate.14へ更新。家計計算・IndexedDB・CSV・報酬・バックアップは無変更。
 - **未完成**：背面の衣装・体形などに既存正面との造形差が残る。正面・斜めは低解像度のままで、まばたきや個別パーツアニメーションも未完成。Human QA未完了でstable昇格禁止。
@@ -32,7 +32,7 @@
 | main | 正式stable・GitHub Pages配信元（root） |
 | candidate | **v0.2.46-candidate.14**：新背面15カットを追加して4方向自動転換を復帰。正面・斜めの高解像度化、パーツアニメーション、美術的一致は未完成（Human QA待ち） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.14：AI QA継続中。Androidの今回分Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.14：GitHub実ファイル静的整合16/16 PASS、独立Chromium画像デコード・15セル切出し15/15 PASS。実アプリ全体のAndroid Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.14`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
