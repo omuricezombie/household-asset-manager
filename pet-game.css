@@ -1,0 +1,84 @@
+/* Optional pet game: all rules and styling are isolated from household UI. */
+.pet-game-intro{line-height:1.65}
+.pet-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0}
+.pet-toggle-row input{width:22px;height:22px;margin:0;flex:0 0 auto}
+.pet-toggle-row strong{display:block;font-size:15px}
+.pet-toggle-row small{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:4px}
+body.pet-game-enabled .bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
+.pet-game-dashboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pet-score-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.pet-score-card strong{font-size:20px;display:block;margin:3px 0 6px;font-variant-numeric:tabular-nums}
+.pet-score-card span{font-size:12px;color:var(--muted)}
+.pet-meter{width:100%;height:7px;border-radius:9px;overflow:hidden;background:var(--line);margin:8px 0}
+.pet-meter i{display:block;height:100%;width:0;border-radius:inherit;background:#60a5fa;transition:width .35s}
+.pet-meter.pet-heart i{background:#f472b6}
+.pet-room{position:relative;min-height:245px;border:1px solid #b8d9cf;border-radius:18px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;overflow:hidden;margin:12px 0;background:linear-gradient(180deg,#dcf5f5,#eef9ec 75%,#d4e7cb)}
+.pet-room::before{content:'';position:absolute;top:22px;right:25px;width:56px;height:56px;border-radius:50%;background:#fff9bd;opacity:.65}
+.pet-room::after{content:'';position:absolute;bottom:0;left:0;right:0;height:35px;background:linear-gradient(0deg,#a7cfab,#cbe9cd);z-index:0}
+.pet-room.pet-room-decorated{background:linear-gradient(180deg,#ebf1fb,#f7f6ea 72%,#d7edca)}
+.pet-room.pet-room-decorated::before{content:'✿';background:#f6d9df;text-align:center;line-height:56px;font-size:36px;color:#a74779}
+.pet-stage{position:relative;z-index:1;min-height:170px;width:100%;display:flex;align-items:flex-end;justify-content:center;padding:4px}
+.pet-speech{position:relative;z-index:2;color:#314c50;background:#fffffff0;border-radius:12px;padding:9px 12px;text-align:center;line-height:1.5;font-size:13px;max-width:90%;min-height:38px;margin:0 0 13px}
+.pet-character{display:block;position:relative;width:146px;height:157px;flex:0 0 auto;animation:pet-breathe 2.8s ease-in-out infinite;transform-origin:50% 90%}
+.pet-character span{position:absolute;display:block}
+.pet-character .pet-shadow{width:104px;height:13px;border-radius:50%;background:#6f9b9060;left:22px;bottom:0;filter:blur(2px)}
+.pet-character .pet-body{background:linear-gradient(138deg,#b7f5cf 3%,#79d3b7 65%,#62bfa9);border:3px solid #439c88;width:116px;height:114px;border-radius:49% 49% 42% 42%;left:15px;top:30px;z-index:3;box-shadow:inset 12px 8px #ffffff45}
+.pet-character .pet-ear{width:39px;height:65px;top:1px;background:#9ee5cb;border:3px solid #439c88;border-radius:58% 58% 27% 27%;z-index:2}
+.pet-character .pet-ear::after{content:'';position:absolute;left:9px;top:10px;width:15px;height:34px;background:#e9acd0;border-radius:55%}
+.pet-character .pet-ear-left{left:26px;transform:rotate(-19deg)}
+.pet-character .pet-ear-right{right:26px;transform:rotate(19deg)}
+.pet-character .pet-tail{width:36px;height:28px;background:#83d9bf;border:3px solid #439c88;border-radius:50%;right:2px;top:95px;z-index:1;transform:rotate(22deg)}
+.pet-character .pet-eye{width:12px;height:17px;background:#285c53;border-radius:50%;top:43px;z-index:2;animation:pet-blink 5s infinite}
+.pet-character .pet-eye-left{left:28px}
+.pet-character .pet-eye-right{right:28px}
+.pet-character .pet-cheek{width:17px;height:9px;background:#ef9fbd;opacity:.4;border-radius:50%;top:69px}
+.pet-character .pet-cheek-left{left:14px}
+.pet-character .pet-cheek-right{right:14px}
+.pet-character .pet-mouth{width:18px;height:10px;border-bottom:3px solid #28695d;border-radius:0 0 50% 50%;left:46px;top:67px}
+.pet-character .pet-decor{left:51px;top:5px;font-size:23px;color:#ea65a8;z-index:5;text-shadow:0 1px 2px #fff}
+.pet-character .pet-foot{width:32px;height:18px;background:#68c7af;border:3px solid #439c88;bottom:6px;border-radius:45%;z-index:4}
+.pet-character .pet-foot-left{left:30px}
+.pet-character .pet-foot-right{right:30px}
+.pet-character .pet-sparkle{left:5px;top:49px;font-size:25px;color:#d48bbf;z-index:3}
+.pet-character[data-bond="friendly"] .pet-cheek{opacity:.78}
+.pet-character[data-bond="bonded"] .pet-cheek{opacity:1;width:21px}
+.pet-character[data-bond="bonded"] .pet-mouth{width:24px;left:43px;height:13px}
+.pet-character[data-trait="play"] .pet-ear-left{transform:rotate(-36deg)}
+.pet-character[data-trait="play"] .pet-ear-right{transform:rotate(36deg)}
+.pet-character[data-trait="calm"] .pet-eye{height:6px;top:51px;border-radius:0 0 50% 50%;animation:none}
+.pet-character[data-trait="food"] .pet-mouth{width:15px;height:13px;left:47px;border:3px solid #28695d;border-top:0;background:#d48aa9}
+.pet-character[data-trait="pet"] .pet-eye{transform:rotate(8deg)}
+.pet-character.pet-mood-pet .pet-eye{height:7px;top:52px;animation:none}
+.pet-character.pet-mood-food .pet-mouth{height:16px;width:14px;left:48px;border-radius:50%;background:#d989ad;border:2px solid #28695d}
+.pet-character.pet-mood-play{animation:pet-hop .42s ease-in-out infinite alternate}
+.pet-character.pet-mood-calm{animation:pet-sway 1.7s ease-in-out infinite alternate}
+.pet-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.pet-action{display:flex;min-height:70px;flex-direction:column;justify-content:center;align-items:center;gap:2px;text-align:center;padding:9px 5px;font-size:13px;border:1px solid var(--line)}
+.pet-action:disabled{opacity:.43;cursor:not-allowed}
+.pet-action-icon{font-size:24px;line-height:1.2;color:#6ba6af}
+.pet-action small{font-size:10px;font-weight:400;line-height:1.35;overflow-wrap:anywhere}
+.pet-catalog{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0}
+.pet-catalog-item{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:6px 9px;opacity:.6}
+.pet-catalog-item.is-open{opacity:1;background:var(--bg)}
+.pet-award-row{display:grid;grid-template-columns:minmax(70px,auto) minmax(0,1fr) auto;gap:10px;border-top:1px solid var(--line);padding:10px 0;align-items:start;font-size:12px;line-height:1.5}
+.pet-award-row strong{white-space:nowrap}
+.pet-award-row b{white-space:nowrap;color:var(--good)}
+.pet-category-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 9px}
+.pet-category-choice{display:flex;align-items:center;gap:7px;margin:4px 0;font-weight:400;font-size:13px}
+.pet-category-choice input{width:18px;height:18px;margin:0;flex:0 0 auto}
+.pet-visitor{display:flex;align-items:center;justify-content:center;position:fixed;right:12px;bottom:calc(98px + env(safe-area-inset-bottom));z-index:28;width:80px;height:83px;overflow:hidden;border:1px solid #91cab8;background:#e3f6eeed;border-radius:22px;box-shadow:0 4px 14px #0002;animation:pet-visit .4s ease-out}
+.pet-visitor-icon{position:absolute;right:9px;top:4px;font-size:16px;color:#e57cae;z-index:2}
+.pet-visitor .pet-character{transform:scale(.43);animation:none;position:absolute;top:-35px;left:-34px;transform-origin:50% 50%}
+@keyframes pet-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.015)}}
+@keyframes pet-hop{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-13px) rotate(6deg)}}
+@keyframes pet-sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+@keyframes pet-blink{0%,42%,45%,100%{transform:scaleY(1)}43%{transform:scaleY(.12)}}
+@keyframes pet-visit{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:390px){
+  .pet-game-enabled .bottom-nav button{font-size:10px;padding:9px 1px}
+  .pet-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .pet-award-row{grid-template-columns:1fr auto}.pet-award-row>div{grid-column:1/-1;grid-row:2}
+}
+@media(prefers-reduced-motion:reduce){
+  .pet-character,.pet-character .pet-eye,.pet-visitor{animation:none!important;transition:none!important}
+}
