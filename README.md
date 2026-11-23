@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.7**：外部美術知見に基づく妖精の首元微調整・ジャンプの予備動作／着地・方向切替演出（AI QA PASS／Human QA待ち） |
+| candidate | **v0.2.46-candidate.8**：5タイプ全横向きをマンガ風の斜め姿に再設計・見本切替追加（AI QA PASS／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.7：静的33/33・動作模擬6/6・SVG 60/60 PASS、妖精幼体の横姿は描画画像を確認済み／Android Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.8：静的34/34・全SVG60/60・見本切替模擬11/11 PASS、妖精・恐竜幼体の新斜め姿は実画像で点検／Android Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -258,3 +258,16 @@ git rev-parse HEAD
 - **ファイル・版管理**：改修 `pet-art.js`（妖精横姿のみ）・`pet-game.css`（待機/方向転換アニメーション）・`pet-game.js`（動きを減らす設定）、バージョン/キャッシュ整合の `index.html`・`db.js`・`service-worker.js`、本README。画面表示・APP_VERSION・Service Worker cacheを `v0.2.46-candidate.7`、JS/CSSクエリを `?v=0246c7` に統一。
 - **既存処理の保護**：家計収支、分類、CSV、月次報酬、愛情度、成長段階、キャラクターID、図鑑、バックアップ、IndexedDB保存ロジックは今回変更なし。DB_VERSION=1／SCHEMA_VERSION=2／backupFormatVersion=1維持。
 - **AI QA**：JS構文/アセット版/保存互換/アニメーションキーフレーム整合等の静的33/33 PASS。方向転換・操作画面移動・モーション軽減設定の模擬6/6 PASS。5種×3段階×4方向のSVG生成60/60 PASS。現行candidate.7の**Android実機での画像の自然さ・アニメーションの感触はHuman QA未実施**。本番stable v0.2.45は変更しない。
+
+
+### v0.2.46-candidate.8：横向きを真横からマンガ的な斜め向きへ変更
+
+- **ユーザーの実機評価**：candidate.7で正面と動きは改善した一方、横向きは動物風・架空の生き物・妖精風・妖怪・恐竜すべてが不自然で外観Human QAは不合格。ユーザーから「本当の横の形に忠実でなくても、漫画表現として横向きが成立すればよい」との方針が明示された。したがって解剖学的な真側面より、顔の丸み・表情・可愛さ・種族らしさを保つ斜め向き（3/4表現）を採用する。
+- **専門根拠**：IIT Bombay/D'Source「Character Design for Animation — Model Sheet」https://www.dsource.in/course/character-design-animation/model-sheet では正面・横・3/4・後ろの描き分けをモデルシートに含める。アニメーションの魅力・可読性に関しては CG Channel の Disney Animationのアニメーターによる表情デザイン解説 https://www.cgchannel.com/2023/04/5-expert-tips-to-bring-appeal-to-your-facial-animation/ も参照。既存作品の絵柄やキャラクターの複製はしない。
+- **5種の斜め向き**：`pet-art.js`で動物風＝丸い頬・短い鼻先・耳と尻尾、架空の生き物＝丸い胴体・耳・小さな翼、妖精＝丸い顔・小人型の衣装と腕脚・背中の翼、妖怪＝大きな一つ目と浮遊シルエット、恐竜＝丸い頭・短い口先・背びれと長い尾、という専用構図を導入。近い側の目を大きく／遠い側を小さく配置するなど、正面に近い表情を残す記号的な斜め向きとした。右向きは左斜め向きの鏡像。
+- **対象範囲**：全5タイプ×3成長段階×左右の**30パターンの横向き**を変更。比較により正面と後ろの**30パターンはcandidate.7と描画文字列完全一致**。成長・愛情度・性格・月次報酬・図鑑・家計処理は変更なし。
+- **画像による美術QA**：実際にSVGをPNG化し、**妖精と恐竜の幼体・斜め向き**を目視点検。口先の過度な突出を避けつつ種族の判別と丸みが残っていることを確認。ほかの3タイプと成長後の絵、実機の動きについては構文検証は済みだが視覚的な最終Human QAが残る。コード整合性だけを美術QA合格とみなさない。
+- **見本の操作性**：相棒画面の折りたたみ「5タイプの幼体見本を見る」に **正面／斜め向き**切替ボタンを追加。全5タイプを、現在の相棒をやり直さずに比較可能。切替は一時的な画面状態のみで、IndexedDBへ書き込まない。成体・中間体の見た目は従来どおり育成後のお楽しみ。
+- **変更したファイル**：`pet-art.js`（5種の横向き描画）、`pet-game.js`（見本切替・方向コメント）、`pet-game.css`（ボタン）、`index.html`（切替UI・版）、`db.js`（版）、`service-worker.js`（キャッシュ・版）、`README.md`。`app.js`、家計集計`analysis.js`、CSV取込`dcard-import.js`、IndexedDBスキーマ・バックアップ処理は変更しない。
+- **版・キャッシュ**：画面表示／APP_VERSION／Service Worker cache `v0.2.46-candidate.8`、全JS/CSSアセット参照`?v=0246c8`。DB_VERSION=1、SCHEMA_VERSION=2、backupFormatVersion=1のまま。
+- **AI QA**：構文・画面ID・版/キャッシュ・保存互換・既存家計への非干渉など静的 **34/34 PASS**、5種×3段階×4方向のSVG生成とタグ検証 **60/60 PASS**、画面の見本切替/データ不変の模擬 **11/11 PASS**。実機Human QAでは、正面／斜め見本5種とキャラの動きの自然さ、ホームでの表示を代表確認。v0.2.45 stable はmainで保全、Human QA前に昇格しない。
