@@ -315,10 +315,12 @@ async function openAssetBreakdown(kind){
 }
 async function renderHomeReviewOrInsights(){
   const status=await DB.getMonthStatus(selectedMonth);
-  const finished=!!status?.completedAt;
-  $('homeReviewCard').classList.toggle('hidden',!finished);
-  $('homeInsightCard').classList.toggle('hidden',finished);
-  if(finished){await renderHomeMonthlyReview();return;}
+  // Past calendar months can be reviewed even when historical month-end
+  // completion timestamps were never written. The review marks these provisional.
+  const reviewable=selectedMonth<DB.currentMonth()||!!status?.completedAt;
+  $('homeReviewCard').classList.toggle('hidden',!reviewable);
+  $('homeInsightCard').classList.toggle('hidden',reviewable);
+  if(reviewable){await renderHomeMonthlyReview();return;}
   $('homeInsightHeading').textContent=selectedMonth===DB.currentMonth()?'月途中の参考情報・月末見通し':'対象月の途中経過';
   await renderHomeSpendingInsights();
 }
