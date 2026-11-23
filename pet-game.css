@@ -71,9 +71,34 @@ body.pet-game-enabled .bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
 .pet-category-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 9px}
 .pet-category-choice{display:flex;align-items:center;gap:7px;margin:4px 0;font-weight:400;font-size:13px}
 .pet-category-choice input{width:18px;height:18px;margin:0;flex:0 0 auto}
-.pet-visitor{display:flex;align-items:center;justify-content:center;position:fixed;right:12px;bottom:calc(98px + env(safe-area-inset-bottom));z-index:28;width:80px;height:83px;overflow:hidden;border:1px solid #91cab8;background:#e3f6eeed;border-radius:22px;box-shadow:0 4px 14px #0002;animation:pet-visit .4s ease-out}
-.pet-visitor-icon{position:absolute;right:9px;top:4px;font-size:16px;color:#e57cae;z-index:2}
-.pet-visitor .pet-character{transform:scale(.43);animation:none;position:absolute;top:-35px;left:-34px;transform-origin:50% 50%}
+/* The room occupant idles with short side steps and occasional hops. */
+.pet-stage .pet-character.pet-mood-idle{animation:pet-room-wander 15s ease-in-out infinite}
+/* Home companion is a transparent sprite, not a miniature room or colored button. */
+.pet-visitor{display:flex;align-items:center;justify-content:center;position:fixed;right:4px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:28;width:72px;height:78px;padding:0;overflow:visible;border:0;background:transparent;box-shadow:none;border-radius:18px;-webkit-tap-highlight-color:transparent}
+.pet-visitor:focus-visible{outline:2px solid var(--good);outline-offset:2px}
+.pet-visitor .pet-character{position:absolute;top:-40px;left:-37px;transform-origin:50% 50%;animation:pet-companion-wander 14s ease-in-out infinite}
+body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
+.pet-guest-companion{animation:pet-visit .35s ease-out}
+/* Long pauses keep the motion subtle while still offering visible sideways steps and hops. */
+@keyframes pet-room-wander{
+  0%,11%,92%,100%{transform:translate(0,0) scale(1)}
+  16%{transform:translate(-13px,-11px) scale(1.02)}
+  20%,30%{transform:translate(-18px,0) scale(1)}
+  37%{transform:translate(0,-15px) scale(1.02)}
+  42%,57%{transform:translate(14px,0) scale(1)}
+  63%{transform:translate(22px,-10px) scale(1.01)}
+  68%,82%{transform:translate(16px,0) scale(1)}
+  87%{transform:translate(5px,-12px) scale(1.02)}
+}
+@keyframes pet-companion-wander{
+  0%,12%,89%,100%{transform:translate(0,0) scale(.43)}
+  20%{transform:translate(-8px,-5px) scale(.43)}
+  24%,35%{transform:translate(-13px,0) scale(.43)}
+  42%{transform:translate(-13px,-10px) scale(.43)}
+  47%,60%{transform:translate(-13px,0) scale(.43)}
+  70%{transform:translate(3px,-7px) scale(.43)}
+  76%,84%{transform:translate(3px,0) scale(.43)}
+}
 @keyframes pet-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.015)}}
 @keyframes pet-hop{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-13px) rotate(6deg)}}
 @keyframes pet-sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
@@ -86,4 +111,5 @@ body.pet-game-enabled .bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){
   .pet-character,.pet-character .pet-eye,.pet-visitor{animation:none!important;transition:none!important}
+  .pet-visitor .pet-character{transform:scale(.43)!important}
 }
