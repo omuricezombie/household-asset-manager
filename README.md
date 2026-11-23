@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.1**：任意の育成ゲーム追加（AI QA中／Human QA未実施） |
+| candidate | **v0.2.46-candidate.1**：任意の育成ゲーム追加（AI QA PASS／Human QA未実施） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | v0.2.45：AI QA 6/6＋23/23 PASS、Android Human QA PASS |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.1：静的整合32/32、模擬動作14/14 PASS／Android Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -193,4 +193,4 @@ git rev-parse HEAD
 - 初期判定対象は食費・日用品等の変動費で、家賃・仕送り・医療・教育費・家電は初期OFF。ゲーム画面から分類別にON/OFF変更が可能（新規確定月に反映）。過去の判定は二重加算せず、記録を編集した場合には明示操作で再判定できる。
 - レベルで動き・食事・遊びが増え、特定分類の節約達成で特別な触れ合い・装飾が解放。ホーム／履歴でのマスコット訪問はまれに出現し、入力中・月末更新中は出現しない。
 - 既存のIndexedDB `settings` ストア内 `petGameStateV1` に独立保存。DB_VERSION=1・SCHEMA_VERSION=2・backupFormatVersion=1は維持。既存JSONバックアップに含まれ、旧バックアップも復元可能。実ユーザーの家計データはGitHubに登録しない。
-- **品質状態：Human QA未実施のためstable未昇格。** QA合格後にPRでmainへ反映。現行stable v0.2.45（main commit `3d9d9baed9a90aa3154b62003b24458bca74be6d`）を変更しない。固定rollback v0.2.16を維持。
+- **品質状態：静的整合32/32・模擬動作14/14 PASS、Human QA未実施のためstable未昇格。** QA合格後にPRでmainへ反映。現行stable v0.2.45（main commit `3d9d9baed9a90aa3154b62003b24458bca74be6d`）を変更しない。固定rollback v0.2.16を維持。
