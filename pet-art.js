@@ -32,6 +32,84 @@ function smile(x,y,mood){
 }
 function sparkle(x,y,color){return path('M'+x+' '+(y-9)+' L'+(x+3)+' '+(y-2)+' L'+(x+10)+' '+y+' L'+(x+3)+' '+(y+2)+' L'+x+' '+(y+9)+' L'+(x-3)+' '+(y+2)+' L'+(x-10)+' '+y+' L'+(x-3)+' '+(y-2)+' Z',color,'none',0);}
 function heart(x,y){return path('M'+x+' '+(y+8)+' C'+(x-26)+' '+(y-5)+','+(x-10)+' '+(y-18)+','+x+' '+(y-7)+' C'+(x+10)+' '+(y-18)+','+(x+26)+' '+(y-5)+','+x+' '+(y+8)+'Z','#f29cbd','none',0);}
+
+/* Cartoon 3/4 left-looking poses: short snouts, rounded shapes and smaller far-side eyes.
+   Intentionally not anatomically strict profiles. Right faces are mirrored. */
+function animalThreeQuarter(age,mood){
+ const P=palette.animal,adult=age===2,baby=age===0;let s='';
+ s+=path(adult?'M141 128 Q181 84 181 114 Q180 142 149 154Z':'M141 130 Q170 104 176 120 Q177 141 148 150Z',P.main,P.dark);
+ s+=ell(109,130,adult?50:baby?41:46,adult?43:35,P.main,P.dark)+ell(106,139,24,23,P.light);
+ s+=ell(77,162,16,10,P.main,P.dark)+ell(135,162,17,10,P.main,P.dark);
+ s+=path(adult?'M76 69 L59 15 Q69 5 82 34 L97 57 L116 39 Q139 10 142 37 L132 82Z':'M77 72 L63 28 Q70 17 83 39 L98 59 L119 46 Q140 23 137 45 L130 81Z',P.main,P.dark);
+ s+=path('M73 55 L68 34 Q78 39 85 58Z','#f7bdba','none',0);
+ s+=ell(93,82,adult?44:41,adult?40:38,P.light,P.dark,3.5);
+ s+=ell(72,98,21,14,P.detail);
+ s+=eye(77,79,mood,1.06)+eye(106,81,mood,.62)+ell(64,100,7,4,'#efaab0');
+ s+=circ(61,96,3.2,'#885d59')+line('M66 108 Q78 118 87 108',P.ink,2.4);
+ s+=ell(138,130,13,9,P.main,P.dark);
+ if(adult)s+=path('M107 117 Q123 130 133 140','none','#fff0d8',5);
+ return s;
+}
+function fantasyThreeQuarter(age,mood){
+ const P=palette.fantasy,adult=age===2,baby=age===0;let s='';
+ if(!baby)s+=path(adult?'M118 106 Q161 16 182 49 Q182 118 144 141 L116 129Z':'M119 117 Q149 62 171 90 Q171 128 135 140Z','#b6ecf2',P.dark);
+ s+=path(adult?'M136 128 Q176 102 175 137 Q169 155 142 151Z':'M136 132 Q162 111 167 132 Q160 146 141 150Z',P.main,P.dark);
+ s+=path(adult?'M80 69 Q53 10 68 15 Q85 23 92 59 L117 55 Q134 9 147 23 Q157 39 134 81Z':'M79 77 Q57 29 71 24 Q87 32 94 66 L117 61 Q129 25 139 31 Q151 45 131 86Z',P.main,P.dark);
+ s+=path('M75 61 L71 38 Q84 44 86 64Z','#f5bbd0','none',0);
+ s+=path(adult?'M51 92 Q48 46 94 51 Q149 44 153 104 Q154 154 102 160 Q49 156 51 92Z':'M54 96 Q51 56 96 58 Q151 55 148 106 Q150 151 101 157 Q54 152 54 96Z',P.main,P.dark,4);
+ s+=ell(84,87,24,20,P.light)+ell(93,123,27,19,'#a6f0de');
+ s+=eye(78,98,mood,1.12)+eye(110,99,mood,.64);
+ s+=ell(68,117,8,4,'#f3a2be')+smile(91,121,mood);
+ s+=ell(77,162,16,10,P.main,P.dark)+ell(128,161,16,10,P.main,P.dark);
+ if(adult)s+=path('M106 59 L118 34 L126 60Z','#f2efba',P.dark,2);
+ return s;
+}
+function fairyThreeQuarter(age,mood){
+ const P=palette.fairy,adult=age===2,baby=age===0,skin='#ffe7ce',hair=adult?'#755680':'#986e94';let s='';
+ s+=path(adult?'M115 108 Q148 39 178 65 Q178 117 132 147Z':'M118 115 Q148 72 163 90 Q167 127 133 141Z','#b7e9f2','#829fc9',3);
+ s+=path('M130 117 Q146 111 154 95','none','#fff9ef',2.5);
+ s+=line('M122 118 L131 141',P.dark,6)+line('M116 152 L122 171',P.dark,6)+ell(122,174,8,4,skin);
+ s+=path(adult?'M81 110 Q98 106 117 112 Q122 137 136 160 Q100 177 72 160Z':baby?'M82 113 Q100 110 118 115 Q122 137 126 157 Q100 169 73 157Z':'M82 112 Q100 108 118 114 Q124 137 130 159 Q99 171 73 159Z',adult?'#b6d8d1':'#c7e7d9',P.dark);
+ s+=line('M83 147 Q102 155 124 148','#fff5e3',3);
+ s+=line('M90 158 L85 173',P.dark,7)+ell(85,176,9,4.3,skin);
+ s+=path(adult?'M59 72 Q57 26 90 19 Q129 15 138 59 Q145 100 123 115 L77 105Z':'M61 74 Q60 32 90 27 Q126 24 134 66 Q139 100 116 112 L76 104Z',hair,P.dark);
+ s+=path('M94 99 L100 113 L112 112 L110 99Z',skin,'none',0);
+ s+=ell(89,78,adult?36:33,adult?35:33,skin,'#d8b7a5',3);
+ s+=path(adult?'M61 63 Q64 34 89 32 Q109 33 122 51 Q110 44 96 49 Q81 63 61 63Z':'M64 64 Q67 42 89 40 Q109 41 119 54 Q105 51 97 55 Q80 66 64 64Z',hair,'none',0);
+ s+=path('M121 53 Q136 84 124 107','none',hair,7);
+ s+=eye(76,77,mood,1.02)+eye(105,79,mood,.65);
+ s+=ell(66,97,6,3,'#f3afaf')+smile(88,100,mood);
+ s+=line('M85 115 Q76 127 73 141',P.dark,7)+circ(73,144,4.4,skin);
+ if(adult)s+=sparkle(160,52,'#fff0b7');
+ return s;
+}
+function yokaiThreeQuarter(age,mood){
+ const P=palette.yokai,adult=age===2,baby=age===0;let s='';
+ s+=path(adult?'M71 65 Q46 13 68 10 Q90 12 95 45 Q120 14 134 24 Q148 39 136 71Z':'M85 67 Q73 35 89 29 Q107 36 110 64Z',P.main,P.dark);
+ s+=path(adult?'M51 84 Q49 39 99 37 Q150 39 154 90 Q162 121 145 148 L131 161 Q116 145 102 158 Q85 143 69 156 Q48 145 49 120Z':'M56 90 Q56 51 100 50 Q146 50 149 94 Q153 129 132 148 Q114 135 101 152 Q83 136 70 148 Q51 133 56 90Z',P.main,P.dark,3.8);
+ s+=ell(83,95,adult?23:21,adult?24:22,'#fff7f4',P.dark,2.7)+eye(83,95,mood,1.85);
+ s+=ell(60,117,8,4,'#eda2d0')+ell(115,116,7,3,'#eda2d0');
+ s+=line('M71 126 Q87 138 106 125','#575082',3);
+ if(!baby)s+=path('M135 122 Q164 99 171 114 Q174 139 142 148Z','#ddb4e9',P.dark);
+ if(adult)s+=sparkle(145,60,'#f6c9ea');
+ return s;
+}
+function dinoThreeQuarter(age,mood){
+ const P=palette.dino,baby=age===0,adult=age===2;let s='';
+ s+=path(adult?'M137 125 Q174 96 189 105 Q179 145 145 156Z':'M136 129 Q169 108 179 123 Q169 147 145 150Z',P.main,P.dark);
+ s+=path(adult?'M104 94 L115 59 L131 85 L143 50 L156 93 L169 80 L161 128Z':'M105 101 L115 76 L131 97 L143 78 L149 120Z',P.detail,P.dark,3);
+ s+=ell(109,130,adult?49:43,adult?40:35,P.main,P.dark)+ell(103,138,26,21,P.light);
+ s+=line(adult?'M84 141 L77 169 L62 171 M137 143 L141 168 L155 170':'M84 141 L77 164 L65 168 M135 144 L140 165 L152 168',P.dark,adult?11:9);
+ s+=path(adult?'M59 78 Q56 43 96 37 Q142 37 147 82 Q150 108 123 119 Q84 123 59 108 Q52 99 59 78Z':'M61 81 Q60 49 96 48 Q139 47 142 83 Q146 108 123 116 Q84 122 60 108 Q53 99 61 81Z',P.main,P.dark,3.7);
+ s+=ell(67,104,21,14,P.light,P.dark,2.8);
+ s+=eye(78,83,mood,1.15)+eye(114,85,mood,.63);
+ s+=circ(54,104,3.1,P.dark)+line('M63 115 Q81 124 99 113',P.dark,2.7);
+ s+=line('M122 119 Q132 128 138 123',P.dark,2.5);
+ if(adult)s+=path('M82 117 L88 125 L94 119 L101 126 L107 118Z','#fff5de','none',0);
+ if(baby)s+=path('M78 149 L89 145 L100 152 L111 145 L125 152 L129 159 Q101 168 77 159Z','#fbefd4','#dfc99b',2);
+ return s;
+}
+
 function animal(age,view,mood){
  const baby=age===0,adult=age===2,P=palette.animal;
  let s='';
@@ -48,14 +126,7 @@ function animal(age,view,mood){
   s+=ell(64,166,16,9,P.main,P.dark)+ell(136,166,16,9,P.main,P.dark);
   if(adult)s+=path('M65 115 Q67 138 100 155 Q133 138 135 115', 'none','#fff2db',7)+path('M65 43 Q100 23 135 43', 'none','#f5d0a3',5);
  }else if(view==='side'){
-  s+=path(adult?'M127 110 Q161 50 184 66 Q181 114 142 137L130 135Z':'M122 123 Q154 77 177 92 Q177 128 142 141Z',P.main,P.dark);
-  s+=ell(106,121,adult?54:44,adult?39:34,P.main,P.dark);
-  s+=path(adult?'M66 81 L49 23 Q54 12 68 36 L76 53 L104 45 L119 18 Q132 6 132 29 L124 89Z':'M63 85 L54 35 Q60 25 73 54 L95 58 L114 34 Q125 31 125 49 L124 91Z',P.main,P.dark);
-  s+=ell(adult?78:81,81,adult?43:39,adult?38:40,P.light,P.dark);
-  s+=path('M53 91 Q32 89 20 105 Q21 119 44 120 L68 105Z',P.detail,P.dark,3);
-  s+=eye(70,80,mood,1.1)+ell(36,106,5,3,'#875e55')+line('M28 116 Q39 122 49 115',P.ink,2);
-  s+=ell(83,155,14,11,P.main,P.dark)+ell(134,156,14,11,P.main,P.dark);
-  if(adult)s+=path('M100 94 Q120 107 139 113', 'none','#fff0d1',6);
+  s+=animalThreeQuarter(age,mood);
  }else{
   s+=path(adult?'M110 126 Q165 91 177 68 Q187 120 151 146Z':'M112 131 Q149 99 166 113 Q166 139 147 149Z',P.main,P.dark);
   s+=ell(100,128,adult?53:43,adult?46:37,P.main,P.dark);
@@ -83,14 +154,7 @@ function fantasy(age,view,mood){
     ell(53,138,15,13,P.detail,P.dark)+ell(146,138,15,13,P.detail,P.dark);
   s+=ell(75,161,17,9,P.main,P.dark)+ell(125,161,17,9,P.main,P.dark);
  }else if(view==='side'){
-  if(!baby)s+=path(adult?'M120 106 Q161 22 182 47 Q184 123 132 146Z':'M120 116 Q159 69 171 93 Q168 130 128 140Z','#bceff4',P.dark);
-  s+=path(adult?'M126 118 Q171 102 184 151 Q171 170 132 143Z':'M124 123 Q153 115 165 139 L138 151Z',P.main,P.dark);
-  s+=path(adult?'M61 76 Q53 4 75 13 Q89 30 89 71 L108 69 Q119 18 136 19 Q147 34 118 87Z':'M66 85 Q52 31 70 29 Q88 38 90 81 L111 80 Q120 33 139 39 L125 93Z',P.main,P.dark);
-  s+=path(adult?'M45 90 Q40 52 85 54 Q139 55 143 103 Q151 157 96 158 Q43 153 45 90Z':'M53 94 Q55 63 94 63 Q143 66 146 111 Q147 158 93 155 Q50 148 53 94Z',P.main,P.dark,4);
-  s+=path('M61 102 Q35 95 23 115 Q37 127 63 120Z',P.detail,P.dark,2.5);
-  s+=eye(64,91,mood,1.2)+ell(42,113,5,3,P.dark)+line('M35 122 Q47 130 61 120',P.ink,2.5)+
-  ell(81,160,14,9,P.main,P.dark)+ell(127,160,14,9,P.main,P.dark);
-  if(adult)s+=path('M107 65 L118 36 L125 67Z','#f7efc5',P.dark,2);
+  s+=fantasyThreeQuarter(age,mood);
  }else{
   if(!baby)s+=path(adult?'M76 95 Q10 36 17 127 Q39 165 79 135Z':'M69 106 Q31 78 37 136 Q51 143 79 133Z','#b6eaf3',P.dark)+
     path(adult?'M124 95 Q190 36 183 127 Q161 165 121 135Z':'M131 106 Q169 78 163 136 Q149 143 121 133Z','#b6eaf3',P.dark);
@@ -124,67 +188,7 @@ function fairy(age,view,mood){
   if(adult)s+=path('M128 43 Q153 51 146 102 Q134 97 134 84Z','#74567c',P.dark,2)+sparkle(145,32,'#fff5bf');
   s+=circ(98,118,4,'#fff6df');
  }else if(view==='side'){
-  // A real chibi human profile facing left, rather than a head facing sideways on a front-facing stick body.
-  // Draw from rear to front: wings -> far limbs -> slender side-view outfit -> hair -> neck/face -> near arm.
-  const hair=adult?'#73547d':'#986d91';
-  const skin='#ffe7ce',skinLine='#d2b5a5',dress=adult?'#a9d6cf':'#c7e7d9';
-  // Wings emerge at the shoulder blades (x118,y111); do not float alongside the head.
-  s+=path(adult?
-    'M117 110 Q138 63 166 67 Q172 102 148 126 Q133 141 118 120Z':
-    baby?'M116 112 Q132 87 148 95 Q150 117 126 132 L115 122Z':
-    'M116 110 Q140 74 159 83 Q164 113 137 135 L116 121Z',
-    '#b8e8f4','#82a5c9',3);
-  s+=path(adult?'M122 112 Q149 91 159 85 M121 119 Q139 124 146 130':
-    'M122 111 Q133 108 143 99','none','#ffffffb5',2);
-  if(adult)s+=path('M118 108 Q149 92 147 67 Q169 89 150 130Z','#e6c0f6','#a68ec9',2);
-  // Far leg and arm are behind the dress.
-  s+=line(adult?'M111 148 L117 169':'M108 148 L113 167',P.dark,6);
-  s+=ell(adult?119:115,172,7,4,'#f5d9c8');
-  s+=line(adult?'M115 112 Q125 122 122 139':'M113 113 Q125 122 119 136',P.dark,6);
-  s+=circ(120,138,4.1,skin);
-  // Torso is narrow in profile, with a side-view skirt extending toward the back.
-  s+=path(adult?
-    'M89 108 Q99 103 113 109 L119 130 Q120 144 130 159 Q105 169 82 160 Q89 142 88 127Z':
-    baby?'M89 111 Q101 107 112 113 L116 138 Q122 150 119 156 Q102 163 83 155 Q90 139 87 127Z':
-    'M89 109 Q102 105 115 111 L118 131 Q121 145 125 158 Q103 165 82 156 Q88 139 87 125Z',
-    dress,P.dark,3.2);
-  s+=path(adult?'M90 142 Q107 149 120 143':'M91 144 Q106 151 116 144','none','#f7f5e5',3.2);
-  if(adult)s+=path('M84 157 Q106 167 132 158','none','#82bdb9',4);
-  // Near leg falls from the forward edge of the skirt, not from the middle of a front-facing body.
-  s+=line(adult?'M92 157 L88 173':'M94 156 L91 172',P.dark,7);
-  s+=ell(adult?88:91,175,9,4.3,'#f5d9c8');
-  // Layered hair creates the back of the skull; the neck connects the profile to the torso.
-  s+=path(adult?
-    'M63 71 Q60 28 91 19 Q124 16 127 55 Q137 87 121 118 Q111 117 105 104 L85 98Z':
-    baby?'M66 70 Q65 36 92 31 Q124 30 125 64 Q131 95 113 109 L89 101Z':
-    'M64 70 Q63 32 91 25 Q127 23 129 62 Q133 95 115 113 L89 103Z',
-    hair,P.dark,3.2);
-  s+=path('M94 95 Q96 103 102 112 L107 107 L106 94Z',skin,'none',0);
-  // Continuous forehead -> small nose -> mouth -> chin -> cheek -> ear-side profile.
-  s+=path(adult?
-    'M78 48 Q94 42 105 51 Q115 63 107 84 Q103 96 91 102 Q76 105 66 96 Q60 89 57 83 L52 79 Q57 74 62 71 Q62 57 78 48Z':
-    baby?'M79 52 Q94 46 105 56 Q112 66 105 85 Q101 95 90 100 Q75 102 65 94 Q60 88 59 82 L55 79 Q61 75 63 71 Q64 57 79 52Z':
-    'M78 50 Q96 43 107 54 Q116 68 106 87 Q101 98 89 102 Q74 104 64 94 Q60 88 57 83 L54 80 Q60 75 63 71 Q63 58 78 50Z',
-    skin,skinLine,2.8);
-  // Fringe bends with the cranium and never forms a protruding beak.
-  s+=path(adult?
-    'M63 70 Q65 43 87 37 Q104 35 111 54 Q96 48 88 47 Q77 57 65 59Z':
-    baby?'M63 71 Q65 47 88 43 Q104 44 108 57 Q91 50 82 54 Q75 65 63 65Z':
-    'M63 71 Q65 43 88 39 Q104 38 110 57 Q95 49 86 52 Q77 64 63 63Z',
-    hair,'none',0);
-  s+=eye(adult?78:79,adult?74:75,mood,.96);
-  s+=ell(67,87,5.5,3.2,'#f2b1b9');
-  // Tiny human nose and subtle smile: face never becomes a large protruding muzzle.
-  s+=circ(55,80,1.6,'#c18f83');
-  s+=line('M60 90 Q66 96 72 91','#956f78',2);
-  // Small ear and an identifiable, near-side shoulder/arm.
-  s+=ell(104,79,5,7,skin,skinLine,1.6);
-  s+=path(adult?'M91 112 Q82 125 79 137':'M92 113 Q84 124 82 136','none',P.dark,7);
-  s+=circ(adult?78:81,138,4.4,skin);
-  if(adult){
-    s+=path('M119 60 Q134 91 115 121','none',hair,8);
-    s+=sparkle(158,58,'#fff6bd');
-  }
+  s+=fairyThreeQuarter(age,mood);
  }else{
   s+=path(adult?'M86 94 Q17 18 16 126 Q49 156 84 135Z':'M83 101 Q26 43 29 126 Q48 142 83 135Z','#b5eaf5','#8295c8',3)+
     path(adult?'M114 94 Q183 18 184 126 Q151 156 116 135Z':'M117 101 Q174 43 171 126 Q152 142 117 135Z','#b5eaf5','#8295c8',3);
@@ -213,12 +217,7 @@ function yokai(age,view,mood){
     path('M143 130 Q169 113 173 93 Q186 106 177 134 Q162 145 141 143Z','#e7b8ed',P.dark,2);}
   if(adult){s+=ell(101,55,10,6,'#fff7bd');s+=sparkle(33,52,'#f2a5d9')+sparkle(166,65,'#f2a5d9');}
  }else if(view==='side'){
-  s+=path(adult?'M82 47 Q82 10 99 8 Q107 34 119 42 Q143 23 145 47Z':'M94 57 Q80 38 89 28 Q107 40 113 59Z',P.main,P.dark);
-  s+=path(adult?'M55 77 Q61 36 108 40 Q152 47 150 97 Q162 124 142 145 Q123 137 119 157 Q96 143 78 154 Q62 139 58 134 Q45 119 55 77Z':'M62 85 Q65 50 107 54 Q144 58 145 103 Q149 128 129 148 Q107 137 94 149 Q67 135 60 115Z',P.main,P.dark);
-  s+=path('M62 94 Q45 90 36 106 Q49 117 63 112Z',P.light,P.dark,2);
-  s+=ell(77,90,16,20,'#fff7f2',P.dark,2.5)+eye(76,89,mood,1.25);
-  s+=line('M55 119 Q70 125 80 117','#554d7c',2.5);
-  if(adult)s+=path('M138 99 Q178 74 179 119 Q167 153 137 142Z','#d99ed7',P.dark);
+  s+=yokaiThreeQuarter(age,mood);
  }else{
   s+=path(adult?'M67 56 Q38 10 66 6 L91 47 L117 22 Q142 12 143 63Z':'M84 64 Q74 36 92 29 L108 60Z',P.main,P.dark);
   s+=path(adult?'M52 79 Q58 33 100 30 Q155 37 147 91 Q166 139 143 151 Q125 141 112 159 Q97 143 78 157 Q65 144 51 153 Q41 132 52 79Z':'M61 82 Q72 48 99 48 Q142 52 142 90 Q160 132 132 149 Q115 136 101 153 Q85 137 70 147 Q58 126 61 82Z',P.main,P.dark);
@@ -243,18 +242,7 @@ function dino(age,view,mood){
   s+=ell(75,166,adult?21:16,adult?12:9,P.main,P.dark)+ell(128,166,adult?21:16,adult?12:9,P.main,P.dark);
   if(baby)s+=path('M71 145 L82 139 L91 148 L99 141 L109 149 L117 140 L132 145 L123 160 L79 161Z','#f6edd2','#e1c89a',2);
  }else if(view==='side'){
-  // True theropod profile with horizontal skull, long snout, separate hind legs and a large tail.
-  s+=path(adult?'M125 114 Q160 94 184 91 Q178 115 151 133 L124 138Z':'M121 121 Q152 107 170 115 Q157 135 129 142Z',P.main,P.dark);
-  s+=path(adult?'M99 90 L115 58 L132 78 L141 44 L153 76 L162 66 L151 112Z':'M97 95 L112 68 L122 92 L135 72 L139 112Z',P.detail,P.dark);
-  s+=path(adult?'M84 90 Q125 82 143 123 Q137 156 106 154 Q79 153 72 122Z':'M85 103 Q123 95 130 125 Q130 155 100 155 Q79 153 74 128Z',P.main,P.dark);
-  s+=path(adult?'M65 74 Q63 45 91 35 Q121 31 127 55 L112 80 Q102 97 83 113 L58 103Z':'M68 82 Q63 52 94 50 Q122 51 123 78 L100 109 L61 105Z',P.main,P.dark);
-  s+=path(adult?'M66 75 Q44 63 24 81 Q20 99 44 103 L78 97Z':'M71 83 Q46 68 28 88 Q24 105 51 108 L82 97Z',P.light,P.dark,3.2);
-  s+=path('M30 103 Q47 114 68 107', 'none',P.dark,3);
-  s+=eye(68,76,mood,1.25)+ell(38,93,4.7,3,P.dark);
-  if(adult)s+=path('M36 104 L43 112 L49 107 L55 114 L61 108Z','#fff9ed','none',0);
-  s+=path(adult?'M102 132 L98 166 L78 171 M126 128 L129 166 L148 170':'M93 132 L90 164 L78 169 M120 134 L125 166 L140 170','none',P.dark,12);
-  s+=line('M83 113 L72 124 M110 112 L114 126',P.dark,adult?8:6);
-  if(baby)s+=path('M91 140 L105 147 L117 139 L126 149 L125 157 L91 158Z','#f6edd3','#e1c89a',2);
+  s+=dinoThreeQuarter(age,mood);
  }else{
   s+=path(adult?'M91 48 L107 5 L123 48 L139 33 L141 89Z':'M88 62 L103 30 L118 62 L129 49 L130 89Z',P.detail,P.dark);
   s+=path(adult?'M58 80 Q73 47 99 48 Q126 44 144 80 L151 137 Q133 160 117 163 L109 174 L91 174 L84 163 Q62 158 51 137Z':'M69 85 Q76 60 100 59 Q127 61 132 83 L140 136 Q129 151 115 158 L109 172 L90 172 L84 158 Q72 152 62 133Z',P.main,P.dark,4);
