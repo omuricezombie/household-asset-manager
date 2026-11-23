@@ -150,24 +150,13 @@
   function characterHtml(small=false,pet=active(),direction=facing()){
     if(!pet)return '';
     const trait=petPersonality(pet).id,tier=affectionTier(pet),type=pet.type;
-    const stage=petStage(pet),decorate=activeRewardFor(['衣料費','美容費'],pet);
-    const room=activeRewardFor(['日用品','家電'],pet);
-    return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+'" data-trait="'+safeText(trait)+
-      '" data-bond="'+tier+'" data-type="'+safeText(type)+'" data-growth="'+stage+'" data-facing="'+safeText(direction)+
-      '" role="img" aria-label="'+safeText(pet.name)+'">'+
-      '<span class="pet-shadow"></span><span class="pet-tail"></span>'+
-      '<span class="pet-wing pet-wing-left"></span><span class="pet-wing pet-wing-right"></span>'+
-      '<span class="pet-ear pet-ear-left"></span><span class="pet-ear pet-ear-right"></span>'+
-      '<span class="pet-antenna pet-antenna-left"></span><span class="pet-antenna pet-antenna-right"></span>'+
-      '<span class="pet-horn"></span><span class="pet-spikes"></span>'+
-      '<span class="pet-body"><span class="pet-back-mark"></span><span class="pet-face">'+
-      '<span class="pet-eye pet-eye-left"></span><span class="pet-eye pet-eye-right"></span>'+
-      '<span class="pet-cheek pet-cheek-left"></span><span class="pet-cheek pet-cheek-right"></span>'+
-      '<span class="pet-mouth"></span><span class="pet-nose"></span></span>'+
-      '<span class="pet-decor">'+(decorate?'✿':tier==='bonded'?'♥':'')+'</span></span>'+
-      '<span class="pet-arm pet-arm-left"></span><span class="pet-arm pet-arm-right"></span>'+
-      '<span class="pet-foot pet-foot-left"></span><span class="pet-foot pet-foot-right"></span>'+
-      (room&&!small?'<span class="pet-sparkle">✧</span>':'')+'</span>';
+    const stage=petStage(pet);
+    const art=HAM.PetArt.draw({type,stage,direction,mood,affection:pet.affection,trait});
+    return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+
+      '" data-trait="'+safeText(trait)+'" data-bond="'+tier+
+      '" data-type="'+safeText(type)+'" data-growth="'+stage+
+      '" data-facing="'+safeText(direction)+'" role="img" aria-label="'+safeText(pet.name)+'">'+
+      art+'</span>';
   }
   function moodMessage(){
     if(mood==='pet')return 'もっとなでてほしそう。';
@@ -393,7 +382,15 @@
       if(mood!=='idle')return;
       faceStep=(faceStep+1)%FACING.length;
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
-        .forEach(el=>el.dataset.facing=facing());
+        .forEach(el=>{
+          el.dataset.facing=facing();
+          // Redraw the actual profile/back silhouette, not a squashed frontal image.
+          const svg=el.querySelector('.pet-art');
+          if(svg&&active())svg.outerHTML=HAM.PetArt.draw({
+            type:active().type,stage:petStage(),direction:facing(),
+            mood,affection:active().affection,trait:personality().id
+          });
+        });
     },3500);
   }
   function renderStats(){
