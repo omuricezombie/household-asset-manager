@@ -8,14 +8,14 @@
 
 | 項目 | 基準 |
 | --- | --- |
-| 正式版 | **v0.2.39 stable**（2026-11-22時点） |
+| 正式版 | **v0.2.40 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.40-candidate.4**：今月の気づき・月末見通し（Human QA待ち） |
+| candidate | mainと同期（未採用candidateなし） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | v0.2.39 stableはAI QA / Human QA合格。v0.2.40 candidateはAI QA中 |
+| 品質 | v0.2.40 stableはAI QA / Human QA合格（代表ケース） |
 | 現在の段階 | 実データでの継続使用・評価 |
 
-v0.2.37は2026-11-22にHuman QA合格後、PR経由でmainへ昇格する版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
+v0.2.40は2026-11-23に代表Human QA合格後、PR経由でmainへ昇格する版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
 
 ## 実装済みの主な機能
 
@@ -128,3 +128,8 @@ git rev-parse HEAD
 - 意味のある色分けを実施。確認済みの超過と、明細が揃った支出増加は注意色。明細が不十分な参考試算と支出減は中立色として、未確定の減少に安易に緑を付けない。
 - 既存のspendingOutlook/insightsの結果を読み取るUIのみ拡張。カテゴリの構造化メタデータを追加したが、支出集計・除外・予測計算・保存・バックアップ・CSV処理・IndexedDBスキーマは維持。
 - v0.2.40-candidate.3は候補履歴へ移行。Human QAはv0.2.40-candidate.4で実施し、合格後に正式昇格する。
+
+### v0.2.40 stable 採用
+
+- v0.2.40-candidate.4のスマートフォン実機Human QAで『よさそう。問題もなさそう』と確認済み。月末の参考試算とカテゴリ別要因を金額中心のカード表示に変更、重要度とデータ確度に応じて色を使い分け。計算式、保存形式は維持。
+- 正式PRを経てmainへ昇格し、candidateと同期する版。候補.1〜.4はGitHubのコミット履歴に残す。
