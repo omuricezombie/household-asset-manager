@@ -10,10 +10,12 @@
     {id:'pet',label:'なでる',icon:'♡',level:1,type:'pet',gain:2,reply:'うれしそうに目を細めた！'},
     {id:'feed',label:'ごはん',icon:'●',level:1,type:'food',gain:2,reply:'おいしそうにもぐもぐしている。'},
     {id:'rest',label:'見守る',icon:'☾',level:1,type:'calm',gain:1,reply:'安心したように、のんびりしている。'},
+    {id:'brush',label:'ブラッシング',icon:'✧',level:2,type:'pet',gain:2,reply:'毛並みがふわふわになった！'},
     {id:'ball',label:'ボール',icon:'◯',level:2,type:'play',gain:3,reply:'ボールを追いかけて跳ね回った！'},
     {id:'snack',label:'おやつ',icon:'✿',level:3,type:'food',gain:2,reply:'おやつに大喜び！'},
     {id:'dance',label:'ダンス',icon:'♪',level:4,type:'play',gain:3,reply:'くるくる踊ってみせてくれた！'},
     {id:'hide',label:'かくれんぼ',icon:'?',level:5,type:'play',gain:3,reply:'見つけた！ ちょっと得意げ。'},
+    {id:'blanket',label:'おふとん',icon:'☁',level:5,type:'calm',gain:1,reply:'ふかふかのおふとんで、うとうと。'},
     {id:'feast',label:'ごちそう',icon:'★',level:6,type:'food',gain:2,reply:'特別なごちそうを味わっている。'},
     {id:'fruit',label:'くだもの',icon:'♧',level:1,type:'food',gain:2,categories:['食費'],reply:'旬のくだものを食べてごきげん！'},
     {id:'storybook',label:'絵本遊び',icon:'▣',level:1,type:'calm',gain:2,categories:['趣味費','漫画・本','娯楽費'],reply:'物語に夢中になっている。'}
