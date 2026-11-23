@@ -123,10 +123,11 @@
   }
   async function setEnabled(flag){
     state.enabled=!!flag;
-    if(state.enabled&&!state.startedMonth)state.startedMonth=DB.currentMonth();
+    // No companion is created just by switching the optional game ON.
     setVisible();
     await persist();
-    if(!state.enabled){hideVisitor();if(current==='pet'&&navigate)void navigate('home');}
+    if(!state.enabled){hideVisitor();stopFacing();if(current==='pet'&&navigate)void navigate('home');}
+    else{setFacingTimer();if(current==='home')maybeVisit('home');}
   }
   function isEnabled(){return !!(state&&state.enabled);}
   function points(){return petPoints();}
@@ -292,25 +293,106 @@
     return {earnedAt:DB.now(),items,bonus,points:bonus+items.reduce((s,x)=>s+x.points,0)};
   }
   async function syncRewards(){
-    if(!state.enabled||!state.startedMonth)return;
+    if(!state.enabled||!active())return;
     const [tx,imports,statuses]=await Promise.all([DB.getAll('transactions'),DB.getAll('cardImports'),DB.getAll('monthStatus')]);
     const done=new Set(statuses.filter(x=>x.completedAt).map(x=>x.month));
     const records=prepareMonthlyRecords(tx,imports);
     let changed=false;
     for(const r of records){
-      if(r.month<state.startedMonth||!done.has(r.month)||!r.quality||state.awards[r.month])continue;
+      if(r.month<active().startedMonth||!done.has(r.month)||!r.quality||state.awards[r.month])continue;
       const past=records.filter(x=>x.month<r.month&&x.quality&&x.hasExpense).slice(-3);
       const prev=state.awards[DB.prevMonth(r.month)]||null;
-      state.awards[r.month]=createAward(r,past,prev);
+      state.awards[r.month]={...createAward(r,past,prev),petId:active().id};
       changed=true;
     }
     if(changed)await persist();
   }
   async function rebuildRewards(){
-    if(!confirm('記録済みの月次報酬を最新の家計データで再計算します。修正内容によってはポイントや解放済み項目が減る場合があります。実行しますか？'))return;
-    state.awards={};
+    const p=active();if(!p)return;
+    if(!confirm('現在の相棒に付与済みの月次報酬を再判定します。他の相棒の報酬履歴は変更しません。現在のポイントや解放項目が減る場合があります。実行しますか？'))return;
+    const [tx,imports,statuses]=await Promise.all([DB.getAll('transactions'),DB.getAll('cardImports'),DB.getAll('monthStatus')]);
+    const done=new Set(statuses.filter(x=>x.completedAt).map(x=>x.month));
+    const records=prepareMonthlyRecords(tx,imports);
+    const updated={...state.awards};
+    const owned=Object.keys(updated).filter(m=>updated[m].petId===p.id).sort();
+    for(const month of owned){
+      const r=records.find(x=>x.month===month);
+      const prior=updated[month];
+      if(!r||!done.has(month)||!r.quality){
+        updated[month]={...prior,items:[],bonus:0,points:0}; // Preserve ownership even after a data correction.
+        continue;
+      }
+      const past=records.filter(x=>x.month<month&&x.quality&&x.hasExpense).slice(-3);
+      const prev=updated[DB.prevMonth(month)]||null;
+      updated[month]={...createAward(r,past,prev),earnedAt:prior.earnedAt,petId:p.id};
+    }
+    state.awards=updated;
     await persist();
     await render();
+  }
+  async function choosePet(type){
+    if(active()||!PET_TYPES.some(t=>t.id===type))return;
+    const p=newPet(type);
+    const name=$('petNameInput')?.value.trim();
+    if(name)p.name=name.slice(0,30);
+    state.activePet=p;
+    if(!state.startedMonth)state.startedMonth=p.startedMonth;
+    faceStep=0;mood='idle';
+    await persist();
+    setFacingTimer();
+    await render();
+  }
+  async function restartPet(){
+    if(!active())return;
+    if(!confirm('育成中の相棒とお別れして、最初から育て直しますか？ この子の愛情度・個性は保存されません。過去の月次報酬や図鑑は残り、同じ月の報酬は再取得できません。'))return;
+    state.activePet=null;faceStep=0;mood='idle';
+    hideVisitor();stopFacing();
+    await persist();await render();
+  }
+  async function archivePet(){
+    const p=active();
+    if(!p||level()<MATURITY_LEVEL)return;
+    if(!confirm('成長した相棒を図鑑に保存して、新しい相棒を迎えられる状態にしますか？ 保存後はこの子との育成を続けられません。'))return;
+    state.collection.push({...JSON.parse(JSON.stringify(p)),earnedPoints:petPoints(),
+      finalLevel:level(),completedAt:DB.now(),finalPersonality:personality().name});
+    state.activePet=null;faceStep=0;mood='idle';
+    hideVisitor();stopFacing();
+    await persist();await render();
+  }
+  function renderCompanionChoices(){
+    const p=active();
+    if($('petChooser'))$('petChooser').classList.toggle('hidden',!!p);
+    if($('petActiveArea'))$('petActiveArea').classList.toggle('hidden',!p);
+    if($('petArchive'))$('petArchive').classList.toggle('hidden',!p||level()<MATURITY_LEVEL);
+    if($('petRestart'))$('petRestart').classList.toggle('hidden',!p);
+    if($('petCurrentType'))$('petCurrentType').textContent=p?
+      p.name+'｜'+PET_TYPES.find(x=>x.id===p.type).label+'｜'+({baby:'幼体',teen:'中間体',adult:'成体'})[petStage()]:'';
+    if($('petTypeChoices'))$('petTypeChoices').innerHTML=p?'':PET_TYPES.map(t=>
+      '<button type="button" class="pet-choice" data-pet-type="'+t.id+'">'+
+      '<span class="pet-choice-preview">'+characterHtml(false,{type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0})+'</span>'+
+      '<strong>'+t.label+'</strong><small>'+t.hint+'</small></button>').join('');
+  }
+  function renderArchives(){
+    if(!$('petArchiveList'))return;
+    if(!state.collection.length){
+      $('petArchiveList').innerHTML='<p class="muted">成体まで育てて図鑑に保存すると、ここに歴代の相棒が並びます。</p>';return;
+    }
+    $('petArchiveList').innerHTML=state.collection.map((p,i)=>
+      '<div class="pet-archive-entry"><span class="pet-archive-preview">'+characterHtml(false,p)+'</span>'+
+      '<div><strong>'+safeText(p.name)+'</strong><small>'+safeText(PET_TYPES.find(t=>t.id===p.type)?.label||'相棒')+
+      '・Lv.'+Number(p.finalLevel||1)+'・愛情度'+Math.floor(p.affection)+'/100</small>'+
+      '<small>'+safeText(p.finalPersonality||petPersonality(p).name)+'｜'+safeText(String(p.completedAt||'').slice(0,10))+'</small></div></div>').join('');
+  }
+  function stopFacing(){if(facingTimer){clearInterval(facingTimer);facingTimer=null;}}
+  function setFacingTimer(){
+    stopFacing();
+    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden)return;
+    facingTimer=setInterval(()=>{
+      if(mood!=='idle')return;
+      faceStep=(faceStep+1)%FACING.length;
+      document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
+        .forEach(el=>el.dataset.facing=facing());
+    },3500);
   }
   function renderStats(){
     const total=points(),lv=level(total),next=LEVEL_THRESHOLDS[lv]||null;
