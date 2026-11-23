@@ -395,16 +395,16 @@
     },3500);
   }
   function renderStats(){
-    const total=points(),lv=level(total),next=LEVEL_THRESHOLDS[lv]||null;
+    const p=active(),total=points(),lv=level(total),next=LEVEL_THRESHOLDS[lv]||null;
     if($('petLevel'))$('petLevel').textContent='Lv. '+lv;
     if($('petScore'))$('petScore').textContent=total.toLocaleString('ja-JP')+' pt';
-    if($('petAffection'))$('petAffection').textContent=Math.floor(state.affection)+'/100';
-    if($('petAffectionBar'))$('petAffectionBar').style.width=state.affection+'%';
+    if($('petAffection'))$('petAffection').textContent=Math.floor(p?.affection||0)+'/100';
+    if($('petAffectionBar'))$('petAffectionBar').style.width=(p?.affection||0)+'%';
     if($('petProgressBar'))$('petProgressBar').style.width=next?((total-(LEVEL_THRESHOLDS[lv-1]||0))/(next-(LEVEL_THRESHOLDS[lv-1]||0))*100)+'%':'100%';
-    if($('petProgressText'))$('petProgressText').textContent=next?'次のLvまで '+(next-total)+' pt':'現在の最高レベル';
+    if($('petProgressText'))$('petProgressText').textContent=next?'次のLvまで '+(next-total)+' pt':'成体まで成長しました。';
     if($('petPersonality'))$('petPersonality').textContent=personality().name;
     todayReset();
-    if($('petDailyCap'))$('petDailyCap').textContent='愛情度（今日の加算） '+state.daily.used+'/'+DAILY_CAP+'。上限後も自由に遊べます。';
+    if($('petDailyCap'))$('petDailyCap').textContent='愛情度（今日の加算） '+(p?.daily.used||0)+'/'+DAILY_CAP+'。上限後も自由に遊べます。';
     if($('petActions'))$('petActions').innerHTML=ACTIONS.map(a=>{
       const unlocked=actionAvailable(a);
       const detail=a.categories?'（'+a.categories.join('・')+'の節約報酬）':('（Lv.'+a.level+'）');
@@ -431,8 +431,10 @@
       await syncRewards();
       paintCharacter();
       renderStats();
+      renderCompanionChoices();
+      renderArchives();
       speak(moodMessage());
-      if($('petStartMonth'))$('petStartMonth').textContent=state.startedMonth||'-';
+      if($('petStartMonth'))$('petStartMonth').textContent=active()?.startedMonth||'-';
       if($('petCategoryOptions'))$('petCategoryOptions').innerHTML=CATEGORY_LIST.map(cat=>
         '<label class="pet-category-choice"><input type="checkbox" data-pet-category="'+safeText(cat)+'" '+
         (state.categories.includes(cat)?'checked':'')+'><span>'+safeText(cat)+'</span></label>').join('');
@@ -450,7 +452,7 @@
   }
   function maybeVisit(name){
     hideVisitor();
-    if(!state.enabled||!['home','history'].includes(name))return;
+    if(!state.enabled||!active()||!['home','history'].includes(name))return;
     if(document.body.classList.contains('app-locked')||document.querySelector('dialog[open]'))return;
     const homeCompanion=name==='home';
     // Keep a small, background-free companion on Home. Visits to History stay rare.
@@ -470,6 +472,7 @@
     current=name;
     if(name==='pet'){hideVisitor();void render();}
     else maybeVisit(name);
+    setFacingTimer();
   }
   async function init(onNavigate){
     if(initialized)return;
@@ -492,8 +495,15 @@
     });
     if($('petRecalculate'))$('petRecalculate').onclick=()=>void rebuildRewards();
     if($('petRefresh'))$('petRefresh').onclick=()=>void render();
+    if($('petTypeChoices'))$('petTypeChoices').addEventListener('click',e=>{
+      const b=e.target.closest('[data-pet-type]');
+      if(b)void choosePet(b.dataset.petType);
+    });
+    if($('petRestart'))$('petRestart').onclick=()=>void restartPet();
+    if($('petArchive'))$('petArchive').onclick=()=>void archivePet();
+    document.addEventListener('visibilitychange',()=>setFacingTimer());
     // Defaults are intentionally OFF; no extra persistent data is written until enabled.
   }
   HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,
-    _test:{prepareMonthlyRecords,createAward,level,normalize}};
+    _test:{prepareMonthlyRecords,createAward,level,normalize,newPet,petStage,petPoints,stageForLevel,petPersonality}};
 })(window);
