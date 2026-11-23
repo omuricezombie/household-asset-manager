@@ -160,14 +160,36 @@ async function renderHomeBankDelta(summary){
 async function renderHome(){
   await renderHomeAlerts();
   const cur=await A.summary(selectedMonth),prev=await A.summary(DB.prevMonth(selectedMonth));
-  $('homeMonthlySummary').innerHTML=[
-    metric('実収入',cur.income,A.formatSigned(cur.income-prev.income)),
-    metric('通常支出',cur.normal,A.formatSigned(cur.normal-prev.normal),cur.normal<=prev.normal?'good':'warn'),
-    metric('臨時支出',cur.temporary,''),
-    metric(selectedMonth===DB.currentMonth()?'今月の収支':'対象月の収支',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
-  ].join('');
   const monthStatus=await DB.getMonthStatus(selectedMonth);
-  $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':'暫定（登録済みの収入・支出による集計）';
+  const isCurrent=selectedMonth===DB.currentMonth()&&!monthStatus?.completedAt;
+  $('homeMonthlySummary').classList.toggle('home-current-metrics',isCurrent);
+  if(isCurrent){
+    // The comparison is historical spending, NOT a manually approved budget.
+    const outlook=await A.spendingOutlook(selectedMonth);
+    const hasBaseline=outlook.baseline!=null;
+    const remaining=hasBaseline?Math.round(outlook.baseline-cur.normal):null;
+    const remainingLabel=remaining==null?'比較可能な過去3か月平均が不足':remaining<0?'過去3か月平均を'+formatYen(-remaining)+'超過':'過去3か月平均まで'+formatYen(remaining);
+    $('homeMonthlySummary').innerHTML=[
+      metric('通常支出（登録済み）',cur.normal,''),
+      metric('臨時支出（登録済み）',cur.temporary,''),
+      metric('実収入（登録済み）',cur.income,''),
+      '<div class="metric home-benchmark"><div class="label">通常支出の比較目安</div>'+
+        '<div class="value '+(remaining!=null&&remaining<0?'warn':'')+'">'+esc(remainingLabel)+'</div>'+
+        '<div class="home-benchmark-note">過去3か月の実績平均との比較。予算上限や使える残高ではありません。</div></div>'
+    ].join('');
+    $('homeBalanceNote').innerHTML='<span class="home-net-label">登録済みの家計収支</span> <strong class="home-net-value">'+esc(formatYen(cur.saving))+'</strong>'+
+      '<span class="home-net-explain">収入の入金・登録前はマイナスになり得ます。月途中の家計評価ではなく、入金後や月末に改めて確認してください。'+
+      (cur.income===0?' 現時点で収入の登録はありません。':'')+
+      'カードの未取込期間がある場合、支出も途中集計です。</span>';
+  }else{
+    $('homeMonthlySummary').innerHTML=[
+      metric('実収入',cur.income,A.formatSigned(cur.income-prev.income)),
+      metric('通常支出',cur.normal,A.formatSigned(cur.normal-prev.normal),cur.normal<=prev.normal?'good':'warn'),
+      metric('臨時支出',cur.temporary,''),
+      metric('対象月の収支',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
+    ].join('');
+    $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':'暫定（登録済みの収入・支出による集計）';
+  }
   renderExpenseDonut(cur.categories);
   await renderHomeBankDelta(cur);
   const points=await A.pointTotal(selectedMonth),adv=(await A.outstandingAdvances()).reduce((s,x)=>s+x.outstanding,0);const plans=await A.paymentPlansUpcoming();const reserved=plans.reduce((s,x)=>s+n(x.reservedAmount),0);
