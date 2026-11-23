@@ -3,6 +3,7 @@
   'use strict';
   const HAM=global.HAM, DB=HAM.DB, A=HAM.Analysis;
   const KEY='petGameStateV1', DAILY_CAP=10, MATURITY_LEVEL=6;
+  let starterPreviewFacing='front'; // local UI-only control; never written to settings
   const PET_TYPES=[{id:'animal',label:'動物風',hint:'人なつっこい小動物'},{id:'fantasy',label:'架空の生き物',hint:'不思議な耳と小さな翼'},{id:'fairy',label:'妖精風',hint:'羽と光をまとった子'},{id:'yokai',label:'妖怪',hint:'少し不思議で愛嬌たっぷり'},{id:'dino',label:'恐竜',hint:'小さなトゲと大きなしっぽ'}];
   const CATEGORY_LIST=['食費','日用品','衣料費','交通費','通信・光熱費','サブスク','美容費','娯楽費','趣味費','漫画・本','リフレッシュ費','交際費','洗濯','貸本','家電','医療','教育費','仕送り','家賃','その他'];
   const DEFAULT_CATEGORIES=['食費','日用品','衣料費','交通費','通信・光熱費','サブスク','美容費','娯楽費','趣味費','漫画・本','リフレッシュ費','交際費','洗濯','貸本'];
@@ -365,10 +366,15 @@
   }
   function renderStarterGallery(){
     const container=$('petStarterGallery');if(!container)return;
+    for(const [id,view] of [['petPreviewFront','front'],['petPreviewSide','left']]){
+      const button=$(id);if(!button)continue;
+      button.classList.toggle('is-active',starterPreviewFacing===view);
+      button.setAttribute('aria-pressed',String(starterPreviewFacing===view));
+    }
     container.innerHTML=PET_TYPES.map(t=>'<div class="pet-choice pet-starter-card">'+
       '<span class="pet-choice-preview">'+characterHtml(false,{
         type:t.id,name:t.label,traits:{pet:0,food:0,play:0,calm:0},affection:0
-      },'front')+'</span><strong>'+safeText(t.label)+'</strong></div>').join('');
+      },starterPreviewFacing)+'</span><strong>'+safeText(t.label)+'</strong></div>').join('');
   }
   function renderArchives(){
     if(!$('petArchiveList'))return;
@@ -392,7 +398,7 @@
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
           el.dataset.facing=facing();
-          // Redraw the actual profile/back silhouette, not a squashed frontal image.
+          // Redraw the dedicated cartoon three-quarter or back silhouette.
           const svg=el.querySelector('.pet-art');
           if(svg&&active())svg.outerHTML=HAM.PetArt.draw({
             type:active().type,stage:petStage(),direction:facing(),
@@ -503,6 +509,8 @@
     });
     if($('petRecalculate'))$('petRecalculate').onclick=()=>void rebuildRewards();
     if($('petRefresh'))$('petRefresh').onclick=()=>void render();
+    if($('petPreviewFront'))$('petPreviewFront').onclick=()=>{starterPreviewFacing='front';renderStarterGallery();};
+    if($('petPreviewSide'))$('petPreviewSide').onclick=()=>{starterPreviewFacing='left';renderStarterGallery();};
     if($('petTypeChoices'))$('petTypeChoices').addEventListener('click',e=>{
       const b=e.target.closest('[data-pet-type]');
       if(b)void choosePet(b.dataset.petType);
