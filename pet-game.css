@@ -246,3 +246,28 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-character.pet-mood-pet[data-growth="adult"] .pet-eye{height:7px;animation:none}
 @media(max-width:390px){.pet-type-choices{gap:7px}.pet-choice{min-height:143px}}
 @media(prefers-reduced-motion:reduce){.pet-character .pet-body{transition:none!important}}
+
+
+/* candidate.5: separate hand-drawn SVG species, not a shared round CSS body.
+   The original CSS body parts are retained only as a rollback-friendly fallback. */
+.pet-character .pet-art{
+  position:absolute;top:-12px;left:-20px;width:186px;height:180px;
+  display:block;overflow:visible;pointer-events:all;
+  filter:drop-shadow(0 2px 1px rgba(39,78,70,.10));
+}
+.pet-character:has(.pet-art) .pet-svg-eye{
+  transform-box:fill-box;transform-origin:center center;animation:pet-art-blink 5.8s infinite;
+}
+.pet-character.pet-mood-pet .pet-svg-eye{animation:none}
+.pet-character.pet-mood-play .pet-art{filter:drop-shadow(0 4px 3px rgba(53,123,125,.22))}
+.pet-choice-preview .pet-art,.pet-archive-preview .pet-art{filter:none}
+.pet-choice-preview .pet-character,.pet-archive-preview .pet-character{pointer-events:none;user-select:none}
+.pet-visitor .pet-art{filter:drop-shadow(0 2px 2px rgba(0,0,0,.20))}
+@keyframes pet-art-blink{
+  0%,45%,47%,100%{transform:scaleY(1)}
+  46%{transform:scaleY(.13)}
+}
+@media(prefers-reduced-motion:reduce){
+  .pet-character .pet-svg-eye{animation:none!important}
+  .pet-character .pet-art{filter:none}
+}
