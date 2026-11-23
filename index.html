@@ -48,10 +48,14 @@
           <div id="assetBreakdownInlineRows" class="breakdown-rows"></div>
         </section>
       </div>
-      <div class="card">
-        <h2>今月の気づき・月末見通し</h2>
-        <p class="muted">登録済みの通常支出をもとに、平均との差と月末の参考試算を表示します。</p>
+      <div class="card" id="homeInsightCard">
+        <h2 id="homeInsightHeading">今月の気づき・月末見通し</h2>
+        <p id="homeInsightIntro" class="muted">CSV取込前の金額は途中経過です。現金支出は随時確認できますが、カードの未取込期間を使いすぎ・節約の確定判断には使いません。</p>
         <div id="homeInsights" class="insight-list"></div>
+      </div>
+      <div class="card hidden" id="homeReviewCard">
+        <h2>月の振り返り</h2>
+        <div id="homeReviewContent"></div>
       </div>
       <div class="card">
         <h2>次の支払</h2>
