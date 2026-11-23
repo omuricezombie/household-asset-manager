@@ -22,7 +22,6 @@
   let visitTimer=null, lastVisit=0, actionTimer=null, saveChain=Promise.resolve(), initialized=false;
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const yen=v=>new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(v);
   const thisDay=()=>DB.ymd();
   function fresh(){
     return {version:1,enabled:false,startedMonth:null,affection:0,
@@ -221,7 +220,7 @@
   function renderStats(){
     const total=points(),lv=level(total),next=LEVEL_THRESHOLDS[lv]||null;
     if($('petLevel'))$('petLevel').textContent='Lv. '+lv;
-    if($('petScore'))$('petScore').textContent=total.toLocaleString('ja-J')+' pt';
+    if($('petScore'))$('petScore').textContent=total.toLocaleString('ja-JP')+' pt';
     if($('petAffection'))$('petAffection').textContent=Math.floor(state.affection)+'/100';
     if($('petAffectionBar'))$('petAffectionBar').style.width=state.affection+'%';
     if($('petProgressBar'))$('petProgressBar').style.width=next?((total-(LEVEL_THRESHOLDS[lv-1]||0))/(next-(LEVEL_THRESHOLDS[lv-1]||0))*100)+'%':'100%';
