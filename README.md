@@ -10,9 +10,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（2026-11-23時点） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.9**：イラスト先行の4タイプ比較試作をアプリ内に追加（本体の育成キャラは変更なし／Human QA待ち） |
+| candidate | **v0.2.46-candidate.10**：妖怪を新イラスト化し5タイプ幼体の統一比較を追加（本体の育成キャラは変更なし／Human QA待ち） |
 | 固定rollback | tag / Release `v0.2.16`（現行Notionに記録された固定復旧基準）。過去の `v0.2.15` tag/Releaseも保持 |
-| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.9：4タイプ×2方向の画像素材、GitHub binary SHA、HTML/CSS/SW版・旧ギャラリー維持を静的確認／新イラストの実機Human QA待ち |
+| 品質 | stable v0.2.45：QA PASS。candidate v0.2.46-candidate.10：静的28/28 PASS、妖怪と既存4タイプの画像SHA確認／5タイプ幼体のAndroid Human QA待ち |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。正確なHEADはGitHubのmainとNotion開発管理の最新確定欄を参照してください。
@@ -283,3 +283,14 @@ git rev-parse HEAD
 - **版**：UI/APP_VERSION/SW CACHEは `v0.2.46-candidate.9`、JS/CSS参照は `?v=0246c9`、画像アトラスも `?v=0246c9` として一括キャッシュ。DB_VERSION=1・SCHEMA_VERSION=2・backupFormatVersion=1を維持。
 - **QA**：GitHubの画像blob SHA一致、4タイプ・8コマのプレビュー位置、HTMLタグバランス、CSS背景指定、Service Workerプリキャッシュ、画面版・DB版、既存の5タイプ見本の保持を静的確認。Android実機で新イラストの表示や美術的な好ましさを確認するHuman QAは未実施。アトラスはあくまで幼体の試作で、成長後/後ろ姿/動作フレームはまだ制作していない。
 - **次工程**：この新イラストが可愛さ・横向きの自然さ・種族差を満たすか評価した後、採用する場合のみ成長段階とアニメーション差分の制作、画像形式とキャッシュ設計、描画切替の移行QAに進む。現在のstable v0.2.45は一切変更せず、Human QA前にmainへマージしない。
+
+
+### v0.2.46-candidate.10：新イラスト5タイプの幼体統一見本
+
+- **判断**：前版candidate.9の4タイプの新イラストをユーザーが好意的に評価し、これを採用する方向で妖怪も同じ世界観に描き直す要望を受けた。今回の完了条件は「5種族×正面・斜め向きの比較表示」。育成中のキャラ本体への適用は別工程で、まだ実施しない。
+- **妖怪の新規アート**：一つ目・浮遊・不思議な輪郭を残しながら、ほか4タイプと共通のパステル色、太めの輪郭、やわらかな陰影、頬・笑顔を持つ幼体として新規制作。正面とマンガ風の斜め向きの2カットを透過WebPの画像ストリップ `assets/pet-yokai-concept.webp`（320×180px）に収録。コードで楕円を積むのではなく、先に完成イラストを制作してから画像形式にした。
+- **ファイル・表示**：前版の4タイプ画像 `assets/pet-concept-atlas.webp` は不変（blob SHA `006eca56f807e78b818e7492798f311ea75b65e6`）。妖怪の新規画像blob SHAは `677a0f564b7ec4c4533ce47cab14a8e4a3998baa`。既存の折りたたみ比較欄を「新しいイラスト先行試作（5タイプ）」に変更し、妖怪の正面／斜め向きを同じカード仕様で追加。2枚の画像はCSSで左右のコマを切り出す。
+- **版／キャッシュ**：`index.html`、`pet-game.css`、`db.js`（APP_VERSION）、`service-worker.js`をcandidate.10（JS/CSSと画像URL `?v=0246c10`）へ更新。新画像をService Workerのキャッシュ対象に追加し、PWAのオフライン比較でも表示できるようにする。
+- **非変更**：`pet-art.js`、`pet-game.js`、育成中のキャラ・動き・成長・図鑑、愛情度、月次報酬、家計集計、CSV、IndexedDBとバックアップ形式はすべて変更なし。新イラストを本体へ自動適用する処理は未実装。
+- **AI QA**：JavaScript構文、HTML/CSSとService Workerの版整合、画像SHA、5タイプ計10コマのHTML、CSSの切り出し、既存の見本・保存形式不変を検査して**28/28 PASS**。実際のAndroidブラウザでの比較欄の見栄えと絵柄統一についてはHuman QA待ち。
+- **次工程**：5タイプ幼体の画風・かわいさをHuman QAで確認。問題なければ後ろ向き、成長3段階、表情・動作の画像差分を設計し、既存表示から新イラストへの本体切替を別candidateとして実装する。Human QA前はstableに昇格しない。
