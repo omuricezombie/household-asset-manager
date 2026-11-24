@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c21");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c22");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c21");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c22");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c21");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c22");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -425,7 +425,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.16 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
 .pet-character .pet-art-back .pet-art-image{
-  background-image:url("./assets/pet-rear-atlas.webp?v=0246c21");
+  background-image:url("./assets/pet-rear-atlas.webp?v=0246c22");
   background-size:300% 500%;background-repeat:no-repeat;
 }
 .pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
@@ -450,10 +450,10 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-character.pet-mood-idle .pet-illustration.pet-turning{animation:none!important;opacity:1;transform:none}
 }
 
-/* candidate.21: coherent 4-column / 15-row atlas; 320x360 output per cell,
+/* candidate.22: coherent 4-column / 15-row atlas; 320x360 output per cell,
    resampled from approximately 162x162 source, so no native-detail claim. */
 .pet-character .pet-art.pet-unified .pet-art-image{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0246c21');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0246c22');
   background-size:400% 1500%;background-repeat:no-repeat;transform:none;
 }
 .pet-character .pet-unified.pet-art-front .pet-art-image{background-position-x:0.000000%}
@@ -476,7 +476,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-character .pet-unified.pet-art-dino.pet-art-teen .pet-art-image{background-position-y:92.857143%}
 .pet-character .pet-unified.pet-art-dino.pet-art-adult .pet-art-image{background-position-y:100.000000%}
 
-/* candidate.21: preserve wander phase when the pet is tapped, petted or fed.
+/* candidate.22: preserve wander phase when the pet is tapped, petted or fed.
    Parent movement must not switch to a different keyframe on mood changes;
    the illustration child still provides the interaction response. */
 .pet-stage .pet-character:is(.pet-mood-idle,.pet-mood-pet,.pet-mood-food,.pet-mood-play,.pet-mood-calm){
@@ -501,10 +501,75 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   }
 }
 
-/* candidate.21: transparent gutters are embedded inside every repaired sprite cell.
+/* candidate.22: transparent gutters are embedded inside every repaired sprite cell.
    Remove the old 2px edge feather that could mask wing/ornament tips.
    Keep the tap-highlight and persistent-position behavior from candidate.19. */
 .pet-character .pet-art.pet-unified .pet-art-image{
   -webkit-mask-image:none;
   mask-image:none;
+}
+
+
+/* candidate.22 — reversible, illustration-specific part motion.
+   Only a clipped copy is animated; the original atlas sprite is never moved or altered.
+   The main .pet-character node and wander phase are untouched. */
+.pet-character .pet-art.pet-unified .pet-art-image.pet-part-wing,
+.pet-character .pet-art.pet-unified .pet-art-image.pet-part-ear,
+.pet-character .pet-art.pet-unified .pet-art-image.pet-part-tail{
+  pointer-events:none;
+  display:none;
+  opacity:.7;
+  will-change:auto;
+}
+/* Front-facing wing highlights; shape limits avoid the wing tips repaired in candidate.22. */
+.pet-character .pet-unified.pet-art-front:is(.pet-art-fairy,.pet-art-fantasy) .pet-part-wing{
+  display:block;
+  animation:pet-part-wing-breathe 3.4s ease-in-out infinite;
+}
+.pet-character .pet-unified.pet-art-front .pet-part-wing-left{
+  clip-path:polygon(1% 43%,39% 43%,44% 79%,1% 82%);
+  transform-origin:36% 62%;
+}
+.pet-character .pet-unified.pet-art-front .pet-part-wing-right{
+  clip-path:polygon(61% 43%,99% 43%,99% 82%,56% 79%);
+  transform-origin:64% 62%;
+  animation-delay:-1.7s;
+}
+/* Ears: tiny lift, only in front view. Keep the face and the repaired wings static. */
+.pet-character .pet-unified.pet-art-front:is(.pet-art-animal,.pet-art-fantasy) .pet-part-ear{
+  display:block;
+  clip-path:polygon(7% 0%,93% 0%,87% 32%,13% 32%);
+  transform-origin:50% 31%;
+  animation:pet-part-ear-twitch 8.8s ease-in-out infinite;
+}
+/* The outer tail is separate enough in three-quarter views for a subtle echo. */
+.pet-character .pet-unified:is(.pet-art-left,.pet-art-right):is(.pet-art-animal,.pet-art-dino) .pet-part-tail{
+  display:block;
+  clip-path:polygon(59% 38%,100% 38%,100% 89%,63% 89%);
+  transform-origin:65% 69%;
+  animation:pet-part-tail-sway 6.5s ease-in-out infinite;
+}
+/* An overlaid crop should never expose a hard rectangular sprite edge. */
+@keyframes pet-part-wing-breathe{
+  0%,18%,55%,100%{transform:scale(1);opacity:.45}
+  32%{transform:scale(1.016,1.025);opacity:.78}
+  42%{transform:scale(.997,1.008);opacity:.55}
+}
+@keyframes pet-part-ear-twitch{
+  0%,35%,40%,100%{transform:rotate(0deg);opacity:.5}
+  36%{transform:rotate(-1.8deg);opacity:.83}
+  38%{transform:rotate(1deg);opacity:.65}
+}
+@keyframes pet-part-tail-sway{
+  0%,45%,100%{transform:rotate(0deg);opacity:.5}
+  56%{transform:rotate(1.8deg);opacity:.75}
+  67%{transform:rotate(-1deg);opacity:.55}
+}
+@media(prefers-reduced-motion:reduce){
+  .pet-character .pet-art.pet-unified .pet-part-wing,
+  .pet-character .pet-art.pet-unified .pet-part-ear,
+  .pet-character .pet-art.pet-unified .pet-part-tail{
+    display:none!important;
+    animation:none!important;
+  }
 }
