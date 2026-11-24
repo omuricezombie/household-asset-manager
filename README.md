@@ -1,3 +1,11 @@
+### v0.2.46-candidate.15：背面の造形修正・透過ノイズ除去（2026-11-24）
+
+- Androidの表示指摘を受け、既存の背面アトラスを修正版に差し替え。特に架空の生き物の耳を正面・斜めの立ち耳に寄せ、羽・頭の形を調整。成体の王冠を補完。全5種族×3段階=15コマを透過WebPに収録（960×1800px、各320×360px）。
+- 修正版は生成画像の低アルファ周辺ノイズを除去し、15コマのセル外は透明。旧背面画像は前コミットで復元可能。既存の正面・斜め素材は無変更。
+- assets/pet-rear-atlas.webp Git blob SHA: c8c42ec54ea32330b1fa253be1a1d125fc6a062c。素材SHA-256: acb0280291e4a610f9ecce21503cecc82554cb2a4ca862d395fb21dd1d6d9e9e。
+- 画面・APP_VERSION・Service Workerキャッシュ・スプライト参照クエリをcandidate.15に同期。家計計算／IndexedDB／CSV／月次報酬／JSONバックアップのロジックに変更なし。
+- 残課題：正面・斜めの1コマ160×180pxの画質不足、15背面と正面の全成長段階での美術的一致、まばたき・羽・尾などの専用差分アニメ。Android Human QA未完了。stableには昇格しない。
+
 ### v0.2.46-candidate.14：後ろ姿15カットをcandidateに組み込み（2026-11-24）
 
 - 5種族×幼体・中間体・成体の背面15カットを新規WebP（960×1800px、1コマ320×360px）としてGitHubに追加。Git blob SHA b35e819f7df8ac104584cca0fb4e1f8f66e79a7d。GitHub再取得一致確認済み。
@@ -30,12 +38,12 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（main、現行本番） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.14**：新背面15カットを追加して4方向自動転換を復帰。正面・斜めの高解像度化、パーツアニメーション、美術的一致は未完成（Human QA待ち） |
+| candidate | **v0.2.46-candidate.15**：背面15カットの造形と透過品質を改善。正面・斜めの高解像度化、専用パーツアニメ、美術的一致の最終確認は未完成（Human QA待ち） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.14：GitHub実ファイル静的整合16/16 PASS、独立Chromium画像デコード・15セル切出し15/15 PASS。実アプリ全体のAndroid Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.15：新素材とコードのAI QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
-v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.14`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
+v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.15`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
 
 ## 実装済みの主な機能
 
