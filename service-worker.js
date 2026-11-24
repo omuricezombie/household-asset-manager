@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.46-candidate.24';
-const FILES=['./','./index.html','./styles.css?v=0246c24','./db.js?v=0246c24','./dcard-import.js?v=0246c24','./analysis.js?v=0246c24','./pet-game.css?v=0246c24','./pet-art.js?v=0246c24','./pet-illustration.js?v=0246c24','./assets/pet-unified-atlas.webp?v=0246c24','./pet-game.js?v=0246c24','./app.js?v=0246c24','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.46-candidate.25';
+const FILES=['./','./index.html','./styles.css?v=0246c25','./db.js?v=0246c25','./dcard-import.js?v=0246c25','./analysis.js?v=0246c25','./pet-game.css?v=0246c25','./pet-art.js?v=0246c25','./pet-illustration.js?v=0246c25','./assets/pet-unified-atlas.webp?v=0246c25','./assets/pet-blink-fantasy-baby.webp?v=0246c25','./pet-game.js?v=0246c25','./app.js?v=0246c25','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
