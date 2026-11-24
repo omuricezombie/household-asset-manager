@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.46-candidate.28';
-const FILES=['./','./index.html','./styles.css?v=0246c28','./db.js?v=0246c28','./dcard-import.js?v=0246c28','./analysis.js?v=0246c28','./pet-game.css?v=0246c28','./pet-art.js?v=0246c28','./pet-illustration.js?v=0246c28','./assets/pet-unified-atlas.webp?v=0246c28','./assets/pet-blink-fantasy-baby.webp?v=0246c28','./assets/pet-gaze-yokai-baby.svg?v=0246c28','./pet-game.js?v=0246c28','./app.js?v=0246c28','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.46-candidate.29';
+const FILES=['./','./index.html','./styles.css?v=0246c29','./db.js?v=0246c29','./dcard-import.js?v=0246c29','./analysis.js?v=0246c29','./pet-game.css?v=0246c29','./pet-art.js?v=0246c29','./pet-illustration.js?v=0246c29','./assets/pet-unified-atlas.webp?v=0246c29','./assets/pet-blink-fantasy-baby.webp?v=0246c29','./assets/pet-gaze-yokai-baby.svg?v=0246c29','./assets/pet-blink-animal-baby.webp?v=0246c29','./assets/pet-blink-dino-baby.webp?v=0246c29','./assets/pet-blink-fairy-baby.webp?v=0246c29','./pet-game.js?v=0246c29','./app.js?v=0246c29','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
