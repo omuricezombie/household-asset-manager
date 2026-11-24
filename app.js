@@ -157,13 +157,21 @@ async function renderHomeBankDelta(summary){
     metric('登録済み家計収支',summary.saving,'')+
     '</div><p class="muted">差額（銀行増減 − 家計収支）：'+esc(A.formatSigned(balanceDiff))+'。口座間・証券への移動、現金引き出し、未登録の入出金などが影響します。</p>';
 }
+function bankReferenceNote(bank){
+  const notes=[];
+  if(bank.adjustment)notes.push('給与・賞与 '+A.formatSigned(bank.adjustment)+' を参考加算。引き落とし等は月末の実残高確認時に反映します。');
+  if(bank.held)notes.push('給与・賞与 '+formatYen(bank.held)+' は入金先・確認時点が特定できないため二重計上防止のため加算保留中です。');
+  if(bank.missing)notes.push('未確認の銀行残高があります。');
+  return notes.join(' ');
+}
 async function renderHome(){
   await renderHomeAlerts();
   const cur=await A.summary(selectedMonth),prev=await A.summary(DB.prevMonth(selectedMonth));
   const monthStatus=await DB.getMonthStatus(selectedMonth);
   const isCurrent=selectedMonth===DB.currentMonth()&&!monthStatus?.completedAt;
-  $('homeMonthlySummary').classList.toggle('home-current-metrics',isCurrent);
-  if(isCurrent){
+  const awaitingSalary=isCurrent&&!A.hasReceivedSalary(selectedMonth,cur.transactions);
+  $('homeMonthlySummary').classList.toggle('home-current-metrics',awaitingSalary);
+  if(awaitingSalary){
     // The comparison is historical spending, NOT a manually approved budget.
     const outlook=await A.spendingOutlook(selectedMonth);
     const hasBaseline=outlook.baseline!=null;
@@ -188,7 +196,7 @@ async function renderHome(){
       metric('臨時支出',cur.temporary,''),
       metric('対象月の収支',cur.saving,A.formatSigned(cur.saving-prev.saving),cur.saving>=prev.saving?'good':'warn')
     ].join('');
-    $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':'暫定（登録済みの収入・支出による集計）';
+    $('homeBalanceNote').textContent=monthStatus?.completedAt?'登録済みの収入・支出による集計（更新完了月）':isCurrent?'暫定（給与登録済み・支出は途中集計。前月比は前月全体との差です）':'暫定（登録済みの収入・支出による集計）';
   }
   renderExpenseDonut(cur.categories);
   await renderHomeBankDelta(cur);
@@ -198,7 +206,10 @@ async function renderHome(){
   const walletText=walletValue==null?'未登録':formatYen(walletValue);
   const walletDetail=walletValue==null?'月末更新で残高を登録':wallet?.liveCash?.isEstimated?'現金移動を自動反映':'最終確認残高';
   const pointText=points.rows.some(x=>x.snapshot)?points.total.toLocaleString('ja-JP')+' pt':'未登録';
-  $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric('総資産',cur.assets.total,A.formatSigned(cur.assets.total-prev.assets.total),cur.assets.total>=prev.assets.total?'good':'warn','total'),metric('流動資産',cur.assets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'');
+  const homeAssets=A.homeAssetSummary(selectedMonth,cur.assets,cur.transactions),bank=homeAssets.bank;
+  const bankNote=bankReferenceNote(bank),estimated=bank.adjustment!==0;
+  const bankLabel=estimated?'銀行預金（参考）':bank.missing?'銀行預金（登録分）':'銀行預金';
+  $('homeAssetSummary').innerHTML=[metric('財布現金',walletText,walletDetail,'','wallet'),metric('ポイント合計',pointText,points.rows.some(x=>!x.snapshot)?'未登録のポイントあり':'','','points'),metric(bankLabel,bank.hasBalance?bank.value:'未登録',estimated?'給与・賞与 '+A.formatSigned(bank.adjustment):bank.held?'自動加算保留':'最終確認残高','','bank'),metric(estimated?'総資産（参考）':'総資産',homeAssets.total,estimated?'給与・賞与を反映':A.formatSigned(cur.assets.total-prev.assets.total),estimated?'':cur.assets.total>=prev.assets.total?'good':'warn','total'),metric(estimated?'流動資産（参考）':'流動資産',homeAssets.liquid,'','','liquid'),metric('支払確保済',reserved,'','','reserved')].join('')+(adv?'<p class="muted">未回収立替 '+formatYen(adv)+'</p>':'')+(bankNote?'<p class="muted" style="grid-column:1/-1">'+esc(bankNote)+'</p>':'');
   await renderHomeReviewOrInsights();
   const up=plans.slice(0,4);$('homePayments').innerHTML=up.length?up.map(p=>`<div class="status-row"><div><strong>${esc(p.name)}</strong><div class="status-meta">${esc(p.dueDate||'日付未設定')}</div></div><div>${formatYen(p.amount)}</div></div>`).join(''):'<p class="muted">登録済みの支払予定はありません。</p>';
 }
@@ -272,7 +283,7 @@ function breakdownRow(label,value,note='',unit='yen'){
 }
 async function openAssetBreakdown(kind){
   const month=selectedMonth;
-  const names={wallet:'財布現金',points:'ポイント合計',total:'総資産',liquid:'流動資産',reserved:'支払確保済'};
+  const names={wallet:'財布現金',points:'ポイント合計',bank:'銀行預金',total:'総資産',liquid:'流動資産',reserved:'支払確保済'};
   if(!names[kind])return;
   const requestId=++assetBreakdownRequestId;
   const compact=assetBreakdownMode==='compact';
@@ -294,7 +305,7 @@ async function openAssetBreakdown(kind){
   activeAssetBreakdownKind=kind;
   updateBreakdownMonthButtons();
   try{
-    let rows=[],total=0,unit='yen',foot='';
+    let rows=[],total=0,unit='yen',foot='',showFoot=false;
     if(kind==='points'){
       const data=await A.pointTotal(month);
       total=data.total;unit='pt';
@@ -306,7 +317,7 @@ async function openAssetBreakdown(kind){
       rows=plans.filter(p=>n(p.reservedAmount)!==0).map(p=>breakdownRow(p.name,n(p.reservedAmount),p.dueDate||'支払日未設定'));
       foot='支払予定に登録された確保済み金額です。';
     }else{
-      const data=await A.assetSummary(month);
+      const data=A.homeAssetSummary(month,await A.assetSummary(month),await A.monthTransactions(month));
       if(kind==='wallet'){
         const wallet=data.rows.find(r=>r.account.id==='cash-wallet');
         const live=wallet?.liveCash;
@@ -317,10 +328,13 @@ async function openAssetBreakdown(kind){
         }else rows=[`<p class="muted">財布現金の残高は未登録です。</p>`];
         foot='現在の表示残高は登録された残高と現金取引から計算しています。';
       }else{
-        const source=kind==='liquid'?data.rows.filter(r=>['bank','cash'].includes(r.account.category)):data.rows;
-        total=kind==='liquid'?data.liquid:data.total;
+        const source=kind==='bank'?data.rows.filter(r=>r.account.category==='bank'):kind==='liquid'?data.rows.filter(r=>['bank','cash'].includes(r.account.category)):data.rows;
+        total=kind==='bank'?data.bank.value:kind==='liquid'?data.liquid:data.total;
         rows=source.map(r=>breakdownRow(r.account.name,r.value,r.snapshot?'':'残高未登録'));
-        foot=kind==='liquid'?'銀行・現金の残高合計です。株式・DC・ポイントは含みません。':'登録された資産残高の合計です。ポイントは含みません。';
+        if(data.bank.adjustment)rows.push(breakdownRow('給与・賞与の参考加算',data.bank.adjustment,'入金先未指定・銀行合計にのみ反映'));
+        const note=bankReferenceNote(data.bank);
+        showFoot=!!note||kind==='bank';
+        foot=(kind==='bank'?'個別銀行は最終確認残高です。':kind==='liquid'?'銀行・現金の残高合計です。株式・DC・ポイントは含みません。':'登録された資産残高の合計です。ポイントは含みません。')+(note?' '+note:'');
       }
     }
     if(requestId!==assetBreakdownRequestId||selectedMonth!==month)return;
@@ -328,7 +342,7 @@ async function openAssetBreakdown(kind){
     const sum=unit==='pt'?total.toLocaleString('ja-JP')+' pt':formatYen(total);
     const body=(rows.length?rows.join(''):'<p class="muted">内訳は登録されていません。</p>')+
       `<div class="breakdown-total"><strong>合計</strong><strong>${esc(sum)}</strong></div>`+
-      (compact?'':`<p class="muted">${esc(foot)}</p>`);
+      (compact&&!showFoot?'':`<p class="muted">${esc(foot)}</p>`);
     $(compact?'assetBreakdownInlineRows':'assetBreakdownRows').innerHTML=body;
   }catch(e){
     console.error(e);
