@@ -173,7 +173,22 @@
   }
   function paintCharacter(){
     if(!state.enabled)return;
-    if($('petAvatar'))$('petAvatar').innerHTML=characterHtml();
+    const container=$('petAvatar'),pet=active();
+    if(container&&pet){
+      const existing=container.querySelector('.pet-character');
+      const stage=petStage(pet);
+      // Keep the node (and its running wander animation) when an action changes mood.
+      // Replacing innerHTML restarts the 15s wander at the center on every tap.
+      if(existing&&existing.dataset.type===pet.type&&existing.dataset.growth===stage){
+        for(const kind of ['idle','pet','food','play','calm'])
+          existing.classList.toggle('pet-mood-'+kind,kind===mood);
+        const bond=affectionTier(pet),trait=petPersonality(pet).id;
+        existing.dataset.bond=bond;
+        existing.dataset.trait=trait;
+        const art=existing.querySelector('.pet-illustration');
+        if(art)art.dataset.artBond=bond;
+      }else container.innerHTML=characterHtml();
+    }
     const room=$('petRoom');
     if(room)room.classList.toggle('pet-room-decorated',hasCategoryAward(['日用品','家電']));
   }
