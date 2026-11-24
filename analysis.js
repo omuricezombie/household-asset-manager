@@ -72,6 +72,49 @@
   }
 
 
+  // Home-only, read-only reference balances. Never modify stored snapshots or
+  // use these estimates as historical balances or actual bank-to-bank comparisons.
+  function receivedIncome(t,month,today){
+    return t.kind==='income'&&t.month===month&&typeof t.date==='string'&&
+      /^\d{4}-\d{2}-\d{2}$/.test(t.date)&&t.date.slice(0,7)===month&&t.date<=today&&
+      Number.isSafeInteger(Number(t.amount))&&Number(t.amount)>0;
+  }
+  function hasReceivedSalary(month,transactions,today=DB().ymd()){
+    return (transactions||[]).some(t=>receivedIncome(t,month,today)&&(t.subCategory||t.category)==='給与');
+  }
+  function bankSnapshotRelation(s,t,month){
+    if(!s||s.confirmed!==true||!Number.isSafeInteger(Number(s.value))||Number(s.value)<0)return 'unknown';
+    if(s.month<month)return 'before';
+    if(s.month!==month)return 'unknown';
+    const at=s.confirmedAt||s.updatedAt;
+    if(!at||!Number.isFinite(Date.parse(at)))return 'unknown';
+    const day=DB().ymd(new Date(at));
+    if(day<t.date)return 'before';
+    if(day>t.date)return 'included';
+    // A same-day confirmation made after the entry was registered is authoritative.
+    // Otherwise the deposit may already be included: do not guess or double count.
+    return t.createdAt&&Number.isFinite(Date.parse(t.createdAt))&&Date.parse(at)>=Date.parse(t.createdAt)
+      ?'included':'unknown';
+  }
+  function homeAssetSummary(month,assets,transactions,today=DB().ymd()){
+    const rows=assets.rows.filter(r=>r.account.category==='bank');
+    const base=rows.reduce((sum,r)=>sum+num(r.value),0);
+    const hasBalance=rows.some(r=>!!r.snapshot);
+    const missing=rows.length===0||rows.some(r=>!r.snapshot||r.snapshot.confirmed!==true);
+    let adjustment=0,held=0;
+    if(month===today.slice(0,7)){
+      for(const t of transactions||[]){
+        if(!receivedIncome(t,month,today)||t.paymentMethod!=='bank_transfer'||
+          !['給与','賞与'].includes(t.subCategory||t.category))continue;
+        const relations=rows.map(r=>bankSnapshotRelation(r.snapshot,t,month));
+        if(relations.length&&relations.every(x=>x==='before'))adjustment+=Number(t.amount);
+        else if(!relations.length||!relations.every(x=>x==='included'))held+=Number(t.amount);
+      }
+    }
+    return {...assets,total:assets.total+adjustment,liquid:assets.liquid+adjustment,
+      bank:{base,value:base+adjustment,adjustment,held,hasBalance,missing}};
+  }
+
   async function annualCumulative(month){
     const year=String(month||'').slice(0,4),end=Number(String(month||'').slice(5,7));
     if(!/^\d{4}$/.test(year)||!Number.isInteger(end)||end<1||end>12)throw new Error('対象月が正しくありません。');
@@ -398,5 +441,5 @@
   function formatYen(n){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(num(n));}
   function formatSigned(n){const v=num(n);return `${v>0?'+':''}${formatYen(v)}`;}
 
-  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,monthlyReview,insights,formatYen,formatSigned,effExpense};
+  HAM.Analysis={monthTransactions,summary,annualCumulative,householdQualityReport,livingExpenseAnalysis,cardCoverage,assetSummary,homeAssetSummary,hasReceivedSalary,bankBalanceDelta,stockYearComparison,liveCashBalance,cashMovementAmount,outstandingAdvances,pointTotal,paymentPlansUpcoming,objDiff,threeMonthAverage,spendingOutlook,monthlyReview,insights,formatYen,formatSigned,effExpense};
 })(window);
