@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>相棒イラスト｜60方向QA（candidate.16）</title>
+<link rel="stylesheet" href="./pet-game.css?v=0246c16">
+<style>
+:root{color-scheme:light dark;--bg:#f6f9fb;--card:#fff;--line:#c8d5dc;--muted:#526672;--good:#157d75}
+*{box-sizing:border-box}body{margin:0;background:#eef3f6;color:#18303b;font-family:system-ui,"Noto Sans JP",sans-serif}
+main{max-width:1160px;margin:auto;padding:16px}h1{font-size:20px;margin:0 0 8px}
+p{line-height:1.5;color:#475569}header{margin-bottom:16px}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;padding:12px;background:white;border-radius:12px;border:1px solid #cbd5e1}
+label{display:grid;gap:4px;font-weight:600;font-size:13px}
+select,input{font:inherit;padding:7px;border-radius:7px;border:1px solid #94a3b8;background:white;color:#172b36}
+.status{padding:10px 0;font-weight:600}
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(174px,1fr));gap:12px}
+.cell{background:white;border:1px solid #bdced7;border-radius:12px;min-height:245px;padding:8px;overflow:hidden}
+.cell h2{font-size:13px;margin:4px 0;text-align:center}
+.view{position:relative;height:190px;display:flex;justify-content:center;align-items:center;border-radius:7px;overflow:hidden}
+.view .pet-character{animation:none!important}
+.view .pet-character .pet-illustration{animation:none!important}
+.view .pet-character{width:146px;height:157px;transform:scale(var(--zoom,1))}
+.view .pet-character .pet-art-emote{display:none}
+.view.check{background:conic-gradient(#e2e8f0 25%,#fff 0 50%,#e2e8f0 0 75%,#fff 0) 0 0/20px 20px}
+.view.dark{background:#172432}.view.light{background:#e9f9ef}
+footer{font-size:12px;color:#475569;margin:16px 0}
+</style>
+</head>
+<body>
+<main>
+<header><h1>相棒イラスト｜全60方向比較</h1>
+<p>開発者用QAページ。家計・育成データの読込・保存・送信は行いません。現在の採用素材を表示するだけです。画質と絵柄の一致、向き・成長段階を確認します。</p></header>
+<section class="controls" aria-label="表示条件">
+<label>種族<select id="species"><option value="all">全5種族</option><option value="animal">動物風</option><option value="fantasy">架空の生き物</option><option value="fairy">妖精</option><option value="yokai">妖怪</option><option value="dino">恐竜</option></select></label>
+<label>成長<select id="stage"><option value="all">全3段階</option><option value="baby">幼体</option><option value="teen">中間体</option><option value="adult">成体</option></select></label>
+<label>背景<select id="background"><option value="check">市松模様</option><option value="light">明るい背景</option><option value="dark">暗い背景</option></select></label>
+<label>表示倍率<select id="zoom"><option value="0.65">65%</option><option value="1" selected>100%</option><option value="1.2">120%</option></select></label>
+</section>
+<div id="status" class="status" aria-live="polite">読み込み中</div>
+<div class="gallery" id="gallery"></div>
+<footer>元画像の品質を変える処理は行いません。WebPの画質とCSS表示倍率をそのまま評価できます。背面のみ320×360px/コマ、前・斜めは160×180px/コマです。candidate.16基準。</footer>
+</main>
+<script src="./pet-illustration.js?v=0246c16"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const species=[['animal','動物風'],['fantasy','架空の生き物'],['fairy','妖精'],['yokai','妖怪'],['dino','恐竜']];
+const stages=[['baby','幼体'],['teen','中間体'],['adult','成体']];
+const faces=[['front','正面'],['left','左斜め'],['back','背面'],['right','右斜め']];
+const sourceFiles=['assets/pet-concept-atlas.webp?v=0246c16','assets/pet-yokai-concept.webp?v=0246c16','assets/pet-growth-atlas.webp?v=0246c16','assets/pet-rear-atlas.webp?v=0246c16'];
+function draw(){
+ const g=$('gallery'),selection=$('species').value,stage=$('stage').value,bg=$('background').value,zoom=$('zoom').value;
+ const items=[];for(const [id,name] of species){if(selection!=='all'&&selection!==id)continue;
+   for(const [growth,glabel] of stages){if(stage!=='all'&&stage!==growth)continue;
+     for(const [direction,flabel] of faces){
+       const artwork=window.HAM.PetIllustration.draw({type:id,stage:growth,direction,mood:'idle'});
+       const character='<span class="pet-character" data-type="'+id+'" data-growth="'+growth+'" data-facing="'+direction+'">'+artwork+'</span>';
+       items.push('<article class="cell"><h2>'+name+' / '+glabel+' / '+flabel+'</h2><div class="view '+bg+'" style="--zoom:'+zoom+'">'+character+'</div></article>');
+     }
+   }
+ }
+ g.innerHTML=items.join('');$('status').textContent='表示：'+items.length+'カット／最大60カット';
+}
+async function checkSources(){
+ const results=await Promise.all(sourceFiles.map(src=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(true);i.onerror=()=>resolve(false);i.src=src;})));
+ const available=results.filter(Boolean).length;
+ $('status').textContent+=' ｜ WebP読込 '+available+'/'+sourceFiles.length+(available===sourceFiles.length?' OK':' エラー：画像参照先を確認');
+}
+for(const id of ['species','stage','background','zoom'])$(id).addEventListener('change',draw);
+draw();checkSources();
+})();
+</script>
+</body></html>
