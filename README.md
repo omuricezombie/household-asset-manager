@@ -1,3 +1,8 @@
+### v0.2.46 stable — 給与登録後の実績表示・銀行参考残高（2026-11-25）
+
+- household-candidate.1 Android Human QA合格（給与登録後の表示、参考加算、残高確認後の加算解消）。ユーザーの本番反映指示により正式版へ昇格。機能コードは検証版と同一、表示版・キャッシュ・READMEのみ変更。
+- 育成candidate.30は別ブランチに保持。本番には含めない。保存スキーマ2、IndexedDB名、バックアップ形式、配信URLを維持。rollbackはv0.2.45 main固定commit 3d9d9baed9a90aa3154b62003b24458bca74be6d。
+
 ### v0.2.46-household-candidate.1 — 給与登録後のホーム実績表示・給与賞与の銀行参考残高（2026-11-25）
 
 - main v0.2.45を基点とする家計簿専用候補。育成candidate.30は独立保全、今回含めない。Human QA後に正式版へ昇格するまでmainは変更しない。
