@@ -64,9 +64,9 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（main、現行本番） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.18**：統一60カットの孤立した画像ノイズを除去。画像の境界・画質は引き続き美術QA対象（Human QA未完了） |
+| candidate | **v0.2.46-candidate.18**：統一60カットの孤立した画像ノイズを除去。画像境界・画質は引き続き美術QA対象（60/60ブラウザQA・Human QA未完了） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.18：AI QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.18：GitHub実ファイル・版・CSS整合16/17項目確認（画像本文は1MB超につき取得制限、Blob SHA一致）。独立Chromiumで画像デコード・60/60切り出し位置PASS。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
 v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.18`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
