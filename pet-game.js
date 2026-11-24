@@ -400,12 +400,21 @@
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
           el.dataset.facing=facing();
-          // Front, angled and rear views all use the illustrated atlas.
-          const svg=el.querySelector('.pet-art');
-          if(svg&&active())svg.outerHTML=HAM.PetIllustration.draw({
-            type:active().type,stage:petStage(),direction:facing(),
-            mood,affection:active().affection,trait:personality().id
-          });
+          // Animate only the new illustration layer, not saved pet state.
+          const oldArt=el.querySelector('.pet-art');
+          if(oldArt&&active()){
+            oldArt.outerHTML=HAM.PetIllustration.draw({
+              type:active().type,stage:petStage(),direction:facing(),
+              mood,affection:active().affection,trait:personality().id
+            });
+            const newArt=el.querySelector('.pet-illustration');
+            if(newArt){
+              newArt.classList.add('pet-turning');
+              newArt.addEventListener('animationend',event=>{
+                if(event.target===newArt)newArt.classList.remove('pet-turning');
+              },{once:true});
+            }
+          }
         });
     },3500);
   }
