@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c20");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c21");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c20");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c21");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c20");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c21");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -425,7 +425,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.16 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
 .pet-character .pet-art-back .pet-art-image{
-  background-image:url("./assets/pet-rear-atlas.webp?v=0246c20");
+  background-image:url("./assets/pet-rear-atlas.webp?v=0246c21");
   background-size:300% 500%;background-repeat:no-repeat;
 }
 .pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
@@ -450,10 +450,10 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-character.pet-mood-idle .pet-illustration.pet-turning{animation:none!important;opacity:1;transform:none}
 }
 
-/* candidate.20: coherent 4-column / 15-row atlas; 320x360 output per cell,
+/* candidate.21: coherent 4-column / 15-row atlas; 320x360 output per cell,
    resampled from approximately 162x162 source, so no native-detail claim. */
 .pet-character .pet-art.pet-unified .pet-art-image{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0246c20');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0246c21');
   background-size:400% 1500%;background-repeat:no-repeat;transform:none;
 }
 .pet-character .pet-unified.pet-art-front .pet-art-image{background-position-x:0.000000%}
@@ -476,7 +476,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-character .pet-unified.pet-art-dino.pet-art-teen .pet-art-image{background-position-y:92.857143%}
 .pet-character .pet-unified.pet-art-dino.pet-art-adult .pet-art-image{background-position-y:100.000000%}
 
-/* candidate.20: preserve wander phase when the pet is tapped, petted or fed.
+/* candidate.21: preserve wander phase when the pet is tapped, petted or fed.
    Parent movement must not switch to a different keyframe on mood changes;
    the illustration child still provides the interaction response. */
 .pet-stage .pet-character:is(.pet-mood-idle,.pet-mood-pet,.pet-mood-food,.pet-mood-play,.pet-mood-calm){
@@ -501,7 +501,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   }
 }
 
-/* candidate.20: transparent gutters are embedded inside every repaired sprite cell.
+/* candidate.21: transparent gutters are embedded inside every repaired sprite cell.
    Remove the old 2px edge feather that could mask wing/ornament tips.
    Keep the tap-highlight and persistent-position behavior from candidate.19. */
 .pet-character .pet-art.pet-unified .pet-art-image{
