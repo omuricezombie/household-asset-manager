@@ -1,3 +1,9 @@
+### v0.2.46-candidate.18：60カットの境界ノイズ除去（2026-11-24）
+
+- 統一60カットの元デザインは維持し、元画像のセルに隣接した別キャラ由来の孤立片など13箇所を、連結成分と透明度に基づき除去した。WebPを再登録（Git Blob SHA `3488e5b72923ae05d330327759524f209b2c85a8`、1280×5400px）。
+- 全方向の表示方式、既存の家計・資産・報酬・保存機能は無変更。CSS参照URL、APP_VERSION、画面版、Service Worker cache、60方向QAページをcandidate.18へ統一。
+- **未解決**：元画像約162×162px/コマの解像度限界と、セル境界で主キャラクター本体が接している26/60箇所のクリッピングリスク。孤立片除去だけで全欠けが解消したという保証はない。Human QAで見た目確認前にstable昇格しない。
+
 ### v0.2.46-candidate.17：60カット統一絵柄の試験組み込み（2026-11-24）
 
 - ユーザーが好評価した統一60カット（5種×3段階×4方向）の画像を採用候補としてアトラス化し、`assets/pet-unified-atlas.webp`（1280×5400px、320×360px/カット）を追加。全方向を固有画像で描画し、左右反転は使用しない。Blob SHA `be9b43c6fa93f9208ca495849ed715cca8a72d2d`。
@@ -58,12 +64,12 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（main、現行本番） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.17**：全60方向の統一絵柄を試験採用。切り出し境界と高解像度化は引き続きQA対象（Human QA未完了） |
+| candidate | **v0.2.46-candidate.18**：統一60カットの孤立した画像ノイズを除去。画像の境界・画質は引き続き美術QA対象（Human QA未完了） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.17：QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.18：AI QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
-v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.17`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
+v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.18`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
 
 ## 実装済みの主な機能
 
