@@ -1,3 +1,10 @@
+### v0.2.46-candidate.17：60カット統一絵柄の試験組み込み（2026-11-24）
+
+- ユーザーが好評価した統一60カット（5種×3段階×4方向）の画像を採用候補としてアトラス化し、`assets/pet-unified-atlas.webp`（1280×5400px、320×360px/カット）を追加。全方向を固有画像で描画し、左右反転は使用しない。Blob SHA `be9b43c6fa93f9208ca495849ed715cca8a72d2d`。
+- 元画像は1942×809pxで1カット約162×162px。アトラスは拡大再サンプリングであり、ネイティブな高精細情報が増えたわけではない。
+- 60カットのうち26カットは元画像のセル境界に比較的濃い画素が接触しており、羽・装飾の欠けや隣の絵の混入に注意。美術QAで要確認。元の旧4アトラスはRepositoryに保持するが、新アプリのSWプリキャッシュからは除外。
+- 家計計算、IndexedDB、CSV、報酬、JSONバックアップは無変更。Human QA未完了につきstableへ昇格しない。
+
 ### イラスト全60方向の比較QAページ（2026-11-24、アプリ版変更なし）
 
 - candidateに[イラスト一括比較ページ](pet-art-qa.html)を追加。5種族×3段階×4方向の60パターンを現行`pet-illustration.js`・`pet-game.css`から描画し、種族・成長・背景・表示倍率を切り替えて比較できる。家計・育成の保存データにはアクセスしない。
@@ -51,12 +58,12 @@
 | --- | --- |
 | 正式版 | **v0.2.45 stable**（main、現行本番） |
 | main | 正式stable・GitHub Pages配信元（root） |
-| candidate | **v0.2.46-candidate.16**：自動方向転換に新絵柄用短時間アニメを追加。画質改善・個別パーツ動作・美術一致は未完成（Human QA待ち） |
+| candidate | **v0.2.46-candidate.17**：全60方向の統一絵柄を試験採用。切り出し境界と高解像度化は引き続きQA対象（Human QA未完了） |
 | rollback | 直前stableは `v0.2.45` の **main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`**。同版tag/Releaseは未作成。過去の固定tag/Releaseは `v0.2.16`（`v0.2.15`も保持） |
-| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.16：今回の静的AI QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
+| 品質 | stable v0.2.45：採用済み。candidate v0.2.46-candidate.17：QA実施中。Android Human QAは未実施。前版candidate.11では静的27/27、描画60通り、模擬12/12 PASS。Android実機で幼体の外観は好評だが画像が粗いとの指摘あり。画質・新後ろ姿・専用アニメーションは未完了。**Human QA一部実施、全体未完了** |
 | 現在の段階 | v0.2.45 stableを維持し、育成機能はcandidateで検証 |
 
-v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.16`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
+v0.2.45は給与入金前の現在月・未完了月のホーム表示を支出中心に変更した正式版です。**2026-11-24引き継ぎ確認**：main SHA `3d9d9baed9a90aa3154b62003b24458bca74be6d`、最新candidateは `v0.2.46-candidate.17`。candidateのHEADは更新されるため新チャットでGitHubとNotionを照合してください。
 
 ## 実装済みの主な機能
 

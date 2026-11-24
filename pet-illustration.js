@@ -1,6 +1,6 @@
 /* Illustration-first companion renderer. No persistence or household calculations.
-   Front and angled: adopted baby sprites, new teen/adult illustrations.
-   Back view: separate atlas for five families and three growth stages. */
+   Unified 60-cut illustrated atlas for 5 species × 3 growth stages × 4 directions.
+   Cells are upsampled from a roughly 162px source, not native 2x artwork. */
 (function(global){
   'use strict';
   const HAM=global.HAM=global.HAM||{};
@@ -14,10 +14,9 @@
     if(!stages.includes(stage))stage='baby';
     if(!directions.includes(direction))direction='front';
     if(!moods.includes(mood))mood='idle';
-    const pos=direction==='back'?'back':direction==='front'?'front':'side',older=stage!=='baby';
-    const classes=['pet-art','pet-illustration','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
-    if(older&&pos!=='back')classes.push('pet-art-growth');
-    if(direction==='right')classes.push('pet-art-mirror');
+    const pos=direction,older=stage!=='baby';
+    const classes=['pet-art','pet-illustration','pet-unified','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
+    // Right is an independent sprite in the unified atlas, not a flipped left view.
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
       '" aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
