@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c23");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c24");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c23");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c24");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c23");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c24");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -425,7 +425,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.16 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
 .pet-character .pet-art-back .pet-art-image{
-  background-image:url("./assets/pet-rear-atlas.webp?v=0246c23");
+  background-image:url("./assets/pet-rear-atlas.webp?v=0246c24");
   background-size:300% 500%;background-repeat:no-repeat;
 }
 .pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
@@ -450,10 +450,10 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-character.pet-mood-idle .pet-illustration.pet-turning{animation:none!important;opacity:1;transform:none}
 }
 
-/* candidate.23: coherent 4-column / 15-row atlas; 320x360 output per cell,
+/* candidate.24: coherent 4-column / 15-row atlas; 320x360 output per cell,
    resampled from approximately 162x162 source, so no native-detail claim. */
 .pet-character .pet-art.pet-unified .pet-art-image{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0246c23');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0246c24');
   background-size:400% 1500%;background-repeat:no-repeat;transform:none;
 }
 .pet-character .pet-unified.pet-art-front .pet-art-image{background-position-x:0.000000%}
@@ -476,7 +476,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-character .pet-unified.pet-art-dino.pet-art-teen .pet-art-image{background-position-y:92.857143%}
 .pet-character .pet-unified.pet-art-dino.pet-art-adult .pet-art-image{background-position-y:100.000000%}
 
-/* candidate.23: preserve wander phase when the pet is tapped, petted or fed.
+/* candidate.24: preserve wander phase when the pet is tapped, petted or fed.
    Parent movement must not switch to a different keyframe on mood changes;
    the illustration child still provides the interaction response. */
 .pet-stage .pet-character:is(.pet-mood-idle,.pet-mood-pet,.pet-mood-food,.pet-mood-play,.pet-mood-calm){
@@ -501,7 +501,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   }
 }
 
-/* candidate.23: transparent gutters are embedded inside every repaired sprite cell.
+/* candidate.24: transparent gutters are embedded inside every repaired sprite cell.
    Remove the old 2px edge feather that could mask wing/ornament tips.
    Keep the tap-highlight and persistent-position behavior from candidate.19. */
 .pet-character .pet-art.pet-unified .pet-art-image{
@@ -510,7 +510,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 
 
-/* candidate.23 — reversible, illustration-specific part motion.
+/* candidate.24 — reversible, illustration-specific part motion.
    Only a clipped copy is animated; the original atlas sprite is never moved or altered.
    The main .pet-character node and wander phase are untouched. */
 .pet-character .pet-art.pet-unified .pet-art-image.pet-part-wing,
@@ -521,7 +521,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   opacity:.7;
   will-change:auto;
 }
-/* Front-facing wing highlights; shape limits avoid the wing tips repaired in candidate.23. */
+/* Front-facing wing highlights; shape limits avoid the wing tips repaired in candidate.24. */
 .pet-character .pet-unified.pet-art-front:is(.pet-art-fairy,.pet-art-fantasy) .pet-part-wing{
   display:block;
   animation:pet-part-wing-breathe 3.4s ease-in-out infinite;
@@ -575,7 +575,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 
 
-/* candidate.23: reduce room occupant to 86%; individual scale composes with
+/* candidate.24: reduce room occupant to 86%; individual scale composes with
    keyframed transform and never restarts the parent wander animation. */
 .pet-stage .pet-character{
   scale:.86;
@@ -634,4 +634,54 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-stage .pet-character.pet-mood-pet .pet-illustration,
   .pet-stage .pet-character .pet-part-wing-left,
   .pet-stage .pet-character .pet-part-wing-right{animation:none!important}
+}
+
+/* candidate.24 — art-fidelity rollback for the rejected offset-outline animation.
+   We keep the accepted single illustration and all hit testing / pet state intact. */
+.pet-character .pet-art.pet-unified .pet-part-wing,
+.pet-character .pet-art.pet-unified .pet-part-ear,
+.pet-character .pet-art.pet-unified .pet-part-tail{
+  display:none!important;
+  animation:none!important;
+}
+/* The room has more space for future independent-frame action animations.
+   Independent scale does NOT reset or replace the parent 15-second wander. */
+.pet-stage .pet-character{
+  scale:.80;
+  transform-origin:50% 88%;
+}
+/* The home visitor grows only 12%; no change to choice cards, archive or room. */
+.pet-visitor .pet-character{
+  scale:1.12;
+}
+/* Remove faux facial/body distortion and duplicated-outline turning transforms.
+   Maintain a short, simple single-image reaction for existing actions. */
+.pet-stage .pet-character .pet-illustration,
+.pet-stage .pet-character.pet-mood-idle .pet-illustration:not(.pet-turning),
+.pet-stage .pet-character.pet-mood-idle .pet-illustration.pet-turning{
+  animation:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+.pet-stage .pet-character.pet-mood-pet .pet-illustration{
+  animation:pet24-petted .35s ease-in-out 2!important;
+}
+.pet-stage .pet-character.pet-mood-play .pet-illustration{
+  animation:pet24-play .65s ease-in-out 2!important;
+}
+@keyframes pet24-petted{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-3px)}
+}
+@keyframes pet24-play{
+  0%,100%{transform:translateY(0)}
+  45%{transform:translateY(-7px)}
+}
+/* The original reduced motion preference remains authoritative, including new actions. */
+@media(prefers-reduced-motion:reduce){
+  .pet-stage .pet-character.pet-mood-pet .pet-illustration,
+  .pet-stage .pet-character.pet-mood-play .pet-illustration{
+    animation:none!important;
+    transform:none!important;
+  }
 }

@@ -1,5 +1,5 @@
-const CACHE='household-asset-manager-v0.2.46-candidate.23';
-const FILES=['./','./index.html','./styles.css?v=0246c23','./db.js?v=0246c23','./dcard-import.js?v=0246c23','./analysis.js?v=0246c23','./pet-game.css?v=0246c23','./pet-art.js?v=0246c23','./pet-illustration.js?v=0246c23','./assets/pet-unified-atlas.webp?v=0246c23','./pet-game.js?v=0246c23','./app.js?v=0246c23','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.46-candidate.24';
+const FILES=['./','./index.html','./styles.css?v=0246c24','./db.js?v=0246c24','./dcard-import.js?v=0246c24','./analysis.js?v=0246c24','./pet-game.css?v=0246c24','./pet-art.js?v=0246c24','./pet-illustration.js?v=0246c24','./assets/pet-unified-atlas.webp?v=0246c24','./pet-game.js?v=0246c24','./app.js?v=0246c24','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
