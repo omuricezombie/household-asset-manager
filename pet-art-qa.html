@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>相棒イラスト｜60方向QA（candidate.25）</title>
-<link rel="stylesheet" href="./pet-game.css?v=0246c25">
+<title>相棒イラスト｜60方向QA（candidate.26）</title>
+<link rel="stylesheet" href="./pet-game.css?v=0246c26">
 <style>
 :root{color-scheme:light dark;--bg:#f6f9fb;--card:#fff;--line:#c8d5dc;--muted:#526672;--good:#157d75}
 *{box-sizing:border-box}body{margin:0;background:#eef3f6;color:#18303b;font-family:system-ui,"Noto Sans JP",sans-serif}
@@ -38,16 +38,16 @@ footer{font-size:12px;color:#475569;margin:16px 0}
 </section>
 <div id="status" class="status" aria-live="polite">読み込み中</div>
 <div class="gallery" id="gallery"></div>
-<footer>元画像の品質を変える処理は行いません。WebPの画質とCSS表示倍率をそのまま評価できます。全方向を320×360px/コマに再整形しました。ただし元は約162px/コマで、真正の高解像度画像ではありません。candidate.25基準。</footer>
+<footer>元画像の品質を変える処理は行いません。WebPの画質とCSS表示倍率をそのまま評価できます。全方向を320×360px/コマに再整形しました。ただし元は約162px/コマで、真正の高解像度画像ではありません。candidate.26基準。</footer>
 </main>
-<script src="./pet-illustration.js?v=0246c25"></script>
+<script src="./pet-illustration.js?v=0246c26"></script>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const species=[['animal','動物風'],['fantasy','架空の生き物'],['fairy','妖精'],['yokai','妖怪'],['dino','恐竜']];
 const stages=[['baby','幼体'],['teen','中間体'],['adult','成体']];
 const faces=[['front','正面'],['left','左斜め'],['back','背面'],['right','右斜め']];
-const sourceFiles=['assets/pet-unified-atlas.webp?v=0246c25'];
+const sourceFiles=['assets/pet-unified-atlas.webp?v=0246c26'];
 function draw(){
  const g=$('gallery'),selection=$('species').value,stage=$('stage').value,bg=$('background').value,zoom=$('zoom').value;
  const items=[];for(const [id,name] of species){if(selection!=='all'&&selection!==id)continue;

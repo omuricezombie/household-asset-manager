@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0246c25");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0246c26");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0246c25");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0246c26");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0246c25");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0246c26");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -425,7 +425,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.16 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
 .pet-character .pet-art-back .pet-art-image{
-  background-image:url("./assets/pet-rear-atlas.webp?v=0246c25");
+  background-image:url("./assets/pet-rear-atlas.webp?v=0246c26");
   background-size:300% 500%;background-repeat:no-repeat;
 }
 .pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
@@ -450,10 +450,10 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-character.pet-mood-idle .pet-illustration.pet-turning{animation:none!important;opacity:1;transform:none}
 }
 
-/* candidate.25: coherent 4-column / 15-row atlas; 320x360 output per cell,
+/* candidate.26: coherent 4-column / 15-row atlas; 320x360 output per cell,
    resampled from approximately 162x162 source, so no native-detail claim. */
 .pet-character .pet-art.pet-unified .pet-art-image{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0246c25');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0246c26');
   background-size:400% 1500%;background-repeat:no-repeat;transform:none;
 }
 .pet-character .pet-unified.pet-art-front .pet-art-image{background-position-x:0.000000%}
@@ -476,7 +476,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-character .pet-unified.pet-art-dino.pet-art-teen .pet-art-image{background-position-y:92.857143%}
 .pet-character .pet-unified.pet-art-dino.pet-art-adult .pet-art-image{background-position-y:100.000000%}
 
-/* candidate.25: preserve wander phase when the pet is tapped, petted or fed.
+/* candidate.26: preserve wander phase when the pet is tapped, petted or fed.
    Parent movement must not switch to a different keyframe on mood changes;
    the illustration child still provides the interaction response. */
 .pet-stage .pet-character:is(.pet-mood-idle,.pet-mood-pet,.pet-mood-food,.pet-mood-play,.pet-mood-calm){
@@ -501,7 +501,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   }
 }
 
-/* candidate.25: transparent gutters are embedded inside every repaired sprite cell.
+/* candidate.26: transparent gutters are embedded inside every repaired sprite cell.
    Remove the old 2px edge feather that could mask wing/ornament tips.
    Keep the tap-highlight and persistent-position behavior from candidate.19. */
 .pet-character .pet-art.pet-unified .pet-art-image{
@@ -510,7 +510,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 
 
-/* candidate.25 — reversible, illustration-specific part motion.
+/* candidate.26 — reversible, illustration-specific part motion.
    Only a clipped copy is animated; the original atlas sprite is never moved or altered.
    The main .pet-character node and wander phase are untouched. */
 .pet-character .pet-art.pet-unified .pet-art-image.pet-part-wing,
@@ -521,7 +521,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   opacity:.7;
   will-change:auto;
 }
-/* Front-facing wing highlights; shape limits avoid the wing tips repaired in candidate.25. */
+/* Front-facing wing highlights; shape limits avoid the wing tips repaired in candidate.26. */
 .pet-character .pet-unified.pet-art-front:is(.pet-art-fairy,.pet-art-fantasy) .pet-part-wing{
   display:block;
   animation:pet-part-wing-breathe 3.4s ease-in-out infinite;
@@ -575,7 +575,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 
 
-/* candidate.25: reduce room occupant to 86%; individual scale composes with
+/* candidate.26: reduce room occupant to 86%; individual scale composes with
    keyframed transform and never restarts the parent wander animation. */
 .pet-stage .pet-character{
   scale:.86;
@@ -636,7 +636,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   .pet-stage .pet-character .pet-part-wing-right{animation:none!important}
 }
 
-/* candidate.25 — art-fidelity rollback for the rejected offset-outline animation.
+/* candidate.26 — art-fidelity rollback for the rejected offset-outline animation.
    We keep the accepted single illustration and all hit testing / pet state intact. */
 .pet-character .pet-art.pet-unified .pet-part-wing,
 .pet-character .pet-art.pet-unified .pet-part-ear,
@@ -687,24 +687,37 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 
 
-/* candidate.25: TRUE three-frame blink, only fantasy / baby / front / room.
+/* candidate.26: TRUE three-frame blink, only fantasy / baby / front / room.
    This switches whole aligned WebP frame illustrations, not overlaid contours.
    960x360 source = 3 cells of 320x360, rendered at 160x180.
-   The other 59 sprite variants stay exactly as in candidate.25. */
+   The other 59 sprite variants stay exactly as in candidate.26. */
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0246c25');
+  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0246c26');
   background-size:300% 100%;
   background-position:0% 0%;
-  animation:pet25-blink-frames 7.2s steps(1,end) infinite;
+  animation:pet26-blink-frames 2.8s steps(1,end) infinite;
 }
-@keyframes pet25-blink-frames{
-  0%,91%,95%,100%{background-position-x:0%}
-  92%,94%{background-position-x:50%}
-  93%{background-position-x:100%}
+/* A front-facing sprite is replaced every 3.5s by setFacingTimer().
+   Animate one complete blink in the FIRST 2 seconds of that window.
+   The former 7.2s/92% blink never occurred before replacement. */
+@keyframes pet26-blink-frames{
+  0%,34%,67%,100%{background-position-x:0%}
+  35%,44%,57%,66%{background-position-x:50%}
+  45%,56%{background-position-x:100%}
 }
 @media(prefers-reduced-motion:reduce){
   .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
     animation:none!important;
     background-position-x:0%!important;
   }
+}
+
+/* candidate.26: slightly larger Home visitor only; preserve room at 80%.
+   Increase visitor hit surface and right inset to avoid visual edge clipping. */
+.pet-visitor{
+  width:80px;
+  right:9px;
+}
+.pet-visitor .pet-character{
+  scale:1.24;
 }
