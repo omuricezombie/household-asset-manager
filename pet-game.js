@@ -24,6 +24,7 @@
   ];
   let state=null, navigate=null, current='home', mood='idle', redrawBusy=false, rerender=false;
   let visitTimer=null, lastVisit=0, actionTimer=null, facingTimer=null, faceStep=0, saveChain=Promise.resolve(), initialized=false;
+  let dataReplacing=false, dataEpoch=0;
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const thisDay=()=>DB.ymd();
@@ -109,9 +110,35 @@
     return !!pet&&Object.values(state.awards).some(a=>a.petId===pet.id&&a.items.some(x=>categories.includes(x.category)));
   }
   function persist(){
+    if(dataReplacing)return Promise.resolve();
     const snapshot=JSON.parse(JSON.stringify(state));
     saveChain=saveChain.catch(()=>{}).then(()=>DB.put('settings',{key:KEY,value:snapshot}));
     return saveChain;
+  }
+  async function flushPendingSave(){await saveChain;}
+  // Restore/reset must not leave a pre-restore companion in memory or allow stale async reward reads to save it.
+  async function replaceStoredData(task){
+    if(dataReplacing)throw new Error('育成データ更新中です。');
+    dataReplacing=true;dataEpoch++;
+    hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';
+    try{
+      await flushPendingSave();
+      await task();
+    }finally{
+      // Fail closed if the restored settings cannot be read.
+      state=fresh();
+      try{
+        const stored=await DB.get('settings',KEY);
+        state=normalize(stored&&stored.value);
+      }finally{
+        saveChain=Promise.resolve();faceStep=0;starterPreviewFacing='front';
+        if($('petAvatar'))$('petAvatar').innerHTML='';
+        if($('petNameInput'))$('petNameInput').value='';
+        setVisible();dataReplacing=false;
+        if(current==='pet'&&!state.enabled&&navigate)await navigate('home');
+        else onScreen(current);
+      }
+    }
   }
   function setVisible(){
     document.body.classList.toggle('pet-game-enabled',!!state.enabled);
@@ -123,10 +150,13 @@
     if(hint)hint.textContent=state.enabled?'育成中です。家計の集計は変わりません。':'OFF中は相棒の画面や訪問を表示しません。育成記録は保持されます。';
   }
   async function setEnabled(flag){
+    if(dataReplacing)return;
+    const epoch=dataEpoch;
     state.enabled=!!flag;
     // No companion is created just by switching the optional game ON.
     setVisible();
     await persist();
+    if(epoch!==dataEpoch)return;
     if(!state.enabled){hideVisitor();stopFacing();if(current==='pet'&&navigate)void navigate('home');}
     else{setFacingTimer();if(current==='home')maybeVisit('home');}
   }
@@ -197,7 +227,8 @@
     if(el)el.textContent=text||moodMessage();
   }
   async function interact(id){
-    if(!isEnabled()||!active())return;
+    if(dataReplacing||!isEnabled()||!active())return;
+    const epoch=dataEpoch;
     const item=ACTIONS.find(x=>x.id===id);
     if(!item||!actionAvailable(item))return;
     todayReset();
@@ -211,6 +242,7 @@
     }
     p.lastAction=DB.now();mood=item.type;
     await persist();
+    if(epoch!==dataEpoch)return;
     paintCharacter();speak(item.reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
@@ -300,8 +332,10 @@
     return {earnedAt:DB.now(),items,bonus,points:bonus+items.reduce((s,x)=>s+x.points,0)};
   }
   async function syncRewards(){
-    if(!state.enabled||!active())return;
+    if(dataReplacing||!state.enabled||!active())return;
+    const epoch=dataEpoch;
     const [tx,imports,statuses]=await Promise.all([DB.getAll('transactions'),DB.getAll('cardImports'),DB.getAll('monthStatus')]);
+    if(dataReplacing||epoch!==dataEpoch)return;
     const done=new Set(statuses.filter(x=>x.completedAt).map(x=>x.month));
     const records=prepareMonthlyRecords(tx,imports);
     let changed=false;
@@ -315,9 +349,11 @@
     if(changed)await persist();
   }
   async function rebuildRewards(){
-    const p=active();if(!p)return;
+    const p=active();if(dataReplacing||!p)return;
+    const epoch=dataEpoch;
     if(!confirm('現在の相棒に付与済みの月次報酬を再判定します。他の相棒の報酬履歴は変更しません。現在のポイントや解放項目が減る場合があります。実行しますか？'))return;
     const [tx,imports,statuses]=await Promise.all([DB.getAll('transactions'),DB.getAll('cardImports'),DB.getAll('monthStatus')]);
+    if(dataReplacing||epoch!==dataEpoch)return;
     const done=new Set(statuses.filter(x=>x.completedAt).map(x=>x.month));
     const records=prepareMonthlyRecords(tx,imports);
     const updated={...state.awards};
@@ -338,7 +374,7 @@
     await render();
   }
   async function choosePet(type){
-    if(!state.enabled||active()||!PET_TYPES.some(t=>t.id===type))return;
+    if(dataReplacing||!state.enabled||active()||!PET_TYPES.some(t=>t.id===type))return;
     const p=newPet(type);
     const name=$('petNameInput')?.value.trim();
     if(name)p.name=name.slice(0,30);
@@ -351,7 +387,7 @@
     await render();
   }
   async function restartPet(){
-    if(!active())return;
+    if(dataReplacing||!active())return;
     if(!confirm('育成中の相棒とお別れして、最初から育て直しますか？ この子の愛情度・個性は保存されません。過去の月次報酬や図鑑は残り、同じ月の報酬は再取得できません。'))return;
     state.activePet=null;faceStep=0;mood='idle';
     hideVisitor();stopFacing();
@@ -359,7 +395,7 @@
   }
   async function archivePet(){
     const p=active();
-    if(!p||level()<MATURITY_LEVEL)return;
+    if(dataReplacing||!p||level()<MATURITY_LEVEL)return;
     if(!confirm('成長した相棒を図鑑に保存して、新しい相棒を迎えられる状態にしますか？ 保存後はこの子との育成を続けられません。'))return;
     state.collection.push({...JSON.parse(JSON.stringify(p)),earnedPoints:petPoints(),
       finalLevel:level(),completedAt:DB.now(),finalPersonality:personality().name});
@@ -408,7 +444,7 @@
   function stopFacing(){if(facingTimer){clearInterval(facingTimer);facingTimer=null;}}
   function setFacingTimer(){
     stopFacing();
-    if(!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked')||prefersReducedMotion())return;
+    if(dataReplacing||!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked')||prefersReducedMotion())return;
     facingTimer=setInterval(()=>{
       if(mood!=='idle'||prefersReducedMotion())return;
       faceStep=(faceStep+1)%FACING.length;
@@ -463,11 +499,13 @@
     }
   }
   async function render(){
-    if(!isEnabled())return;
+    if(dataReplacing||!isEnabled())return;
+    const epoch=dataEpoch;
     if(redrawBusy){rerender=true;return;}
     redrawBusy=true;
     try{
       await syncRewards();
+      if(dataReplacing||epoch!==dataEpoch)return;
       paintCharacter();
       renderStats();
       renderCompanionChoices();
@@ -492,7 +530,7 @@
   }
   function maybeVisit(name){
     hideVisitor();
-    if(!state.enabled||!active()||!['home','history'].includes(name))return;
+    if(dataReplacing||!state.enabled||!active()||!['home','history'].includes(name))return;
     if(document.body.classList.contains('app-locked')||document.querySelector('dialog[open]'))return;
     const homeCompanion=name==='home';
     // Keep a small, background-free companion on Home. Visits to History stay rare.
@@ -526,6 +564,7 @@
       const b=e.target.closest('[data-pet-action]');if(b)void interact(b.dataset.petAction);
     });
     if($('petCategoryOptions'))$('petCategoryOptions').addEventListener('change',e=>{
+      if(dataReplacing)return;
       const input=e.target.closest('[data-pet-category]');
       if(!input)return;
       const cat=input.dataset.petCategory;
@@ -546,6 +585,6 @@
     document.addEventListener('visibilitychange',()=>setFacingTimer());
     // Defaults are intentionally OFF; no extra persistent data is written until enabled.
   }
-  HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,
+  HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,flushPendingSave,replaceStoredData,
     _test:{prepareMonthlyRecords,createAward,level,normalize,newPet,petStage,petPoints,stageForLevel,petPersonality}};
 })(window);
