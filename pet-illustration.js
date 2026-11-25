@@ -17,7 +17,8 @@
     const pos=direction,older=stage!=='baby';
     const classes=['pet-art','pet-illustration','pet-unified','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
     if(stage==='baby')classes.push('pet-hq');
-    const hqStyle=stage==='baby'?' style="'+['base','face','motion','food'].map(k=>'--hq-'+k+':url(assets/hq-baby/'+type+'-'+k+'.webp?v=0248)').join(';')+';--hq-face-cols:'+(type==='animal'?'500%':'300%')+';--hq-motion-rows:'+(['animal','dino'].includes(type)?'200%':'400%')+';--hq-left-row:'+(['animal','dino'].includes(type)?'0%':'33.333333%')+'"':'';
+    else{classes.push('pet-hq-growth');if(stage==='adult'&&['dino','yokai'].includes(type))classes.push('pet-hq-extended');}
+    const hqStyle=stage==='baby'?' style="'+['base','face','motion','food'].map(k=>'--hq-'+k+':url(assets/hq-baby/'+type+'-'+k+'.webp?v=0249c1)').join(';')+';--hq-face-cols:'+(type==='animal'?'500%':'300%')+';--hq-motion-rows:'+(['animal','dino'].includes(type)?'200%':'400%')+';--hq-left-row:'+(['animal','dino'].includes(type)?'0%':'33.333333%')+'"':' style="--hq-growth:url(assets/hq-growth/'+type+'-'+stage+'.webp?v=0249c1)"';
     // Right is an independent sprite in the unified atlas, not a flipped left view.
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
