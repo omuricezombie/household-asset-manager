@@ -14,3 +14,6 @@ household_asset_backup*.json
 *.log
 .DS_Store
 Thumbs.db
+
+/artifacts/
+/AI_QA_0250c1*.json

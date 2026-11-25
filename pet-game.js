@@ -25,6 +25,7 @@
   let state=null, navigate=null, current='home', mood='idle', redrawBusy=false, rerender=false;
   let visitTimer=null, lastVisit=0, actionTimer=null, facingTimer=null, faceStep=0, saveChain=Promise.resolve(), initialized=false;
   let dataReplacing=false, dataEpoch=0;
+  let visualAction='', actionSequence=0; // transient rendering only; never persisted
   let homePosition=null;
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -121,7 +122,7 @@
   async function replaceStoredData(task){
     if(dataReplacing)throw new Error('育成データ更新中です。');
     dataReplacing=true;dataEpoch++;
-    hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';
+    hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';visualAction='';actionSequence++;
     try{
       await flushPendingSave();
       await task();
@@ -189,7 +190,7 @@
     return '<span class="pet-character '+(small?'pet-small ':'')+'pet-mood-'+safeText(mood)+
       '" data-trait="'+safeText(trait)+'" data-bond="'+tier+
       '" data-type="'+safeText(type)+'" data-growth="'+stage+
-      '" data-facing="'+safeText(direction)+'" role="img" aria-label="'+safeText(pet.name)+'">'+
+      '" data-action="'+(pet===active()?safeText(visualAction):'')+'" data-facing="'+safeText(direction)+'" role="img" aria-label="'+safeText(pet.name)+'">'+
       art+'</span>';
   }
   function moodMessage(){
@@ -216,6 +217,7 @@
         for(const kind of ['idle','pet','food','play','calm'])
           existing.classList.toggle('pet-mood-'+kind,kind===mood);
         const bond=affectionTier(pet),trait=petPersonality(pet).id;
+        existing.dataset.action=visualAction;
         existing.dataset.bond=bond;
         existing.dataset.trait=trait;
         let art=existing.querySelector('.pet-illustration');
@@ -241,7 +243,7 @@
     if(!art||!art.getAnimations||prefersReducedMotion())return;
     // Restart only care animations on repeat taps, never the parent wander.
     for(const animation of art.getAnimations({subtree:true})){
-      if(String(animation.animationName||'').startsWith('pet247-care-'+kind+'-')){
+      if(String(animation.animationName||'').startsWith('pet247-care-'+kind+'-')||String(animation.animationName||'').startsWith('brush250-')){
         animation.currentTime=0;animation.play();
       }
     }
@@ -265,15 +267,17 @@
       p.daily.traitsUsed++;
     }
     p.lastAction=DB.now();clearTimeout(actionTimer);mood=item.type;
+    visualAction=id==='brush'&&petStage()==='baby'?'brush':'';
+    const sequence=++actionSequence;
     await persist();
-    if(epoch!==dataEpoch)return;
+    if(epoch!==dataEpoch||sequence!==actionSequence)return;
     paintCharacter();
     if(item.type===mood)restartBabyCare(item.type);
     speak(item.reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
-    const duration=mood==='calm'&&petStage()==='baby'?3200:1700;
-    actionTimer=setTimeout(()=>{mood='idle';paintCharacter();speak(moodMessage());},duration);
+    const duration=visualAction==='brush'?2700:mood==='calm'&&petStage()==='baby'?3200:1700;
+    actionTimer=setTimeout(()=>{mood='idle';visualAction='';actionSequence++;paintCharacter();speak(moodMessage());},duration);
   }
   // Pointer events cover a tap or a sliding finger gesture on the character.
   // One gesture triggers exactly one "pet" action; dragging does not farm affection.
@@ -408,7 +412,7 @@
     state.activePet=p;
     if($('petNameInput'))$('petNameInput').value='';
     if(!state.startedMonth)state.startedMonth=p.startedMonth;
-    faceStep=0;mood='idle';
+    faceStep=0;mood='idle';visualAction='';actionSequence++;
     await persist();
     setFacingTimer();
     await render();
@@ -416,7 +420,7 @@
   async function restartPet(){
     if(dataReplacing||!active())return;
     if(!confirm('育成中の相棒とお別れして、最初から育て直しますか？ この子の愛情度・個性は保存されません。過去の月次報酬や図鑑は残り、同じ月の報酬は再取得できません。'))return;
-    state.activePet=null;faceStep=0;mood='idle';
+    state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
     hideVisitor();stopFacing();
     await persist();await render();
   }
@@ -426,7 +430,7 @@
     if(!confirm('成長した相棒を図鑑に保存して、新しい相棒を迎えられる状態にしますか？ 保存後はこの子との育成を続けられません。'))return;
     state.collection.push({...JSON.parse(JSON.stringify(p)),earnedPoints:petPoints(),
       finalLevel:level(),completedAt:DB.now(),finalPersonality:personality().name});
-    state.activePet=null;faceStep=0;mood='idle';
+    state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
     hideVisitor();stopFacing();
     await persist();await render();
   }
