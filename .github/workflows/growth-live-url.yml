@@ -1,0 +1,25 @@
+name: Verify growth comparison delivery URL
+on:
+  push:
+    branches: ['experiment/hq-growth-20261125']
+    paths: ['.github/workflows/growth-live-url.yml']
+permissions:
+  contents: read
+jobs:
+  delivery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check fixed URL and exact HTML bytes
+        run: |
+          python - <<'PY'
+          import urllib.request,hashlib
+          u='https://raw.githack.com/omuricezombie/household-asset-manager/f6b233b20a91923d92a5abfc66fa166b75e2a414/experiments/growth/comparison.html?v=0249hq-r1'
+          r=urllib.request.urlopen(u,timeout=90)
+          assert r.status==200
+          assert 'text/html' in r.headers.get('Content-Type','')
+          b=r.read()
+          assert len(b)==32224325
+          assert hashlib.sha256(b).hexdigest()=='a8f18b4ae901ce42a36ac7de14c2ecd18d9c36c9eba70d674bffb180c3898619'
+          print('PASS: fixed public comparison URL HTTP 200, HTML MIME, bytes, SHA-256')
+          PY
