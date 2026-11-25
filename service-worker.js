@@ -1,7 +1,7 @@
-const CACHE='household-asset-manager-v0.2.47-candidate.13';
-const FILES=['./','./index.html','./styles.css?v=0247c13','./db.js?v=0247c13','./dcard-import.js?v=0247c13','./analysis.js?v=0247c13','./pet-game.css?v=0247c13','./pet-art.js?v=0247c13','./pet-illustration.js?v=0247c13','./assets/pet-unified-atlas.webp?v=0247c13','./assets/pet-blink-fantasy-baby.webp?v=0247c13','./assets/pet-gaze-yokai-baby.svg?v=0247c13','./assets/pet-blink-animal-baby.webp?v=0247c13','./assets/pet-animal-baby-blink-ear.webp?v=0247c13','./assets/pet-baby-tail-sides.webp?v=0247c13','./assets/pet-fantasy-baby-wings.webp?v=0247c13','./assets/pet-fairy-baby-wings.webp?v=0247c13','./assets/pet-fairy-baby-wing-fold.webp?v=0247c13','./assets/pet-fairy-baby-wing-axis.webp?v=0247c13','./assets/pet-yokai-baby-tail.webp?v=0247c13',
-  './assets/pet-yokai-baby-tail-swing.webp?v=0247c13',
-  './assets/pet-yokai-baby-tail-swing-fixed.webp?v=0247c13','./assets/pet-blink-dino-baby.webp?v=0247c13','./assets/pet-blink-fairy-baby.webp?v=0247c13','./pet-game.js?v=0247c13','./app.js?v=0247c13','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='household-asset-manager-v0.2.47-candidate.14';
+const FILES=['./','./index.html','./styles.css?v=0247c14','./db.js?v=0247c14','./dcard-import.js?v=0247c14','./analysis.js?v=0247c14','./pet-game.css?v=0247c14','./pet-art.js?v=0247c14','./pet-illustration.js?v=0247c14','./assets/pet-unified-atlas.webp?v=0247c14','./assets/pet-baby-chew-mouth-fixed.webp?v=0247c14','./assets/pet-blink-fantasy-baby.webp?v=0247c14','./assets/pet-gaze-yokai-baby.svg?v=0247c14','./assets/pet-blink-animal-baby.webp?v=0247c14','./assets/pet-animal-baby-blink-ear.webp?v=0247c14','./assets/pet-baby-tail-sides.webp?v=0247c14','./assets/pet-fantasy-baby-wings.webp?v=0247c14','./assets/pet-fairy-baby-wings.webp?v=0247c14','./assets/pet-fairy-baby-wing-fold.webp?v=0247c14','./assets/pet-fairy-baby-wing-axis.webp?v=0247c14','./assets/pet-yokai-baby-tail.webp?v=0247c14',
+  './assets/pet-yokai-baby-tail-swing.webp?v=0247c14',
+  './assets/pet-yokai-baby-tail-swing-fixed.webp?v=0247c14','./assets/pet-blink-dino-baby.webp?v=0247c14','./assets/pet-blink-fairy-baby.webp?v=0247c14','./pet-game.js?v=0247c14','./app.js?v=0247c14','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
