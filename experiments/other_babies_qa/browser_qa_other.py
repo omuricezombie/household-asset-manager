@@ -59,12 +59,14 @@ with sync_playwright() as pw:
    page.locator('[data-mood=food]').click();page.locator('[data-mood=pet]').click();ck(species+'/switch',page.locator('.qa-hq .pet-mood-pet').count()==1)
    page.wait_for_timeout(1800);ck(species+'/idle-return/'+mood,page.locator('.qa-hq .pet-mood-idle').count()==1)
   page.locator('[data-dir=front]').click();sample(0);page.screenshot(path='artifacts/'+species+'-browser.png',full_page=True)
+  geometry=page.locator('.pet-room').evaluate_all('els=>els.map(el=>{let a=el.getBoundingClientRect(),s=el.querySelector(".pet-stage").getBoundingClientRect();return {y:a.y,h:a.height,stageY:s.y,stageH:s.height}})')
+  ck(species+'/same-stage-position',all(abs(geometry[0][k]-geometry[1][k])<.01 for k in geometry[0]))
   page.emulate_media(reduced_motion='reduce')
   for d in ['front','left','back','right']:
    page.locator('[data-dir='+d+']').click();ck(species+'/reduce/'+d,css('.qa-hq')['name']=='none')
   page.locator('[data-mood=food]').click();ck(species+'/reduce/food',css('.qa-hq')['name']=='none' and css('.qa-hq')['x']=='50%' and css('.qa-hq','.pet-care-food')['opacity']=='0')
   page.emulate_media(reduced_motion='no-preference')
- page.locator('#zoom').click();ck('zoom',page.locator('body').evaluate("e=>e.classList.contains('zoom')"));page.locator('#view').click();ck('hq only',not page.locator('.qa-old').is_visible());page.locator('#view').click();ck('old only',not page.locator('.qa-hq').is_visible());page.locator('#view').click();ck('both',page.locator('.qa-old').is_visible() and page.locator('.qa-hq').is_visible())
+ page.locator('#zoom').click();ck('same zoom scale',page.locator('.pet-character').evaluate_all('els=>els.every(e=>getComputedStyle(e).scale==="1.5")'));ck('zoom',page.locator('body').evaluate("e=>e.classList.contains('zoom')"));page.locator('#view').click();ck('hq only',not page.locator('.qa-old').is_visible());page.locator('#view').click();ck('old only',not page.locator('.qa-hq').is_visible());page.locator('#view').click();ck('both',page.locator('.qa-old').is_visible() and page.locator('.qa-hq').is_visible())
  # Decode all embedded assets once, tracking timings. Doesn't estimate Android GPU speed.
  html=(out/'pet_other_babies_hq_motion_qa.html').read_text();urls=list(set(re.findall(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+',html)))
  decoded=page.evaluate('''async urls=>{let t=performance.now();let a=await Promise.all(urls.map(async u=>{let im=new Image();im.src=u;await im.decode();return [im.naturalWidth,im.naturalHeight]}));return {ms:performance.now()-t,sizes:a}}''',urls)

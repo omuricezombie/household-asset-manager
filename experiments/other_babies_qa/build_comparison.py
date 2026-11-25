@@ -56,6 +56,7 @@ ui=prev[prev.index('*{box-sizing'):prev.index('.qa-hq .pet-stage .pet-character.
 # strip any data-dependent HQ rules, keep UI only
 ui=ui[:ui.find('\n\n')] if '\n\n' in ui else ui
 ui+=' .qa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.qa-old,.qa-hq{min-width:0}.only-hq .qa-old,.only-old .qa-hq{display:none}.only-hq .qa-grid,.only-old .qa-grid{grid-template-columns:1fr}@media(max-width:370px){.qa-grid{grid-template-columns:1fr}}select{font:inherit;padding:9px;border-radius:8px}button{min-height:42px}'
+ui+=' .qa-old .pet-room,.qa-hq .pet-room{margin:6px 0 14px;min-height:245px}.zoom .qa-old .pet-room,.zoom .qa-hq .pet-room{min-height:320px}.zoom .qa-old .pet-stage .pet-character,.zoom .qa-hq .pet-stage .pet-character{scale:1.5;transform-origin:50% 95%}@media(max-width:480px){.qa-old .pet-speech,.qa-hq .pet-speech{font-size:11px;padding:6px}}'
 body=prev[prev.index('<main>'):prev.index('<script>')]
 body=body.replace('動物風幼体｜高画質 動作比較','幼体4種族｜高画質 動作比較').replace('<nav id="dirs">','<nav><label>種族 <select id="species"><option value="dino">恐竜</option><option value="fantasy">架空の生き物</option><option value="yokai">妖怪</option><option value="fairy">妖精</option></select></label><span>試作 r1・v0.2.47基準</span></nav><nav id="dirs">').replace('data-room-type="animal"','data-room-type="dino"')
 script=prev[prev.index("let facing="):prev.index('</script>')]
