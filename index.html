@@ -6,13 +6,14 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0246">
+  <link rel="stylesheet" href="styles.css?v=0247">
+  <link rel="stylesheet" href="pet-game.css?v=0247">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.46</p>
+      <p class="sub">v0.2.47</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -250,6 +251,11 @@
 
     <section class="screen" data-screen="data">
       <div class="card">
+        <h2>育成ゲーム（任意）</h2>
+        <label class="pet-toggle-row" for="petEnabled"><span><strong>相棒と暮らす</strong><small>家計の成果で成長し、触れ合いで個性が変わります</small></span><input id="petEnabled" type="checkbox"></label>
+        <p id="petEnableHint" class="muted">OFF中は家計の通常画面だけを表示します。</p>
+      </div>
+      <div class="card">
         <h2>過去月の登録状況一覧</h2>
         <p class="muted">収支や資産残高の登録件数を月別に確認できます。月を開くと月末更新に移動します。</p>
         <div class="historical-fields">
@@ -351,6 +357,70 @@
         <p class="muted">v0.1.0の旧DBは削除しません。</p>
       </div>
     </section>
+    <section class="screen" data-screen="pet">
+      <div class="card">
+        <div class="section-title-row">
+          <h2>相棒の部屋</h2><button type="button" class="text-btn" data-go="home">ホームへ</button>
+        </div>
+        <p class="muted pet-game-intro">家計の月次成果で新しい遊びや表情を解放。愛情度は毎日の触れ合いで育ち、放置しても下がりません。</p>
+        <div id="petChooser" class="hidden">
+          <h3>最初の相棒を選ぶ</h3>
+          <p class="muted">5タイプから1匹を選びます。途中でタイプを変更したいときは育成をやり直します。過去の月次報酬は再取得できません。</p>
+          <label for="petNameInput">名前（任意）<input id="petNameInput" maxlength="30" placeholder="あとから変えない相棒の名前"></label>
+          <div id="petTypeChoices" class="pet-type-choices"></div>
+        </div>
+        <div id="petActiveArea" class="hidden">
+        <p id="petCurrentType" class="pet-current-type"></p>
+        <div class="pet-game-dashboard">
+          <div class="pet-score-card"><span>家計の成長</span><strong id="petLevel">Lv. 1</strong><div class="pet-meter"><i id="petProgressBar"></i></div><span id="petScore">0 pt</span> <span id="petProgressText"></span></div>
+          <div class="pet-score-card"><span>愛情度</span><strong id="petAffection">0/100</strong><div class="pet-meter pet-heart"><i id="petAffectionBar"></i></div><span>性格：<b id="petPersonality">まだ探検中</b></span></div>
+        </div>
+        <div class="pet-room" id="petRoom"><div class="pet-stage" id="petAvatar" aria-live="off"></div><p class="pet-speech" id="petSpeech" aria-live="polite">のんびり過ごしている。</p></div>
+        <h3>一緒に過ごす</h3>
+        <p class="muted">キャラクターを直接タップ・指でなでても反応します。</p>
+        <p id="petDailyCap" class="muted">触れ合いは何度でもできます。</p>
+        <div id="petActions" class="pet-actions"></div>
+        <div class="pet-life-actions">
+          <button type="button" id="petArchive" class="primary hidden">成長した相棒を図鑑へ保存する</button>
+          <button type="button" id="petRestart" class="danger hidden">この相棒の育成をやり直す</button>
+        </div>
+        <p class="muted">成体になってもそのまま一緒に過ごせます。図鑑へ保存するのは、自分で選んだときだけです。</p>
+        </div>
+      </div>
+      <details class="card">
+        <summary><strong>5タイプの幼体見本を見る</strong></summary>
+        <p class="muted">現在の相棒を変更せずに、正面とマンガ風の斜め向きを見比べられます。成長後の姿は育成してからのお楽しみです。</p>
+        <div class="pet-preview-controls" role="group" aria-label="幼体見本の向き">
+          <button type="button" id="petPreviewFront" aria-pressed="true">正面</button>
+          <button type="button" id="petPreviewSide" aria-pressed="false">斜め向き</button>
+        </div>
+        <div id="petStarterGallery" class="pet-type-choices"></div>
+      </details>
+
+      <div class="card">
+        <h2>解放した遊び</h2>
+        <div id="petCatalog" class="pet-catalog"></div>
+        <p class="muted">レベル報酬のほか、食費・趣味費など特定分類の節約報酬で開く行動もあります。衣料費などの報酬で見た目も少し変化します。</p>
+      </div>
+      <div class="card">
+        <h2>歴代の相棒図鑑</h2>
+        <p class="muted">成体になった子は、いつでも姿や性格を見返せるように保存できます。図鑑はやり直しても残ります。</p>
+        <div id="petArchiveList" class="pet-archive-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-title-row"><h2>月次の育成報酬</h2><button type="button" id="petRefresh">再確認</button></div>
+        <p class="muted">開始月：<span id="petStartMonth">-</span>。月末更新の完了、必要なdカードCSVの取込、自己負担明細の分類が揃った月を一度だけ判定します。過去月は比較基準には使いますが、開始前の月には報酬を付けません。</p>
+        <div id="petAwards"></div>
+      </div>
+      <details class="card">
+        <summary><strong>節約判定の設定・説明</strong></summary>
+        <p class="muted">比較可能な直近3か月の通常支出を基準にし、8％以上・500円以上の削減を節約成功とします。翌月も成功水準＋5％以内なら維持成功です。成功水準は上方にずらしません。各月の成果は確定時点で記録し、後の家計修正では自動修正しません。</p>
+        <p class="muted">以下の対象分類は新しく確定する月に適用されます。医療・教育費・家賃・仕送り・家電などは初期状態で除外します。</p>
+        <div id="petCategoryOptions" class="pet-category-list"></div>
+        <button type="button" id="petRecalculate">月次報酬を再判定</button>
+        <p class="muted">必要な場合のみ実行してください。修正された金額や対象分類により獲得ポイント・解放内容が減ることがあります。</p>
+      </details>
+    </section>
   </main>
 
   <nav class="bottom-nav" aria-label="メイン">
@@ -358,6 +428,7 @@
     <button data-nav="input">入力</button>
     <button data-nav="monthend">月末更新</button>
     <button data-nav="history">履歴・分析</button>
+    <button id="petNav" data-nav="pet" class="hidden">相棒</button>
     <button data-nav="data">データ</button>
   </nav>
 
@@ -405,9 +476,12 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0246"></script>
-  <script src="dcard-import.js?v=0246"></script>
-  <script src="analysis.js?v=0246"></script>
-  <script src="app.js?v=0246"></script>
+  <script src="db.js?v=0247"></script>
+  <script src="dcard-import.js?v=0247"></script>
+  <script src="analysis.js?v=0247"></script>
+  <script src="pet-art.js?v=0247"></script>
+  <script src="pet-illustration.js?v=0247"></script>
+  <script src="pet-game.js?v=0247"></script>
+  <script src="app.js?v=0247"></script>
 </body>
 </html>

@@ -62,6 +62,8 @@ let toastTimer=null;
 let currentScreen='home';
 let currentPanel=null;
 let historyReady=false;
+const ACTIVE_TAB_SESSION_KEY='ham-active-tab-v1';
+const MAIN_TABS=new Set(['home','input','monthend','history','data','pet']);
 let monthEndWriteQueue=Promise.resolve();
 let assetBreakdownMode='compact';
 let assetBreakdownRequestId=0;
@@ -91,7 +93,21 @@ function monthLabel(m){const [y,mo]=m.split('-');return `${y}年${Number(mo)}月
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function selectOptions(values,current=''){return values.map(v=>{const [value,label]=Array.isArray(v)?v:[v,v];return `<option value="${esc(value)}" ${String(value)===String(current)?'selected':''}>${esc(label)}</option>`}).join('');}
 
+// Keep the active main tab across a same-tab reload without altering the household DB.
+function rememberActiveTab(name){
+  if(!MAIN_TABS.has(name))return;
+  try{sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY,name);}catch(err){/* storage may be blocked */ }
+}
+function readRefreshTab(){
+  let name=history.state?.hamNav==='screen'?history.state.screen:null;
+  if(!MAIN_TABS.has(name)){
+    try{name=sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY);}catch(err){name=null;}
+  }
+  if(!MAIN_TABS.has(name)||(name==='pet'&&!HAM.PetGame?.isEnabled()))return 'home';
+  return name;
+}
 async function showScreen(name,{push=true,panel=null}={}){
+  if(name==='pet'&&!HAM.PetGame?.isEnabled())name='home';
   if(currentScreen==='monthend' && !(await flushMonthEndEdits())){
     if(!push&&historyReady)history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
     return false;
@@ -99,6 +115,7 @@ async function showScreen(name,{push=true,panel=null}={}){
   if(name==='input'&&currentScreen!=='input'&&push)resetInputToCurrentMonth();
   if(name!=='home'){assetBreakdownRequestId++;closeInlineBreakdown();if($('assetBreakdownDialog').open)$('assetBreakdownDialog').close();}
   currentScreen=name;
+  rememberActiveTab(name);
   currentPanel=name==='input'?panel:null;
   $$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===name));
   $$('[data-nav]').forEach(x=>x.classList.toggle('active',x.dataset.nav===name));
@@ -111,6 +128,7 @@ async function showScreen(name,{push=true,panel=null}={}){
   if(currentPanel==='cash')$('cashAmount').focus();
   if(currentPanel==='advance'){renderAdvanceCardTransactions();renderManualAdvancePaymentEdits();}
   if(name==='home')renderHome();if(name==='monthend')renderMonthEnd();if(name==='history')renderHistory();if(name==='data')renderData();
+  HAM.PetGame?.onScreen(name);
   if(push&&historyReady) history.pushState({hamNav:'screen',screen:currentScreen,panel:currentPanel},'',location.href);
   return true;
 }
@@ -118,9 +136,15 @@ function openInputPanel(name,{push=true}={}){
   const panel=$(`input-${name}`)?name:null;
   showScreen('input',{push,panel});
 }
-function setupNavigationHistory(){
-  history.replaceState({hamNav:'exit-guard'},'',location.href);
-  history.pushState({hamNav:'screen',screen:'home',panel:null},'',location.href);
+function setupNavigationHistory(initialScreen='home'){
+  // Reload preserves the existing history entry, so Android Back still reaches
+  // the actual previous in-app screen rather than an extra exit confirmation.
+  if(history.state?.hamNav==='screen'){
+    history.replaceState({hamNav:'screen',screen:initialScreen,panel:null},'',location.href);
+  }else{
+    history.replaceState({hamNav:'exit-guard'},'',location.href);
+    history.pushState({hamNav:'screen',screen:initialScreen,panel:null},'',location.href);
+  }
   historyReady=true;
   window.addEventListener('popstate',async e=>{
     const st=e.state;
@@ -1471,13 +1495,13 @@ async function saveHistoricalBank(){
   finally{historicalSaveBusy=false;$('bulkBankSave').disabled=false;}
 }
 async function renderData(){await renderHistoricalBankAccounts();await renderHistoricalRentAccounts();const im=(await DB.getAll('cardImports')).sort((a,b)=>(b.importedAt||'').localeCompare(a.importedAt||''));$('importHistory').innerHTML=im.length?im.slice(0,10).map(x=>`<div class="status-row"><div><strong>${esc(x.fileName)}</strong><div class="status-meta">${new Date(x.importedAt).toLocaleString('ja-JP')} / ${esc(x.targetRange||'')}</div></div><div>${x.importedCount}件</div></div>`).join(''):'<p class="muted">取込履歴はありません。</p>';$('appInfo').innerHTML=`<p>App ${DB.APP_VERSION}<br>schemaVersion ${DB.SCHEMA_VERSION}<br>DB ${DB.DB_NAME}</p>`;let info='';try{if(navigator.storage?.estimate){const e=await navigator.storage.estimate();info=`使用量 約${Math.round((e.usage||0)/1024)} KB / 利用可能枠 約${Math.round((e.quota||0)/1024/1024)} MB`;}}catch{}$('storageInfo').textContent=info;}
-async function exportBackup(){try{const p=await DB.buildBackup();const blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`household_asset_backup_v2_${DB.ymd()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('バックアップを作成しました。');}catch(e){toast('バックアップ失敗: '+e.message);}}
-async function importBackup(file){try{const p=JSON.parse(await file.text());await DB.validateBackup(p);if(!confirm('v0.2の現在データをバックアップ内容で置き換えます。よろしいですか？'))return;await DB.restoreBackup(p);toast('復元しました。');await renderAll();}catch(e){toast('復元できません: '+e.message);}finally{$('backupImport').value='';}}
+async function exportBackup(){try{await HAM.PetGame.flushPendingSave();const p=await DB.buildBackup();const blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`household_asset_backup_v2_${DB.ymd()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('バックアップを作成しました。');}catch(e){toast('バックアップ失敗: '+e.message);}}
+async function importBackup(file){try{const p=JSON.parse(await file.text());await DB.validateBackup(p);if(!confirm('v0.2の現在データをバックアップ内容で置き換えます。よろしいですか？'))return;await HAM.PetGame.replaceStoredData(()=>DB.restoreBackup(p));toast('復元しました。');await renderAll();}catch(e){toast('復元できません: '+e.message);}finally{$('backupImport').value='';}}
 
 function openAccountDialog(category='bank'){$('accountCategory').value=category;$('accountDialog').showModal();}
 async function addAccountFromDialog(e){e.preventDefault();if(!(await flushMonthEndEdits()))return;const name=$('accountName').value.trim();if(!name)return;const cat=$('accountCategory').value;const all=await DB.getAll('accounts');await DB.put('accounts',{id:DB.uid('acct'),name,category:cat,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('accountDialog').close();$('accountName').value='';await renderMonthEnd();await renderHome();}
 async function addPointFromDialog(e){e.preventDefault();if(!(await flushMonthEndEdits()))return;const name=$('pointName').value.trim();if(!name)return toast('ポイント名を入力してください。');const all=await DB.getAll('pointAccounts');if(all.some(x=>x.active!==false&&x.name===name))return toast('同じ名前のポイント項目があります。');await DB.put('pointAccounts',{id:DB.uid('point'),name,active:true,sortOrder:Math.max(0,...all.map(x=>n(x.sortOrder)))+10,createdAt:DB.now()});$('pointDialog').close();$('pointName').value='';toast('ポイント項目を追加しました。');await renderMonthEnd();}
-async function clearAll(){if(!confirm('v0.2の家計・資産データを全削除します。v0.1旧DBは削除しません。実行しますか？'))return;if(!confirm('元に戻せません。JSONバックアップは保存しましたか？'))return;for(const s of DB.STORES)await DB.clear(s);await DB.seed();toast('v0.2データを削除しました。');await renderAll();}
+async function clearAll(){if(!confirm('v0.2の家計・資産データを全削除します。v0.1旧DBは削除しません。実行しますか？'))return;if(!confirm('元に戻せません。JSONバックアップは保存しましたか？'))return;await HAM.PetGame.replaceStoredData(async()=>{for(const s of DB.STORES)await DB.clear(s);await DB.seed();});toast('v0.2データを削除しました。');await renderAll();}
 
 function updateBreakdownMonthButtons(){
   const prev=monthShift(selectedMonth,-1),next=monthShift(selectedMonth,1);
@@ -1709,6 +1733,7 @@ function hideLock(){
   $('lockOverlay').classList.add('hidden');
   $('lockPin').value='';
   recordUnlockActivity({force:true});
+  if(currentScreen==='home')HAM.PetGame?.onScreen('home');
 }
 async function unlockApp(e){
   e.preventDefault();
@@ -1824,7 +1849,7 @@ function setupLock(){
 
 async function init(){
   try{
-    await DB.open();await DB.seed();selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();setupNavigationHistory();await renderAll();await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');
+    await DB.open();await DB.seed();await HAM.PetGame.init(showScreen);selectedMonth=DB.currentMonth();$('globalMonth').value=selectedMonth;fillCategorySelect($('cashCategory'));fillMealSelect($('cashMealType'));$('cashDate').value=dateForSelected();$('incomeDate').value=dateForSelected();$('rentDate').value=dateForSelected();$('advanceDate').value=dateForSelected();await renderCashPresets();await renderRentDefaults();bind();const refreshTab=readRefreshTab();setupNavigationHistory(refreshTab);await renderAll();if(refreshTab!=='home')await showScreen(refreshTab,{push:false});else rememberActiveTab('home');await refreshCsvDraftControls();setupLock();document.body.classList.remove('app-booting');if(currentScreen==='home')HAM.PetGame?.onScreen('home');
     if(location.protocol==='https:'||location.hostname==='localhost') navigator.serviceWorker?.register('service-worker.js',{updateViaCache:'none'}).catch(()=>{});
   }catch(e){console.error(e);document.body.classList.remove('app-booting');document.body.innerHTML=`<main><div class="card"><h1>起動エラー</h1><p>${esc(e.message)}</p></div></main>`;}
 }
