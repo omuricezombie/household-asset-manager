@@ -1,0 +1,146 @@
+{
+  "original": {
+    "file": "pet-unified-atlas.webp",
+    "bytes": 1344538,
+    "sha256": "5c82c1a5ec5d671daaea600ea1ff6d114e0e7e121f8c31748148850289f2f0e6",
+    "size": [
+      1280,
+      5400
+    ]
+  },
+  "animal-baby": {
+    "file": "animal-base.webp",
+    "bytes": 895812,
+    "sha256": "517fe333a3e10cff0d43536774a9b26d29482ad925eaf2a6965fdec2506cb20f",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "animal-teen": {
+    "file": "animal-teen.webp",
+    "bytes": 1580680,
+    "sha256": "fa97aaaee871d2c2e9ce38c913ea4448ddb14f6621726ab5e9644ec924ebe657",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "animal-adult": {
+    "file": "animal-adult.webp",
+    "bytes": 1682166,
+    "sha256": "d7c25843f27e1a68a1042e977b20a20302b7cf793e92258b6d6011caf4eb0833",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fantasy-baby": {
+    "file": "fantasy-base.webp",
+    "bytes": 1461416,
+    "sha256": "0aebed1ab14ee0d11f2eb669bc7630932197e3f9f84301990ae39d9b81cead26",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fantasy-teen": {
+    "file": "fantasy-teen.webp",
+    "bytes": 1513996,
+    "sha256": "b09ecd90b47edc96a39fceba1d41a600d0c54b197f12dab83e5a598e27a04e2d",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fantasy-adult": {
+    "file": "fantasy-adult.webp",
+    "bytes": 1611924,
+    "sha256": "7f383404fd50c678b48ab70b936e138c528b72e5f4d8ac5cee3601844e2031c2",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fairy-baby": {
+    "file": "fairy-base.webp",
+    "bytes": 1633054,
+    "sha256": "707e7160308f3712980c4b25e3b2474d3671acbbee6967fc7204e85fe58881a0",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fairy-teen": {
+    "file": "fairy-teen.webp",
+    "bytes": 1673176,
+    "sha256": "d31d6bbee9143a5eef79e7c089821079735358ffc8709cf3c470c961f47bee95",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "fairy-adult": {
+    "file": "fairy-adult.webp",
+    "bytes": 1826836,
+    "sha256": "6577ec124a8a73494bc50ae65e688159ed3c7c8f6d6b3eb74230fa8e5b5fbee5",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "yokai-baby": {
+    "file": "yokai-base.webp",
+    "bytes": 1257434,
+    "sha256": "f1338798597fe0735e68733de3da3ef6e48f96c06bc044cb696a434010076797",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "yokai-teen": {
+    "file": "yokai-teen.webp",
+    "bytes": 1453914,
+    "sha256": "f2327cefadc4f85f8c8d87c35a0ab9e221a5878e64369ea5e95597d12a98867d",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "yokai-adult": {
+    "file": "yokai-adult.webp",
+    "bytes": 1833840,
+    "sha256": "accffb0ef14e4e42d0b59a04892f80a0b65a06030e07a065d06ab5f8f728b465",
+    "size": [
+      2560,
+      752
+    ]
+  },
+  "dino-baby": {
+    "file": "dino-base.webp",
+    "bytes": 1430340,
+    "sha256": "bcfc6e1d3316334447bad7ca600886bab0ef2d1c887d7436e18f107f713ccfd0",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "dino-teen": {
+    "file": "dino-teen.webp",
+    "bytes": 1445018,
+    "sha256": "7d09efc321e32ffbb588d64dd2063de1e3a4ca1f980996e22a53a1e863be7487",
+    "size": [
+      2560,
+      720
+    ]
+  },
+  "dino-adult": {
+    "file": "dino-adult.webp",
+    "bytes": 1519124,
+    "sha256": "957b6dc790ba7c77e417e97dd86fb13c9833f38375a67e6707cc9f542f1e3970",
+    "size": [
+      2560,
+      752
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "species": "yokai",
+  "source_sha256": "7ba86a82cca43864a4eef0d31cfc8c6a259253042fea08bf46f8bd837ab172d8",
+  "model_sha256": "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da",
+  "frames": [
+    {
+      "direction": 0,
+      "locked_rgb_pixels": 436755,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 1,
+      "locked_rgb_pixels": 431276,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 2,
+      "locked_rgb_pixels": 447696,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 3,
+      "locked_rgb_pixels": 427981,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    }
+  ],
+  "cell_size": [
+    640,
+    752
+  ],
+  "content_offset_y": 32,
+  "sha256": "accffb0ef14e4e42d0b59a04892f80a0b65a06030e07a065d06ab5f8f728b465",
+  "bytes": 1833840,
+  "size": [
+    2560,
+    752
+  ]
+}

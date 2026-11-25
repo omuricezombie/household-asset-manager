@@ -1,0 +1,42 @@
+{
+  "species": "dino",
+  "source_sha256": "20130d6bd77bb78c508d46200b27fe6e880075838926928356ae6c389019fc45",
+  "model_sha256": "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da",
+  "frames": [
+    {
+      "direction": 0,
+      "locked_rgb_pixels": 428313,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 1,
+      "locked_rgb_pixels": 447282,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 2,
+      "locked_rgb_pixels": 430728,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    },
+    {
+      "direction": 3,
+      "locked_rgb_pixels": 443856,
+      "alpha_match": true,
+      "top_and_bottom_margin": true
+    }
+  ],
+  "cell_size": [
+    640,
+    752
+  ],
+  "content_offset_y": 32,
+  "sha256": "957b6dc790ba7c77e417e97dd86fb13c9833f38375a67e6707cc9f542f1e3970",
+  "bytes": 1519124,
+  "size": [
+    2560,
+    752
+  ]
+}
