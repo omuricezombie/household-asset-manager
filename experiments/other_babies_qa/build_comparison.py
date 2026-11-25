@@ -65,7 +65,10 @@ script=script.replace("startsWith('pet247-care-')","match(/^(hq-)?pet247-care-/)
 script=script.replace("if(ch.dataset.facing!==dir||!ch.querySelector('.pet-illustration'))", "if(ch.dataset.type!==species||ch.dataset.facing!==dir||!ch.querySelector('.pet-illustration'))")
 script=script.replace('ch.dataset.facing=dir;', 'ch.dataset.type=species;ch.dataset.facing=dir;')
 script+='''
-function selectSpecies(){species=document.querySelector('#species').value;clearTimeout(timer);mood='idle';facing=mode==='auto'?'front':mode;for(const [k,u] of Object.entries(sprites[species]))document.querySelector('.qa-hq').style.setProperty('--hq-'+k,'url("'+u+'")');document.querySelectorAll('.pet-room').forEach(x=>x.dataset.roomType=species);paint()}
+const blobCache={};
+function blobSource(s,k){const key=s+'/'+k;if(!blobCache[key]){const raw=atob(sprites[s][k].split(',')[1]);const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));blobCache[key]=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}))}return blobCache[key]}
+window.addEventListener('pagehide',e=>{if(e.persisted)return;for(const u of Object.values(blobCache))URL.revokeObjectURL(u)});
+function selectSpecies(){species=document.querySelector('#species').value;clearTimeout(timer);mood='idle';facing=mode==='auto'?'front':mode;for(const k of Object.keys(sprites[species]))document.querySelector('.qa-hq').style.setProperty('--hq-'+k,'url("'+blobSource(species,k)+'")');document.querySelectorAll('.pet-room').forEach(x=>x.dataset.roomType=species);paint()}
 document.querySelector('#species').onchange=selectSpecies;selectSpecies();
 '''
 page='<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>幼体4種族｜Real-ESRGAN 動作比較 r1</title><style>'+orig_css+'\n'+hq+'\n'+food+ui+'</style>'+body+'<script>'+(root/'pet-illustration.js').read_text()+'\n'+script+'</script>'

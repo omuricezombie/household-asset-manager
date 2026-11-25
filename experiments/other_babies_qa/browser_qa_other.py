@@ -15,7 +15,15 @@ with sync_playwright() as pw:
   return page.locator(which+' '+selector).evaluate('''el=>{let s=getComputedStyle(el);return {image:s.backgroundImage,size:s.backgroundSize,x:s.backgroundPositionX,y:s.backgroundPositionY,name:s.animationName,duration:s.animationDuration,timing:s.animationTimingFunction,w:s.width,h:s.height,opacity:s.opacity,left:s.left,top:s.top,display:s.display}}''')
  def sample(ms):
   page.locator('.pet-character').evaluate_all('(els,ms)=>{for(const el of els)for(const a of el.getAnimations({subtree:true})){a.pause();a.currentTime=ms}}',ms)
+ image_cache={}
  def sha(c):
+  b=re.search(r'blob:[^"\)]+',c['image'])
+  if b:
+   u=b[0]
+   if u not in image_cache:
+    raw=page.evaluate('async u=>{let a=new Uint8Array(await (await fetch(u)).arrayBuffer());let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s)}',u)
+    image_cache[u]=hashlib.sha256(base64.b64decode(raw)).hexdigest()
+   return image_cache[u]
   m=re.search('base64,([A-Za-z0-9+/=]+)',c['image']);return hashlib.sha256(base64.b64decode(m[1])).hexdigest() if m else ''
  for species in ['dino','fantasy','yokai','fairy']:
   page.select_option('#species',species);page.locator('[data-dir=front]').click()
