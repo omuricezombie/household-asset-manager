@@ -65,8 +65,11 @@ RGBの透明領域を最寄り可視色で埋め、同じRRDBNet6・128pxタイ�
 
 比較対象：中間体・成体 HQ 比較 r1（v0.2.49統合前）。
 
-確認URL：https://raw.githack.com/omuricezombie/household-asset-manager/f6b233b20a91923d92a5abfc66fa166b75e2a414/experiments/growth/comparison.html?v=0249hq-r1
-単体HTMLをChromeで開いても同じ内容。家計データの入力や移行は不要。
+確認用ファイル：pet_growth_hq_comparison_r1.html（ダウンロード後、Chromeで開く）。
+オンライン比較配信URLは検証run 45612385079でHTTP 403となったため、配信確認済みのURLとして案内しない。単体HTMLは画像を内包し、file://での起動・オフライン再読込をChromiumで確認済み。家計データの入力や移行は不要。
+GitHub上の比較HTML固定原本：https://github.com/omuricezombie/household-asset-manager/blob/f6b233b20a91923d92a5abfc66fa166b75e2a414/experiments/growth/comparison.html
+
+生成素材/比較HTMLの固定commitはf6b233b...。レポート・配信経路検証の後続commitは別途実験branch HEADに保持。成果の表示品質QAは合格、オンライン配信経路のみ403。
 
 1. 5種族それぞれの中間体・成体で全4方向を見て、顔・色合い・頭身・輪郭に違和感がないか確認。
 2. 本番相当と2倍程度を切り替え、必要に応じてHQ単独や背景変更で輪郭を確認。
