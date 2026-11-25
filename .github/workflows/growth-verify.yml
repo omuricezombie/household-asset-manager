@@ -1,0 +1,47 @@
+name: Growth HQ integrity and Chromium comparison QA
+on:
+  push:
+    branches: ['experiment/hq-growth-20261125']
+    paths: ['.github/workflows/growth-verify.yml', 'experiments/growth/build.py', 'experiments/growth/template.html', 'experiments/growth/verify.py', 'experiments/growth/browser_qa.py']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 45610989096
+          pattern: growth-*
+          path: downloaded
+      - run: |
+          mkdir -p growth-output
+          for s in animal fantasy fairy yokai dino; do mv downloaded/growth-$s growth-output/$s; done
+      - run: python -m pip install pillow numpy playwright && python -m playwright install --with-deps chromium
+      - run: python experiments/growth/build.py && python experiments/growth/verify.py && python experiments/growth/browser_qa.py
+      - name: Preserve verified art on experimental branch only
+        run: |
+          mkdir -p assets/hq-growth
+          cp growth-deliverable/assets/hq-growth/*.webp assets/hq-growth/
+          cp growth-deliverable/pet_growth_hq_comparison_r1.html experiments/growth/comparison.html
+          cp growth-deliverable/integrity-qa.json experiments/growth/integrity-qa.json
+          cp growth-deliverable/browser-qa.json experiments/growth/browser-qa.json
+          cp growth-deliverable/manifest.json experiments/growth/manifest.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/hq-growth experiments/growth/comparison.html experiments/growth/integrity-qa.json experiments/growth/browser-qa.json experiments/growth/manifest.json
+          git commit -m 'Preserve verified 40 growth HQ frames and comparison r1'
+          git push origin HEAD:experiment/hq-growth-20261125
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: growth-comparison-qa
+          path: growth-deliverable/
+          retention-days: 30
