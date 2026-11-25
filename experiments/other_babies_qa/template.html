@@ -1,0 +1,47 @@
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#101824;color:#f4f7fc;font:15px system-ui,sans-serif}
+main{max-width:800px;margin:auto}h1{font-size:20px;margin:0 0 8px}p{line-height:1.55;color:#bcc8d6}button{font:inherit;color:inherit;background:#253348;border:1px solid #53627a;border-radius:9px;padding:10px;cursor:pointer}button.active{background:#386a69}nav{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qa-label{text-align:center;font-weight:700}.pet-room{margin:6px 0 14px;min-height:245px}.pet-stage{min-height:170px}.qa-status{font-size:12px;color:#b8ccc7} .zoom .qa-grid{grid-template-columns:1fr}.zoom .pet-stage{min-height:255px}.zoom .pet-character{scale:1.5;transform-origin:50% 95%}.zoom .pet-room{min-height:320px} @media(max-width:480px){body{padding:10px}.qa-grid{gap:6px}.pet-room{min-width:0}.pet-stage{overflow:visible}.pet-speech{font-size:11px;padding:6px}} 
+
+.qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child{
+ background-image:url("DATA");background-size:300% 100%;background-position:0% 0%;animation:pet247-care-food-hq-frames 1.65s steps(1,end) both!important;
+}
+.qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-animal.pet-art-baby.pet-art-front .pet-care-chew{display:none!important;animation:none!important;}
+@keyframes pet247-care-food-hq-frames{
+ 0%,27%{background-position-x:0%}
+ 29%,49%,69%,89%,100%{background-position-x:50%}
+ 39%,59%,79%{background-position-x:100%}
+}
+@media(prefers-reduced-motion:reduce){.qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child{animation:none!important;background-position-x:50%!important;}}
+.qa-grid{grid-template-columns:repeat(2,minmax(0,1fr))} .only-hq .qa-old,.only-old .qa-hq{display:none}.only-hq .qa-grid,.only-old .qa-grid{grid-template-columns:1fr}.qa-old,.qa-hq{min-width:0} @media(max-width:370px){.qa-grid{grid-template-columns:1fr}} nav button{min-height:42px} .qa-status{margin:4px 0}
+</style><main><h1>動物風幼体｜高画質 動作比較</h1><p>左：本番v0.2.47　右：Real-ESRGAN候補。実際の育成データは変更しません。</p><nav id="dirs"><button data-dir="auto" class="active">自動</button><button data-dir="front">正面</button><button data-dir="left">左</button><button data-dir="back">背面</button><button data-dir="right">右</button></nav><nav id="actions"><button data-mood="idle">待機</button><button data-mood="pet">なでる</button><button data-mood="food">ごはん</button><button data-mood="calm">見守る</button><button id="zoom">拡大表示</button><button id="view">表示：並べる</button></nav><div class="qa-grid"><section class="qa-old"><div class="qa-label">現行</div><div class="pet-room" data-room-type="animal"><div class="pet-stage"></div><p class="pet-speech">のんびり過ごしている。</p></div></section><section class="qa-hq"><div class="qa-label">高画質候補</div><div class="pet-room" data-room-type="animal"><div class="pet-stage"></div><p class="pet-speech">のんびり過ごしている。</p></div></section></div><p class="qa-status" id="status">確認用・保存なし</p></main><script>/* Illustration-first companion renderer. No persistence or household calculations.
+   Unified 60-cut illustrated atlas for 5 species × 3 growth stages × 4 directions.
+   Cells are upsampled from a roughly 162px source, not native 2x artwork. */
+(function(global){
+  'use strict';
+  const HAM=global.HAM=global.HAM||{};
+  const species=['animal','fantasy','fairy','yokai','dino'];
+  const stages=['baby','teen','adult'];
+  const directions=['front','left','right','back'];
+  const moods=['idle','pet','food','play','calm'];
+  const typeMap={animal:'animal',fantasy:'fantasy',fairy:'fairy',yokai:'yokai',dino:'dino'};
+  function draw({type='fantasy',stage='baby',direction='front',mood='idle',affection=0,trait='curious'}={}){
+    if(!species.includes(type))type='fantasy';
+    if(!stages.includes(stage))stage='baby';
+    if(!directions.includes(direction))direction='front';
+    if(!moods.includes(mood))mood='idle';
+    const pos=direction,older=stage!=='baby';
+    const classes=['pet-art','pet-illustration','pet-unified','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
+    // Right is an independent sprite in the unified atlas, not a flipped left view.
+    const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
+    return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
+      '" aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-image pet-part-wing pet-part-wing-left"></span><span class="pet-art-image pet-part-wing pet-part-wing-right"></span><span class="pet-art-image pet-part-ear"></span><span class="pet-art-image pet-part-tail"></span><span class="pet-care-chew" aria-hidden="true"></span><span class="pet-care-food" aria-hidden="true"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
+  }
+  HAM.PetIllustration={draw,types:species.slice(),stages:stages.slice()};
+})(window);
+
+let facing='front',mode='auto',mood='idle',step=0,timer;const sequence=['front','left','back','right','front'];
+const stages=[...document.querySelectorAll('.pet-stage')];
+function paint(restart=false){for(const el of stages){let ch=el.querySelector('.pet-character');if(!ch){el.innerHTML='<span class="pet-character pet-mood-idle" data-type="animal" data-growth="baby" data-facing="front"></span>';ch=el.firstChild}const dir=mood==='idle'?facing:'front';for(const m of ['idle','pet','food','play','calm'])ch.classList.toggle('pet-mood-'+m,m===mood);if(ch.dataset.facing!==dir||!ch.querySelector('.pet-illustration')){ch.dataset.facing=dir;ch.innerHTML=HAM.PetIllustration.draw({type:'animal',stage:'baby',direction:dir,mood})}if(restart){for(const anim of ch.querySelector('.pet-illustration').getAnimations({subtree:true})){if(anim.animationName?.startsWith('pet247-care-')){anim.currentTime=0;anim.play()}}}el.nextElementSibling.textContent={idle:'のんびり過ごしている。',pet:'うれしそうに目を細めた！',food:'おいしそうにもぐもぐしている。',calm:'安心してくつろいでいる。'}[mood]||''}document.querySelector('#status').textContent='向き：'+({front:'正面',left:'左',back:'背面',right:'右'}[mood==='idle'?facing:'front'])+' ／ '+({idle:'待機',pet:'なでる',food:'ごはん',calm:'見守る'}[mood])}
+document.querySelector('#dirs').onclick=e=>{const b=e.target.closest('[data-dir]');if(!b)return;mode=b.dataset.dir;facing=mode==='auto'?'front':mode;step=0;document.querySelectorAll('[data-dir]').forEach(x=>x.classList.toggle('active',x===b));clearTimeout(timer);mood='idle';paint()};
+document.querySelector('#actions').onclick=e=>{const b=e.target.closest('[data-mood]');if(!b)return;clearTimeout(timer);mood=b.dataset.mood;paint(true);if(mood!=='idle')timer=setTimeout(()=>{mood='idle';paint()},mood==='calm'?3200:1700)};
+document.querySelector('#zoom').onclick=()=>{const on=document.body.classList.toggle('zoom');document.querySelector('#zoom').textContent=on?'通常サイズ':'拡大表示'};let view=0;document.querySelector('#view').onclick=()=>{view=(view+1)%3;document.body.classList.toggle('only-hq',view===1);document.body.classList.toggle('only-old',view===2);document.querySelector('#view').textContent=['表示：並べる','表示：高画質のみ','表示：現行のみ'][view]};setInterval(()=>{if(mode==='auto'&&mood==='idle'){step=(step+1)%sequence.length;facing=sequence[step];paint()}},3500);paint();
+</script>

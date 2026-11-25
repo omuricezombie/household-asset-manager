@@ -1,0 +1,42 @@
+name: Four baby species motion and integrity QA
+on:
+  push:
+    branches: ['experiment/sr-model-qa-20261125']
+    paths: ['.github/workflows/sr-motion-qa.yml','experiments/other_babies_qa/**']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 45552969579
+          pattern: sr-*-full
+          path: downloaded
+      - run: |
+          mkdir -p deliverable artifacts
+          for s in dino fantasy yokai fairy; do mv downloaded/sr-$s-full deliverable/$s; done
+      - run: python -m pip install pillow numpy scipy playwright && python -m playwright install --with-deps chromium
+      - run: python experiments/other_babies_qa/verify_other_assets.py
+      - run: python experiments/other_babies_qa/build_comparison.py
+      - run: python experiments/other_babies_qa/browser_qa_other.py
+      - run: python experiments/other_babies_qa/compression_probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sr-other-babies-motion-qa
+          path: |
+            deliverable/
+            artifacts/
+          retention-days: 7
