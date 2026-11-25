@@ -49,7 +49,7 @@ food='''
 .qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-art-front > .pet-art-image:first-child{background-image:var(--hq-food);background-size:300% 100%;background-position:0% 0%;animation:hq-pet247-care-food-frames 1.65s steps(1,end) both!important}
 .qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-care-chew{display:none!important;animation:none!important}
 @keyframes hq-pet247-care-food-frames{0%,27%{background-position-x:0%}29%,49%,69%,89%,100%{background-position-x:50%}39%,59%,79%{background-position-x:100%}}
-@media(prefers-reduced-motion:reduce){.qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-art-image:first-child{animation:none!important;background-position-x:50%!important}}
+@media(prefers-reduced-motion:reduce){.qa-hq .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-art-front > .pet-art-image:first-child{animation:none!important;background-position-x:50%!important}}
 '''
 prev=Path('experiments/other_babies_qa/template.html').read_text()
 ui=prev[prev.index('*{box-sizing'):prev.index('.qa-hq .pet-stage .pet-character.pet-mood-food',prev.index('*{box-sizing'))]
