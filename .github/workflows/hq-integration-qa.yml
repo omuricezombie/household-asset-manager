@@ -1,0 +1,29 @@
+name: Baby HQ integration QA
+on:
+  push:
+    branches: ['experiment/hq-baby-integration-20261125']
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tests/hq_static_qa.py
+      - run: python -m pip install playwright && python -m playwright install --with-deps chromium
+      - run: python tests/hq_browser_qa.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: household-v0248-candidate1-qa
+          path: |
+            AI_QA_0248c1.json
+            hq-baby-manifest.json
+          retention-days: 30

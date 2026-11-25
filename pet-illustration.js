@@ -16,10 +16,12 @@
     if(!moods.includes(mood))mood='idle';
     const pos=direction,older=stage!=='baby';
     const classes=['pet-art','pet-illustration','pet-unified','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
+    if(stage==='baby')classes.push('pet-hq');
+    const hqStyle=stage==='baby'?' style="'+['base','face','motion','food'].map(k=>'--hq-'+k+':url(assets/hq-baby/'+type+'-'+k+'.webp?v=0248c1)').join(';')+';--hq-face-cols:'+(type==='animal'?'500%':'300%')+';--hq-motion-rows:'+(['animal','dino'].includes(type)?'200%':'400%')+';--hq-left-row:'+(['animal','dino'].includes(type)?'0%':'33.333333%')+'"':'';
     // Right is an independent sprite in the unified atlas, not a flipped left view.
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
-      '" aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-image pet-part-wing pet-part-wing-left"></span><span class="pet-art-image pet-part-wing pet-part-wing-right"></span><span class="pet-art-image pet-part-ear"></span><span class="pet-art-image pet-part-tail"></span><span class="pet-care-chew" aria-hidden="true"></span><span class="pet-care-food" aria-hidden="true"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
+      '"'+hqStyle+' aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-image pet-part-wing pet-part-wing-left"></span><span class="pet-art-image pet-part-wing pet-part-wing-right"></span><span class="pet-art-image pet-part-ear"></span><span class="pet-art-image pet-part-tail"></span><span class="pet-care-chew" aria-hidden="true"></span><span class="pet-care-food" aria-hidden="true"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
   }
   HAM.PetIllustration={draw,types:species.slice(),stages:stages.slice()};
 })(window);

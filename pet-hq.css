@@ -1,0 +1,22 @@
+/* v0.2.48 candidate.1: approved byte-identical baby HQ art only. */
+.pet-character .pet-unified.pet-art-baby.pet-hq > .pet-art-image:first-child{
+ background-image:var(--hq-base);background-size:400% 100%;background-position-y:0%;
+}
+.pet-stage .pet-character:is(.pet-mood-idle,.pet-mood-pet,.pet-mood-food,.pet-mood-calm) .pet-unified.pet-art-baby.pet-hq.pet-art-front > .pet-art-image:first-child{
+ background-image:var(--hq-face);background-size:var(--hq-face-cols) 100%;background-position-y:0%;
+ --pet-blink-strip:var(--hq-face);--pet-wing-strip:var(--hq-motion);--pet-yokai-gaze:var(--hq-face);--pet-yokai-tail:var(--hq-motion);
+}
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq:is(.pet-art-animal,.pet-art-dino).pet-art-left > .pet-art-image:first-child,
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq:is(.pet-art-animal,.pet-art-dino).pet-art-right > .pet-art-image:first-child,
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq:is(.pet-art-fantasy,.pet-art-fairy,.pet-art-yokai):is(.pet-art-left,.pet-art-back,.pet-art-right) > .pet-art-image:first-child{
+ background-image:var(--hq-motion);background-size:300% var(--hq-motion-rows);background-position-y:var(--hq-left-row);
+ --pet-wing-strip:var(--hq-motion);--pet-yokai-tail:var(--hq-motion);
+}
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq.pet-art-yokai:is(.pet-art-left,.pet-art-back,.pet-art-right) > .pet-art-image:first-child{background-size:500% 400%}
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq.pet-art-back:is(.pet-art-fantasy,.pet-art-fairy,.pet-art-yokai) > .pet-art-image:first-child{background-position-y:66.66666666666667%}
+.pet-stage .pet-character .pet-unified.pet-art-baby.pet-hq:is(.pet-art-animal,.pet-art-dino,.pet-art-fantasy,.pet-art-fairy,.pet-art-yokai).pet-art-right > .pet-art-image:first-child{background-position-y:100%}
+.pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-yokai.pet-art-baby.pet-hq.pet-art-front > .pet-art-image:first-child{background-image:var(--hq-motion);background-size:500% 400%}
+.pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-hq.pet-art-front > .pet-art-image:first-child{background-image:var(--hq-food);background-size:300% 100%;background-position:0% 0%;animation:pet247-care-food-hq-frames 1.65s steps(1,end) both!important}
+.pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-hq.pet-art-front .pet-care-chew{display:none!important;animation:none!important}
+@keyframes pet247-care-food-hq-frames{0%,27%{background-position-x:0%}29%,49%,69%,89%,100%{background-position-x:50%}39%,59%,79%{background-position-x:100%}}
+@media(prefers-reduced-motion:reduce){.pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-hq.pet-art-front > .pet-art-image:first-child{animation:none!important;background-position-x:50%!important}}

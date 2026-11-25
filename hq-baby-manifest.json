@@ -1,0 +1,82 @@
+{
+  "assets/hq-baby/animal-base.webp": {
+    "bytes": 895812,
+    "sha256": "517fe333a3e10cff0d43536774a9b26d29482ad925eaf2a6965fdec2506cb20f"
+  },
+  "assets/hq-baby/animal-face.webp": {
+    "bytes": 370356,
+    "sha256": "b8038068d0d6d6205d300452c05c9e5743a150e2a796852eeadbfc2d86064ef6"
+  },
+  "assets/hq-baby/animal-motion.webp": {
+    "bytes": 776612,
+    "sha256": "10878d5b30362a76f0d4bc1637e1cc60bb3cf7450509fe4c54f98423c3ac1381"
+  },
+  "assets/hq-baby/animal-food.webp": {
+    "bytes": 267780,
+    "sha256": "92d25d912654b14d47d1727d10991a5a8367d41ea1b44f268973ee7b212a03d3"
+  },
+  "assets/hq-baby/dino-base.webp": {
+    "bytes": 1430340,
+    "sha256": "bcfc6e1d3316334447bad7ca600886bab0ef2d1c887d7436e18f107f713ccfd0"
+  },
+  "assets/hq-baby/dino-face.webp": {
+    "bytes": 412410,
+    "sha256": "a6d13525714ecd4c968030a8491698f02324071ee623853c140e81d0b3c40056"
+  },
+  "assets/hq-baby/dino-motion.webp": {
+    "bytes": 1031906,
+    "sha256": "5fa48830f4122362d84158a2a0a59ac90495894415bdc126e51496ad1973e1ae"
+  },
+  "assets/hq-baby/dino-food.webp": {
+    "bytes": 392586,
+    "sha256": "e42eb334d9ae9ab0a3197e4cba694fd1ab2952334b3189c5cc48503a6cad7309"
+  },
+  "assets/hq-baby/fantasy-base.webp": {
+    "bytes": 1461416,
+    "sha256": "0aebed1ab14ee0d11f2eb669bc7630932197e3f9f84301990ae39d9b81cead26"
+  },
+  "assets/hq-baby/fantasy-face.webp": {
+    "bytes": 813476,
+    "sha256": "94dee423d2458be706471f0de7759077500d958be715576a8fd85c19aaa1ef61"
+  },
+  "assets/hq-baby/fantasy-motion.webp": {
+    "bytes": 2059484,
+    "sha256": "8e467d5f60648e0b6e4e9e3f9737a66d1a50811e54f8a552a23906dee97c2e0d"
+  },
+  "assets/hq-baby/fantasy-food.webp": {
+    "bytes": 429318,
+    "sha256": "28069f9b354c696b8f1a9002b41f056b6e066e4ee03fb242ad636b8301bf288c"
+  },
+  "assets/hq-baby/yokai-base.webp": {
+    "bytes": 1257434,
+    "sha256": "f1338798597fe0735e68733de3da3ef6e48f96c06bc044cb696a434010076797"
+  },
+  "assets/hq-baby/yokai-face.webp": {
+    "bytes": 390046,
+    "sha256": "e2550d84b47be5b1b907bb877a5fa28e6ce652701ed15996cd70ad8dce9f9b3c"
+  },
+  "assets/hq-baby/yokai-motion.webp": {
+    "bytes": 1949220,
+    "sha256": "a9bfc32b74ceb64c0385c0d0c042fbed2729293c63ec4e03283d4f2ce9c01163"
+  },
+  "assets/hq-baby/yokai-food.webp": {
+    "bytes": 353742,
+    "sha256": "45e78e97df8cddf692acad327b37dae2187c493de05c353b872cf394a3119bd9"
+  },
+  "assets/hq-baby/fairy-base.webp": {
+    "bytes": 1633054,
+    "sha256": "707e7160308f3712980c4b25e3b2474d3671acbbee6967fc7204e85fe58881a0"
+  },
+  "assets/hq-baby/fairy-face.webp": {
+    "bytes": 500538,
+    "sha256": "0a260bf1f2c9c782b950b8545a4d663af2d5223a7f4918418c869566faa203d0"
+  },
+  "assets/hq-baby/fairy-motion.webp": {
+    "bytes": 2602472,
+    "sha256": "2faa88feb104a3f7a3e878eeca7d5bf2b39bc2b01876b8c338b98d89bdcb2fc3"
+  },
+  "assets/hq-baby/fairy-food.webp": {
+    "bytes": 476650,
+    "sha256": "e128833a60e9c42cb49fa051b02f082ae3a65d59c1a3fcbdf1beb97856fc7e0a"
+  }
+}
