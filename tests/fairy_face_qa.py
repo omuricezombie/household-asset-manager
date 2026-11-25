@@ -36,7 +36,7 @@ with sync_playwright()as pw:
  b=pw.chromium.launch(args=['--no-sandbox']);p=b.new_page(viewport={'width':390,'height':844},device_scale_factor=2.5);errors=[];p.on('pageerror',lambda e:errors.append(str(e)))
  p.goto(Path('artifacts/pet_brushing_5_babies_v0250c3.html').resolve().as_uri());p.select_option('#species','fairy')
  p.evaluate('s=>{style.textContent=mapUrls(s)}',css_at('8a4245db7ca70d56bcef9e4558237d00f0805192'));p.click('#brushBtn');old=p.evaluate(scan,False);ck('c2 cheek overlap reproduced',old['faceHitFrames']>0)
- p.evaluate('s=>{style.textContent=mapUrls(s)}',current_css);p.click('#brushBtn');new=p.evaluate(scan,False);ck('c3 all visible SVG pixels avoid face for 20ms samples',new['faceHitFrames']==0);ck('c3 two stroke start/end heads touch opaque hair',len(new['contacts'])==4 and all(n>0 for n in new['contacts'].values()))
+ p.evaluate('s=>{style.textContent=mapUrls(s)}',current_css);p.click('#brushBtn');new=p.evaluate(scan,False);print('face scan',json.dumps({'old':old,'new':new}),flush=True);ck('c3 all visible SVG pixels avoid face for 20ms samples',new['faceHitFrames']==0);ck('c3 two stroke start/end heads touch opaque hair',len(new['contacts'])==4 and all(n>0 for n in new['contacts'].values()))
  for t in [442,936,1430,1924]:
   p.click('#brushBtn');p.evaluate('t=>{for(const a of document.querySelector(".pet-illustration").getAnimations({subtree:true})){a.pause();a.currentTime=t}}',t);p.locator('.pet-room').screenshot(path=f'artifacts/fairy-hair-only-{t}.png')
  p.emulate_media(reduced_motion='reduce');p.click('#brushBtn');reduced=p.evaluate(scan,True);ck('reduced pose avoids face',reduced['faceHitFrames']==0);ck('reduced pose on hair',all(n>0 for n in reduced['contacts'].values()))

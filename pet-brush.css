@@ -39,7 +39,7 @@
 }
 
 /* candidate.2: hair, cheek cloth and neck sponge; animal/fantasy retain r1. */
-.pet-character[data-type="fairy"]{--brush-x:118px;--brush-y:26px;--care-width:25px;--care-height:35px;--care-tool:url(assets/pet-care-hairbrush.svg);--care-origin:8px 12px}
+.pet-character[data-type="fairy"]{--brush-x:121px;--brush-y:26px;--care-width:25px;--care-height:35px;--care-tool:url(assets/pet-care-hairbrush.svg);--care-origin:8px 12px}
 .pet-character[data-type="yokai"]{--brush-x:103px;--brush-y:100px;--care-width:22px;--care-height:23px;--care-tool:url(assets/pet-care-cloth.svg);--care-origin:11px 12px}
 .pet-character[data-type="dino"]{--brush-x:109px;--brush-y:86px;--care-width:25px;--care-height:20px;--care-tool:url(assets/pet-care-sponge.svg);--care-origin:12px 10px}
 .pet-stage .pet-character[data-growth="baby"][data-action="brush"][data-type="fairy"] .pet-care-brush{animation-name:brush250-hair}
