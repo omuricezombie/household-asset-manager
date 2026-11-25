@@ -1,0 +1,82 @@
+{
+  "assets/hq-growth/animal-teen.webp": {
+    "bytes": 1580680,
+    "sha256": "fa97aaaee871d2c2e9ce38c913ea4448ddb14f6621726ab5e9644ec924ebe657",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/animal-adult.webp": {
+    "bytes": 1682166,
+    "sha256": "d7c25843f27e1a68a1042e977b20a20302b7cf793e92258b6d6011caf4eb0833",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/fantasy-teen.webp": {
+    "bytes": 1513996,
+    "sha256": "b09ecd90b47edc96a39fceba1d41a600d0c54b197f12dab83e5a598e27a04e2d",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/fantasy-adult.webp": {
+    "bytes": 1611924,
+    "sha256": "7f383404fd50c678b48ab70b936e138c528b72e5f4d8ac5cee3601844e2031c2",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/fairy-teen.webp": {
+    "bytes": 1673176,
+    "sha256": "d31d6bbee9143a5eef79e7c089821079735358ffc8709cf3c470c961f47bee95",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/fairy-adult.webp": {
+    "bytes": 1826836,
+    "sha256": "6577ec124a8a73494bc50ae65e688159ed3c7c8f6d6b3eb74230fa8e5b5fbee5",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/yokai-teen.webp": {
+    "bytes": 1453914,
+    "sha256": "f2327cefadc4f85f8c8d87c35a0ab9e221a5878e64369ea5e95597d12a98867d",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/yokai-adult.webp": {
+    "bytes": 1833840,
+    "sha256": "accffb0ef14e4e42d0b59a04892f80a0b65a06030e07a065d06ab5f8f728b465",
+    "width": 2560,
+    "height": 752,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 32
+  },
+  "assets/hq-growth/dino-teen.webp": {
+    "bytes": 1445018,
+    "sha256": "7d09efc321e32ffbb588d64dd2063de1e3a4ca1f980996e22a53a1e863be7487",
+    "width": 2560,
+    "height": 720,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 0
+  },
+  "assets/hq-growth/dino-adult.webp": {
+    "bytes": 1519124,
+    "sha256": "957b6dc790ba7c77e417e97dd86fb13c9833f38375a67e6707cc9f542f1e3970",
+    "width": 2560,
+    "height": 752,
+    "source_commit": "8727b3444d364315f909294c3d16e5f72bea29a7",
+    "top_padding_hq_px": 32
+  }
+}
