@@ -208,6 +208,8 @@
     if(container&&pet){
       const existing=container.querySelector('.pet-character');
       const stage=petStage(pet);
+      const pettingBaby=stage==='baby'&&mood==='pet';
+      if(pettingBaby)faceStep=0;
       // Keep the node (and its running wander animation) when an action changes mood.
       // Replacing innerHTML restarts the 15s wander at the center on every tap.
       if(existing&&existing.dataset.type===pet.type&&existing.dataset.growth===stage){
@@ -216,12 +218,28 @@
         const bond=affectionTier(pet),trait=petPersonality(pet).id;
         existing.dataset.bond=bond;
         existing.dataset.trait=trait;
-        const art=existing.querySelector('.pet-illustration');
+        let art=existing.querySelector('.pet-illustration');
+        // A care response looks toward the user without replacing the moving parent.
+        if(pettingBaby&&art&&existing.dataset.facing!=='front'){
+          art.outerHTML=HAM.PetIllustration.draw({type:pet.type,stage,direction:'front',mood,affection:pet.affection,trait});
+          existing.dataset.facing='front';
+          art=existing.querySelector('.pet-illustration');
+        }
         if(art)art.dataset.artBond=bond;
       }else container.innerHTML=characterHtml();
     }
     const room=$('petRoom');
     if(room)room.classList.toggle('pet-room-decorated',hasCategoryAward(['日用品','家電']));
+  }
+  function restartBabyPetting(){
+    const art=$('petAvatar')?.querySelector('.pet-character.pet-mood-pet[data-growth="baby"] .pet-illustration');
+    if(!art||!art.getAnimations||prefersReducedMotion())return;
+    // Restart only care animations on repeat taps, never the parent wander.
+    for(const animation of art.getAnimations({subtree:true})){
+      if(String(animation.animationName||'').startsWith('pet247-care-pet-')){
+        animation.currentTime=0;animation.play();
+      }
+    }
   }
   function speak(text){
     const el=$('petSpeech');
@@ -241,10 +259,12 @@
       p.traits[item.type]+=1;
       p.daily.traitsUsed++;
     }
-    p.lastAction=DB.now();mood=item.type;
+    p.lastAction=DB.now();clearTimeout(actionTimer);mood=item.type;
     await persist();
     if(epoch!==dataEpoch)return;
-    paintCharacter();speak(item.reply+(gained?' 愛情度 +'+gained:''));
+    paintCharacter();
+    if(item.type==='pet'&&mood==='pet')restartBabyPetting();
+    speak(item.reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
     actionTimer=setTimeout(()=>{mood='idle';paintCharacter();speak(moodMessage());},1700);
