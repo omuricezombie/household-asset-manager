@@ -1,4 +1,4 @@
-/* v0.2.48 candidate.1: approved byte-identical baby HQ art only. */
+/* v0.2.48: approved byte-identical baby HQ art only. */
 .pet-character .pet-unified.pet-art-baby.pet-hq > .pet-art-image:first-child{
  background-image:var(--hq-base);background-size:400% 100%;background-position-y:0%;
 }
