@@ -208,7 +208,7 @@
     if(container&&pet){
       const existing=container.querySelector('.pet-character');
       const stage=petStage(pet);
-      const caringBaby=stage==='baby'&&(mood==='pet'||mood==='food');
+      const caringBaby=stage==='baby'&&['pet','food','calm'].includes(mood);
       if(caringBaby)faceStep=0;
       // Keep the node (and its running wander animation) when an action changes mood.
       // Replacing innerHTML restarts the 15s wander at the center on every tap.
@@ -232,7 +232,7 @@
     if(room)room.classList.toggle('pet-room-decorated',hasCategoryAward(['日用品','家電']));
   }
   function restartBabyCare(kind){
-    if(!['pet','food'].includes(kind))return;
+    if(!['pet','food','calm'].includes(kind))return;
     const art=$('petAvatar')?.querySelector('.pet-character.pet-mood-'+kind+'[data-growth="baby"] .pet-illustration');
     if(!art||!art.getAnimations||prefersReducedMotion())return;
     // Restart only care animations on repeat taps, never the parent wander.
@@ -268,7 +268,8 @@
     speak(item.reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
-    actionTimer=setTimeout(()=>{mood='idle';paintCharacter();speak(moodMessage());},1700);
+    const duration=mood==='calm'&&petStage()==='baby'?3200:1700;
+    actionTimer=setTimeout(()=>{mood='idle';paintCharacter();speak(moodMessage());},duration);
   }
   // Pointer events cover a tap or a sliding finger gesture on the character.
   // One gesture triggers exactly one "pet" action; dragging does not farm affection.
