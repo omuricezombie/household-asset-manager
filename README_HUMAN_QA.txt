@@ -1,3 +1,15 @@
+v0.2.50-candidate.2 幼体「お手入れ」Human QA待ち
+開発正本candidate、本番main/stable v0.2.49、rollback基点v0.2.49。
+最新候補コード：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+確認ファイル：pet_brushing_5_babies_v0250c2.html（保存なし、Chromeで開く）。
+確認対象：妖精＝髪用ブラシで髪、妖怪＝布で頬、恐竜＝スポンジで頬から首元。
+各種族で道具・当てる位置・2回の動き・反応が自然か確認。
+どれか1種族で途中切替と待機復帰を代表確認。
+動物風/架空の生き物は既存の合格した動きを維持。再確認不要。
+本番データ変更・PWA再インストール・サイトデータ削除不要。
+今回は正式版への昇格、ボール遊び専用動作を実装しない。
+
+--- 以下は過去のQA履歴 ---
 v0.2.50-candidate.1 幼体ブラッシング Human QA待ち
 現行開発正本：candidate。main/stable v0.2.49を維持。rollback基点：v0.2.49。
 確認対象：pet_brushing_5_babies_v0250c1.html（保存なし・単体HTML）。

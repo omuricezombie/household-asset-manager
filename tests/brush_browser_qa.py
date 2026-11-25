@@ -1,7 +1,7 @@
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from PIL import Image,ImageDraw
-import json,threading,http.server,hashlib,base64
+import json,threading,http.server,hashlib,base64,subprocess
 checks=[];errors=[];bad=[]
 def ck(n,v):
  assert v,n
@@ -11,11 +11,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 server=http.server.ThreadingHTTPServer(('127.0.0.1',8766),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
 with sync_playwright() as pw:
  b=pw.chromium.launch(args=['--no-sandbox']);ctx=b.new_context(viewport={'width':390,'height':844},device_scale_factor=2.5);p=ctx.new_page();p.on('pageerror',lambda e:errors.append(str(e)));p.on('response',lambda r:bad.append([r.url,r.status])if r.status>=400 else None)
- p.goto(Path('artifacts/pet_brushing_5_babies_v0250c1.html').resolve().as_uri());p.wait_for_timeout(150)
+ p.goto(Path('artifacts/pet_brushing_5_babies_v0250c2.html').resolve().as_uri());p.wait_for_timeout(150)
+ ck('care action label',p.locator('#brushBtn').inner_text()=='お手入れ')
  ck('all offline assets decode',p.evaluate('''async()=>{for(const u of Object.values(urls)){let i=new Image();i.src=u;await i.decode()}return true}'''))
  for s in ['fantasy','fairy','yokai','dino','animal']:
   p.select_option('#species',s);p.click('#brushBtn');p.wait_for_timeout(50)
   ck(s+' brush displayed',p.locator('.pet-care-brush').evaluate('e=>getComputedStyle(e).display')=='block')
+  expected_tool={'fairy':'pet-care-hairbrush.svg','yokai':'pet-care-cloth.svg','dino':'pet-care-sponge.svg'}.get(s,'pet-care-brush.svg')
+  ck(s+' correct tool',p.locator('.pet-care-brush').evaluate('(e,url)=>getComputedStyle(e).backgroundImage.includes(url)',p.evaluate('k=>urls[k]','assets/'+expected_tool)))
+  ck(s+' correct path',p.locator('.pet-care-brush').evaluate('e=>getComputedStyle(e).animationName')=={'fairy':'brush250-hair','yokai':'brush250-cloth','dino':'brush250-sponge'}.get(s,'brush250-stroke'))
+  ck(s+' correct reply',p.locator('#petSpeech').inner_text()==p.evaluate('s=>HAM.PetIllustration.careReply(s)',s))
   ck(s+' unchanged 160x180',p.locator('.pet-illustration').evaluate('e=>e.offsetWidth===160&&e.offsetHeight===180'))
   ck(s+' wander paused',p.locator('.pet-character').evaluate('e=>getComputedStyle(e).animationPlayState')=='paused')
   for t in [430,870,1450,1870,2260]:
@@ -37,6 +42,8 @@ with sync_playwright() as pw:
  for s in ['animal','fantasy','fairy','yokai','dino']:
   seed(s);p.wait_for_timeout(80);p.click('[data-pet-action=brush]');p.wait_for_timeout(60)
   ck('app '+s+' dedicated brush',p.locator('#petAvatar .pet-character').get_attribute('data-action')=='brush')
+  ck('app '+s+' care button label',p.locator('[data-pet-action=brush]').inner_text().find('お手入れ')>=0)
+  ck('app '+s+' reply',p.locator('#petSpeech').inner_text().startswith(p.evaluate('s=>HAM.PetIllustration.careReply(s)',s)))
   ck('app '+s+' prop visible',p.locator('#petAvatar .pet-care-brush').evaluate('e=>getComputedStyle(e).display')=='block')
   saved=p.evaluate("async()=>(await HAM.DB.get('settings','petGameStateV1')).value")
   ck('app '+s+' gain2 cap retained',saved['activePet']['affection']==32 and saved['activePet']['daily']['used']==2)
@@ -50,17 +57,17 @@ with sync_playwright() as pw:
  seed('dino',450);p.wait_for_timeout(50);p.click('[data-pet-action=brush]');p.wait_for_timeout(50);ck('teen unchanged shared pet reaction',p.locator('#petAvatar .pet-character').get_attribute('data-action')=='' and p.locator('#petAvatar .pet-character').get_attribute('data-growth')=='teen')
  seed('fairy');p.wait_for_timeout(50);p.click('[data-pet-action=brush]');p.click('[data-nav=home]');p.click('[data-nav=pet]');p.wait_for_timeout(2850);ck('navigation returns idle',p.locator('#petAvatar .pet-mood-idle').count()==1)
  p.evaluate('async()=>{await navigator.serviceWorker.ready}');p.wait_for_function('navigator.serviceWorker.controller')
- cache=p.evaluate("async()=>{let c=await caches.open('household-asset-manager-v0.2.50-candidate.1');return(await c.keys()).map(x=>x.url)}")
- ck('SW brush CSS and SVG cached',all(any(n in u for u in cache)for n in ['pet-brush.css?v=0250c1','pet-care-brush.svg']))
+ cache=p.evaluate("async()=>{let c=await caches.open('household-asset-manager-v0.2.50-candidate.2');return(await c.keys()).map(x=>x.url)}")
+ ck('SW brush CSS and SVG cached',all(any(n in u for u in cache)for n in ['pet-brush.css?v=0250c2','pet-care-brush.svg','pet-care-hairbrush.svg','pet-care-cloth.svg','pet-care-sponge.svg']))
  ck('all30 HQ cached',sum('/hq-baby/'in u or'/hq-growth/'in u for u in cache)==30)
- ck('app version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.50-candidate.1')
+ ck('app version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.50-candidate.2')
  ck('no JS errors',not errors);ck('no missing requests',not bad)
  b.close()
 server.shutdown()
 # Internal contact sheet for visual review, not a deliverable.
-canvas=Image.new('RGB',(1000,850),'#17212a');d=ImageDraw.Draw(canvas)
+canvas=Image.new('RGB',(1500,1250),'#17212a');d=ImageDraw.Draw(canvas)
 for row,s in enumerate(['animal','fantasy','fairy','yokai','dino']):
  for col,t in enumerate([430,870,1450,1870,2260]):
-  im=Image.open(f'artifacts/brush-{s}-{t}.png').convert('RGB');im.thumbnail((198,145));x=col*200;y=row*170;canvas.paste(im,(x,y+20));d.text((x+4,y+3),f'{s} {t}ms',fill='white')
+  im=Image.open(f'artifacts/brush-{s}-{t}.png').convert('RGB');im.thumbnail((298,225));x=col*300;y=row*250;canvas.paste(im,(x,y+20));d.text((x+4,y+3),f'{s} {t}ms',fill='white')
 canvas.save('artifacts/brush-contact-internal.png')
-Path('AI_QA_0250c1_brush.json').write_text(json.dumps({'count':len(checks),'checks':checks,'errors':errors,'bad':bad},indent=2));print('BRUSH PASS',len(checks))
+Path('AI_QA_0250c2_brush.json').write_text(json.dumps({'count':len(checks),'checks':checks,'errors':errors,'bad':bad},indent=2));print('BRUSH PASS',len(checks))

@@ -12,7 +12,7 @@
     {id:'pet',label:'なでる',icon:'♡',level:1,type:'pet',gain:2,reply:'うれしそうに目を細めた！'},
     {id:'feed',label:'ごはん',icon:'●',level:1,type:'food',gain:2,reply:'おいしそうにもぐもぐしている。'},
     {id:'rest',label:'見守る',icon:'☾',level:1,type:'calm',gain:1,reply:'安心したように、のんびりしている。'},
-    {id:'brush',label:'ブラッシング',icon:'✧',level:2,type:'pet',gain:2,reply:'毛並みがふわふわになった！'},
+    {id:'brush',label:'お手入れ',icon:'✧',level:2,type:'pet',gain:2,reply:'きれいにお手入れできた！'},
     {id:'ball',label:'ボール',icon:'◯',level:2,type:'play',gain:3,reply:'ボールを追いかけて跳ね回った！'},
     {id:'snack',label:'おやつ',icon:'✿',level:3,type:'food',gain:2,reply:'おやつに大喜び！'},
     {id:'dance',label:'ダンス',icon:'♪',level:4,type:'play',gain:3,reply:'くるくる踊ってみせてくれた！'},
@@ -273,7 +273,8 @@
     if(epoch!==dataEpoch||sequence!==actionSequence)return;
     paintCharacter();
     if(item.type===mood)restartBabyCare(item.type);
-    speak(item.reply+(gained?' 愛情度 +'+gained:''));
+    const reply=visualAction==='brush'?HAM.PetIllustration.careReply(p.type):item.reply;
+    speak(reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
     const duration=visualAction==='brush'?2700:mood==='calm'&&petStage()==='baby'?3200:1700;

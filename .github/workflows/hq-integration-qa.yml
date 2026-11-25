@@ -1,4 +1,4 @@
-name: Baby brushing and HQ regression QA
+name: Baby care and HQ regression QA
 on:
   push:
     branches: ['candidate', 'main']
@@ -26,8 +26,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: brushing-v0250c1-qa
+          name: brushing-v0250c2-qa
           path: |
-            AI_QA_0250c1*.json
+            AI_QA_0250c2*.json
             artifacts/brush-contact-internal.png
+            artifacts/brush-fairy-*.png
+            artifacts/brush-yokai-*.png
+            artifacts/brush-dino-*.png
           retention-days: 30
