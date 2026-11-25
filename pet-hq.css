@@ -21,7 +21,7 @@
 @keyframes pet247-care-food-hq-frames{0%,27%{background-position-x:0%}29%,49%,69%,89%,100%{background-position-x:50%}39%,59%,79%{background-position-x:100%}}
 @media(prefers-reduced-motion:reduce){.pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-hq.pet-art-front > .pet-art-image:first-child{animation:none!important;background-position-x:50%!important}}
 
-/* v0.2.49-candidate.1: approved teen/adult basic art; no new animations. */
+/* v0.2.49: approved teen/adult basic art; no new animations. */
 .pet-character .pet-unified.pet-hq-growth > .pet-art-image:first-child{
  background-image:var(--hq-growth);background-size:400% 100%;background-position-y:0%;
 }

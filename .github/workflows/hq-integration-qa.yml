@@ -22,11 +22,11 @@ jobs:
       - run: python tests/hq_browser_qa.py
       - name: Package candidate code and QA
         run: |
-          git archive --format=zip --prefix=household-asset-manager/ --output=artifacts/household_v0_2_49_candidate_1.zip HEAD
+          git archive --format=zip --prefix=household-asset-manager/ --output=artifacts/household_v0_2_49_stable.zip HEAD
           python - <<'PY'
           import zipfile
-          with zipfile.ZipFile('artifacts/household_v0_2_49_candidate_1.zip','a',zipfile.ZIP_DEFLATED) as z:
-            for name in ['AI_QA_0249c1.json','AI_QA_0249c1_static.json']:
+          with zipfile.ZipFile('artifacts/household_v0_2_49_stable.zip','a',zipfile.ZIP_DEFLATED) as z:
+            for name in ['AI_QA_0249.json','AI_QA_0249_static.json']:
               z.write(name,'household-asset-manager/'+name)
           PY
       - name: Check candidate delivery hosts
@@ -39,7 +39,7 @@ jobs:
           sha=os.environ['GITHUB_SHA'];base='omuricezombie/household-asset-manager/'+sha+'/'
           results=[]
           for host in ['raw.githack.com','rawcdn.githack.com']:
-            url='https://'+host+'/'+base+'hq-integration-qa.html?v=0249c1'
+            url='https://'+host+'/'+base+'hq-integration-qa.html?v=0249'
             try:
               r=urllib.request.urlopen(url,timeout=20);b=r.read();ok=r.status==200 and 'text/html' in r.headers.get('Content-Type','') and b==Path('hq-integration-qa.html').read_bytes()
               results.append({'url':url,'status':r.status,'exact_html':ok})
@@ -49,9 +49,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: household-v0249c1-growth-qa
+          name: household-v0249-growth-qa
           path: |
-            AI_QA_0249c1*.json
+            AI_QA_0249*.json
             hq-growth-manifest.json
             hq-baby-manifest.json
             artifacts/
