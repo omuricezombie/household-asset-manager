@@ -1,0 +1,69 @@
+name: Repair adult dino and yokai upper clipping r2
+on:
+  push:
+    branches: ['experiment/hq-growth-20261125']
+    paths: ['.github/workflows/growth-repair-r2.yml', 'experiments/growth/r2/upscale_repair.py', 'experiments/growth/r2/build_repaired.py', 'experiments/growth/r2/verify_repaired.py', 'experiments/growth/r2/browser_qa_repaired.py', 'experiments/growth/r2/*-source.webp']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  repair:
+    strategy:
+      fail-fast: false
+      matrix:
+        species: [dino, yokai]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pillow numpy scipy && python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python experiments/growth/r2/upscale_repair.py --species ${{ matrix.species }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: growth-repair-r2-${{ matrix.species }}
+          path: growth-r2-output/${{ matrix.species }}/
+          retention-days: 30
+  verify:
+    needs: repair
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: growth-repair-r2-*
+          path: downloaded
+      - run: |
+          mkdir -p growth-r2-output
+          for s in dino yokai; do mv downloaded/growth-repair-r2-$s growth-r2-output/$s; done
+      - run: python -m pip install pillow numpy playwright && python -m playwright install --with-deps chromium
+      - run: python experiments/growth/r2/build_repaired.py && python experiments/growth/r2/verify_repaired.py && python experiments/growth/r2/browser_qa_repaired.py
+      - name: Preserve r2 on experimental branch
+        run: |
+          cp growth-r2-output/dino/dino-adult.webp assets/hq-growth/dino-adult.webp
+          cp growth-r2-output/yokai/yokai-adult.webp assets/hq-growth/yokai-adult.webp
+          cp growth-r2-deliverable/pet_growth_hq_comparison_r2.html experiments/growth/r2/comparison.html
+          cp growth-r2-deliverable/manifest.json experiments/growth/r2/manifest.json
+          cp growth-r2-deliverable/integrity-qa.json experiments/growth/r2/integrity-qa.json
+          cp growth-r2-deliverable/browser-qa.json experiments/growth/r2/browser-qa.json
+          cp growth-r2-output/dino/qa.json experiments/growth/r2/dino-inference-qa.json
+          cp growth-r2-output/yokai/qa.json experiments/growth/r2/yokai-inference-qa.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/hq-growth/dino-adult.webp assets/hq-growth/yokai-adult.webp experiments/growth/r2/comparison.html experiments/growth/r2/manifest.json experiments/growth/r2/integrity-qa.json experiments/growth/r2/browser-qa.json experiments/growth/r2/*-inference-qa.json
+          git commit -m 'Restore clipped adult spikes and halos from pre-atlas original; r2 QA'
+          git push origin HEAD:experiment/hq-growth-20261125
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: growth-repair-r2-comparison-qa
+          path: growth-r2-deliverable/
+          retention-days: 30

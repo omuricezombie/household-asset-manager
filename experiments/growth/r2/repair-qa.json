@@ -1,0 +1,103 @@
+{
+  "pre_atlas_sha256": "4ca2cee7375c1f289bd04b5d537029050704fd261ba6909bf4eb25dccd373816",
+  "atlas_sha256": "5c82c1a5ec5d671daaea600ea1ff6d114e0e7e121f8c31748148850289f2f0e6",
+  "frames": [
+    {
+      "species": "yokai",
+      "direction": 0,
+      "source_roi_bbox": [
+        97,
+        35,
+        221,
+        101
+      ],
+      "changed_pixels": 5953,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "yokai",
+      "direction": 1,
+      "source_roi_bbox": [
+        90,
+        25,
+        212,
+        101
+      ],
+      "changed_pixels": 6764,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "yokai",
+      "direction": 2,
+      "source_roi_bbox": [
+        105,
+        52,
+        216,
+        101
+      ],
+      "changed_pixels": 4339,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "yokai",
+      "direction": 3,
+      "source_roi_bbox": [
+        99,
+        25,
+        235,
+        101
+      ],
+      "changed_pixels": 6888,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "dino",
+      "direction": 0,
+      "source_roi_bbox": [
+        90,
+        16,
+        235,
+        101
+      ],
+      "changed_pixels": 7787,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "dino",
+      "direction": 1,
+      "source_roi_bbox": [
+        90,
+        39,
+        201,
+        101
+      ],
+      "changed_pixels": 4368,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "dino",
+      "direction": 2,
+      "source_roi_bbox": [
+        90,
+        21,
+        235,
+        101
+      ],
+      "changed_pixels": 7310,
+      "outside_roi_identical": true
+    },
+    {
+      "species": "dino",
+      "direction": 3,
+      "source_roi_bbox": [
+        120,
+        34,
+        235,
+        101
+      ],
+      "changed_pixels": 5032,
+      "outside_roi_identical": true
+    }
+  ],
+  "note": "Only original-image recovery of clipped halo/spike; original atlas remains unchanged."
+}
