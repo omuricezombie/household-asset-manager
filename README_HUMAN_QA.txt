@@ -1,3 +1,11 @@
+v0.2.50-candidate.3 妖精の髪ブラシ位置修正 Human QA待ち
+確認ファイル：pet_brushing_5_babies_v0250c3.html（保存なし、Chromeで開く）。
+最新candidate：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+妖精だけ確認：ブラシが顔・頬に触れず、上部の横髪だけを2回とかすか。
+他4種族はユーザーHuman QA合格。再確認不要。
+main/stable/rollback基点はv0.2.49維持。正式版昇格・ボール遊び追加なし。
+
+--- 以下は過去のQA履歴 ---
 v0.2.50-candidate.2 幼体「お手入れ」Human QA待ち
 開発正本candidate、本番main/stable v0.2.49、rollback基点v0.2.49。
 最新候補コード：https://github.com/omuricezombie/household-asset-manager/tree/candidate

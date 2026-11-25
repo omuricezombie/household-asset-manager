@@ -23,14 +23,16 @@ jobs:
       - run: python tests/hq_browser_qa.py
       - run: python tests/build_brush_standalone.py
       - run: python tests/brush_browser_qa.py
+      - run: python tests/fairy_face_qa.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: brushing-v0250c2-qa
+          name: brushing-v0250c3-qa
           path: |
-            AI_QA_0250c2*.json
+            AI_QA_0250c3*.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
+            artifacts/fairy-hair-only-*.png
             artifacts/brush-yokai-*.png
             artifacts/brush-dino-*.png
           retention-days: 30
