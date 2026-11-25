@@ -1,9 +1,10 @@
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 import json,re,base64,hashlib,time
-out=Path('deliverable');checks=[]
+out=Path('deliverable');checks=[];failures=[]
 def ck(n,b):
- if not b:raise AssertionError(n)
+ if not b:
+  failures.append(n);print('FAIL',n,flush=True)
  checks.append(n)
 with sync_playwright() as pw:
  browser=pw.chromium.launch(args=['--no-sandbox'])
@@ -29,7 +30,8 @@ with sync_playwright() as pw:
    # Every animated phase keeps existing position/timing, with intended atlas packing changes only.
    for ms in [0,100,260,340,420,510,720,850,1050,1260,1400,1700,2000,2500]:
     sample(ms);h=css('.qa-hq');o=css('.qa-old');ck(f'{species}/{direction}/{ms}/x',h['x']==o['x'])
-    ck(f'{species}/{direction}/{ms}/image',sha(h) in [hashes['face'],hashes['motion'],hashes['base']])
+    ck(f'{species}/{direction}/{ms}/image',sha(h) in [hashes['face'],hashes['motion'],hashes['base']]);
+    if sha(h) not in hashes.values():print('IMAGE_DIAGNOSTIC',species,direction,ms,h['image'][:60],sha(h),h['name'],flush=True)
     if species=='fairy' and direction=='front' and sha(h)==hashes['face']:ck(f'fairy/no-half/{ms}',h['x']!='50%')
   for mood in ['pet','food','calm']:
    page.locator('[data-dir=left]').click();page.locator('[data-mood='+mood+']').click();sample(0)
@@ -59,6 +61,6 @@ with sync_playwright() as pw:
  html=(out/'pet_other_babies_hq_motion_qa.html').read_text();urls=list(set(re.findall(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+',html)))
  decoded=page.evaluate('''async urls=>{let t=performance.now();let a=await Promise.all(urls.map(async u=>{let im=new Image();im.src=u;await im.decode();return [im.naturalWidth,im.naturalHeight]}));return {ms:performance.now()-t,sizes:a}}''',urls)
  ck('all images decode',len(decoded['sizes'])==len(urls));ck('no JS errors',not errors);ck('no network',not external)
- (out/'browser_qa.json').write_text(json.dumps({'count':len(checks),'checks':checks,'decoded':decoded,'errors':errors,'network':external},indent=2))
+ (out/'browser_qa.json').write_text(json.dumps({'count':len(checks),'checks':checks,'failures':failures,'decoded':decoded,'errors':errors,'network':external},indent=2))
  browser.close()
-print('PASS',len(checks))
+print('checks',len(checks),'failures',len(failures));assert not failures,failures
