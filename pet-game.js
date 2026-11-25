@@ -229,7 +229,11 @@
       }else container.innerHTML=characterHtml();
     }
     const room=$('petRoom');
-    if(room)room.classList.toggle('pet-room-decorated',hasCategoryAward(['日用品','家電']));
+    if(room){
+      // Theme is derived from the existing companion type, not persisted.
+      room.dataset.roomType=pet&&PET_TYPES.some(t=>t.id===pet.type)?pet.type:'';
+      room.classList.toggle('pet-room-decorated',hasCategoryAward(['日用品','家電']));
+    }
   }
   function restartBabyCare(kind){
     if(!['pet','food','calm'].includes(kind))return;
