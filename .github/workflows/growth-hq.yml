@@ -1,0 +1,30 @@
+name: Growth basic art Real-ESRGAN comparison
+on:
+  push:
+    branches: ['experiment/hq-growth-20261125']
+    paths: ['experiments/growth/upscale.py', '.github/workflows/growth-hq.yml']
+permissions:
+  contents: read
+jobs:
+  upscale:
+    strategy:
+      fail-fast: false
+      matrix:
+        species: [animal, fantasy, fairy, yokai, dino]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'numpy<3' pillow scipy
+      - run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python experiments/growth/upscale.py --species ${{ matrix.species }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: growth-${{ matrix.species }}
+          path: growth-output/${{ matrix.species }}/
+          retention-days: 30
