@@ -1,0 +1,31 @@
+name: Isolated sprite super-resolution QA
+on:
+  push:
+    branches: ['experiment/sr-model-qa-20261125']
+    paths: ['.github/workflows/sr-qa.yml','experiments/sr_qa.py']
+permissions:
+  contents: read
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [fsrcnn, realesrgan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'numpy<3' pillow scipy opencv-contrib-python-headless
+      - if: matrix.model == 'realesrgan'
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python experiments/sr_qa.py --model ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sr-qa-${{ matrix.model }}
+          path: sr-qa-${{ matrix.model }}/
+          retention-days: 7
