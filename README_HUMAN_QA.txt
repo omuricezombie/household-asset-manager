@@ -1,3 +1,15 @@
+v0.2.50-candidate.1 幼体ブラッシング Human QA待ち
+現行開発正本：candidate。main/stable v0.2.49を維持。rollback基点：v0.2.49。
+確認対象：pet_brushing_5_babies_v0250c1.html（保存なし・単体HTML）。
+最新版コード：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+本番PWAは今回のcandidateを配信していない。確認用HTMLをChromeで開く。
+架空・妖精・妖怪・恐竜：ブラシの出現/2回の動き/反応/待機復帰/他操作への切替が自然か確認。
+妖怪は閉眼せず、既存しっぽの反応が仕様。妖精は半目なし。
+動物風：合格済みr1の回帰代表1回だけ。
+本番データ・サイトデータ削除・PWA再インストールは不要。
+この作業では正式版への昇格、ボール遊び専用動作の実装は行わない。
+
+--- 以下は過去のQA履歴 ---
 v0.2.49 正式版準備
 比較r2・統合版candidate.1の表示Human QA合格（2026-11-26）。
 合格範囲：恐竜/妖怪成体4方向の上部/位置/大きさ、および中間体切り替え表示。

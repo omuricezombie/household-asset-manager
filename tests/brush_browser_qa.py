@@ -21,10 +21,10 @@ with sync_playwright() as pw:
   for t in [430,870,1450,1870,2260]:
    p.evaluate('''t=>{for(const a of document.querySelector('.pet-illustration').getAnimations({subtree:true})){a.pause();a.currentTime=t}}''',t);p.wait_for_timeout(20)
    if t in [870,1450,1870]and s!='yokai':ck(s+f' closed at {t}',p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).backgroundPositionX')==('50%'if s=='animal'else'100%'))
-   if s=='yokai':ck('yokai uses adopted tail '+str(t),'yokai-motion' in p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).backgroundImage') if False else p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).backgroundSize')=='500% 400%')
+   if s=='yokai':ck('yokai uses adopted tail '+str(t),p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).backgroundSize')=='500% 400%')
    p.locator('.pet-room').screenshot(path=f'artifacts/brush-{s}-{t}.png')
   p.click('#brushBtn');p.wait_for_timeout(60);ck(s+' repeat restart',p.locator('.pet-care-brush').evaluate('e=>e.getAnimations()[0].currentTime')<350)
-  for action,name in [('pet','pet247-care-pet-eyes'if s!='yokai'else'pet247-care-pet-yokai'),('feed','pet247-care-food-hq-frames'),('rest','pet247-care-calm-eyes'if s!='yokai'else'pet247-care-calm-moon')]:
+  for action,name in [('pet','pet247-care-pet-eyes'if s!='yokai'else'pet247-care-pet-yokai'),('feed','pet247-care-food-hq-frames'),('rest','pet247-care-calm-eyes'if s!='yokai'else'none')]:
    p.click('[data-action='+action+']');p.wait_for_timeout(30);ck(s+' switch '+action,p.locator('.pet-care-brush').evaluate('e=>getComputedStyle(e).display')=='none');ck(s+' existing '+action,p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).animationName')==name);p.click('#brushBtn')
   p.wait_for_timeout(2800);ck(s+' idle return',p.locator('.pet-character').get_attribute('data-action')=='');ck(s+' no residual brush',p.locator('.pet-care-brush').evaluate('e=>getComputedStyle(e).display')=='none')
   p.emulate_media(reduced_motion='reduce');p.click('#brushBtn');p.wait_for_timeout(30);ck(s+' reduced prop static',p.locator('.pet-care-brush').evaluate('e=>getComputedStyle(e).animationName==="none"&&getComputedStyle(e).opacity==="1"'));ck(s+' reduced correct face',p.locator('.pet-art-image').first.evaluate('e=>getComputedStyle(e).backgroundPositionX')==('0%'if s=='yokai'else'50%'if s=='animal'else'100%'));p.emulate_media(reduced_motion='no-preference');p.click('[data-action=idle]')

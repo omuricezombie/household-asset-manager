@@ -17,6 +17,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python tests/hq_static_qa.py
+      - run: python tests/brush_static_qa.py
       - run: python tests/build_growth_standalone.py
       - run: python -m pip install playwright pillow && python -m playwright install --with-deps chromium
       - run: python tests/hq_browser_qa.py
