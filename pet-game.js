@@ -25,6 +25,7 @@
   let state=null, navigate=null, current='home', mood='idle', redrawBusy=false, rerender=false;
   let visitTimer=null, lastVisit=0, actionTimer=null, facingTimer=null, faceStep=0, saveChain=Promise.resolve(), initialized=false;
   let dataReplacing=false, dataEpoch=0;
+  let homePosition=null;
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const thisDay=()=>DB.ymd();
@@ -446,7 +447,7 @@
     stopFacing();
     if(dataReplacing||!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked')||prefersReducedMotion())return;
     facingTimer=setInterval(()=>{
-      if(mood!=='idle'||prefersReducedMotion())return;
+      if(mood!=='idle'||prefersReducedMotion()||document.querySelector('#petVisitor.pet-home-held'))return;
       faceStep=(faceStep+1)%FACING.length;
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
@@ -524,6 +525,73 @@
       if(rerender){rerender=false;void render();}
     }
   }
+  // Home placement is session-local UI state, never part of a saved companion.
+  function clampHomePosition(el,x,y){
+    const width=document.documentElement.clientWidth||global.innerWidth;
+    const height=document.documentElement.clientHeight||global.innerHeight;
+    const nav=document.querySelector('.bottom-nav');
+    const navTop=nav?nav.getBoundingClientRect().top:height;
+    const bottom=navTop>0&&navTop<height?navTop:height;
+    const w=el.offsetWidth,h=el.offsetHeight;
+    if(!w||!h)return null;
+    // Reserve the sprite's overhang and normal idle steps as well as the button box.
+    const minX=Math.min(24,Math.max(0,width-w)),minY=Math.min(16,Math.max(0,bottom-h));
+    const maxX=Math.max(minX,width-w-16),maxY=Math.max(minY,bottom-h-16);
+    return {x:Math.max(minX,Math.min(maxX,x)),y:Math.max(minY,Math.min(maxY,y))};
+  }
+  function applyHomePosition(el,x,y){
+    const p=clampHomePosition(el,x,y);
+    if(!p)return;
+    homePosition=p;
+    el.style.left=p.x+'px';el.style.top=p.y+'px';
+    el.style.right='auto';el.style.bottom='auto';
+  }
+  function restoreHomePosition(){
+    const el=$('petVisitor');
+    if(homePosition&&el&&el.classList.contains('pet-home-companion'))
+      applyHomePosition(el,homePosition.x,homePosition.y);
+  }
+  function bindHomeDrag(visitor){
+    let gesture=null,suppressClick=false;
+    visitor.addEventListener('pointerdown',e=>{
+      if(gesture||e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
+      suppressClick=false;
+      const r=visitor.getBoundingClientRect();
+      gesture={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,dragged:false};
+      visitor.classList.add('pet-home-held');
+      try{visitor.setPointerCapture(e.pointerId);}catch(err){/* implicit capture may still apply */}
+    });
+    visitor.addEventListener('pointermove',e=>{
+      if(!gesture||gesture.id!==e.pointerId)return;
+      const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
+      if(!gesture.dragged&&Math.hypot(dx,dy)<8)return;
+      gesture.dragged=true;suppressClick=true;
+      if(e.cancelable)e.preventDefault();
+      applyHomePosition(visitor,gesture.left+dx,gesture.top+dy);
+    });
+    const finish=e=>{
+      if(!gesture||gesture.id!==e.pointerId)return;
+      if(e.type==='pointerup'){
+        const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
+        if(gesture.dragged||Math.hypot(dx,dy)>=8){
+          suppressClick=true;
+          applyHomePosition(visitor,gesture.left+dx,gesture.top+dy);
+        }
+      }else suppressClick=true;
+      gesture=null;
+      visitor.classList.remove('pet-home-held');
+      try{if(visitor.hasPointerCapture(e.pointerId))visitor.releasePointerCapture(e.pointerId);}catch(err){}
+    };
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])visitor.addEventListener(type,finish);
+    visitor.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' ')suppressClick=false;
+    });
+    visitor.addEventListener('click',e=>{
+      if(!suppressClick)return;
+      suppressClick=false;e.preventDefault();e.stopImmediatePropagation();
+    },true);
+    visitor.addEventListener('contextmenu',e=>e.preventDefault());
+  }
   function hideVisitor(){
     if(visitTimer){clearTimeout(visitTimer);visitTimer=null;}
     const el=$('petVisitor');if(el)el.remove();
@@ -540,10 +608,11 @@
     visitor.type='button';visitor.id='petVisitor';
     visitor.className='pet-visitor '+(homeCompanion?'pet-home-companion':'pet-guest-companion');
     visitor.setAttribute('aria-label','相棒の部屋へ移動');
-    visitor.setAttribute('title','相棒の部屋へ');
+    visitor.setAttribute('title',homeCompanion?'タップで相棒の部屋へ・ドラッグで移動':'相棒の部屋へ');
     visitor.innerHTML=characterHtml(true);
     visitor.onclick=()=>{hideVisitor();if(navigate)void navigate('pet');};
     document.body.appendChild(visitor);
+    if(homeCompanion){bindHomeDrag(visitor);restoreHomePosition();}
     if(!homeCompanion)visitTimer=setTimeout(hideVisitor,6500);
   }
   function onScreen(name){
@@ -583,6 +652,7 @@
     if($('petRestart'))$('petRestart').onclick=()=>void restartPet();
     if($('petArchive'))$('petArchive').onclick=()=>void archivePet();
     document.addEventListener('visibilitychange',()=>setFacingTimer());
+    global.addEventListener('resize',restoreHomePosition);
     // Defaults are intentionally OFF; no extra persistent data is written until enabled.
   }
   HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,flushPendingSave,replaceStoredData,
