@@ -315,13 +315,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-art-image{position:absolute;inset:0;background-repeat:no-repeat;background-color:transparent}
 .pet-art-baby:not(.pet-art-yokai) .pet-art-image{
-  background-image:url("./assets/pet-concept-atlas.webp?v=0251c1");background-size:200% 400%;
+  background-image:url("./assets/pet-concept-atlas.webp?v=0251c2");background-size:200% 400%;
 }
 .pet-art-baby.pet-art-yokai .pet-art-image{
-  background-image:url("./assets/pet-yokai-concept.webp?v=0251c1");background-size:200% 100%;
+  background-image:url("./assets/pet-yokai-concept.webp?v=0251c2");background-size:200% 100%;
 }
 .pet-art-growth .pet-art-image{
-  background-image:url("./assets/pet-growth-atlas.webp?v=0251c1");background-size:400% 500%;
+  background-image:url("./assets/pet-growth-atlas.webp?v=0251c2");background-size:400% 500%;
 }
 .pet-art-front.pet-art-baby .pet-art-image{background-position-x:0%}
 .pet-art-side.pet-art-baby .pet-art-image{background-position-x:100%}
@@ -425,7 +425,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.16 rear view sprites: 3 stage columns by 5 species rows, 320x360 pixels per cell. */
 .pet-character .pet-art-back .pet-art-image{
-  background-image:url("./assets/pet-rear-atlas.webp?v=0251c1");
+  background-image:url("./assets/pet-rear-atlas.webp?v=0251c2");
   background-size:300% 500%;background-repeat:no-repeat;
 }
 .pet-art-back.pet-art-baby .pet-art-image{background-position-x:0%}
@@ -453,7 +453,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 /* candidate.28: coherent 4-column / 15-row atlas; 320x360 output per cell,
    resampled from approximately 162x162 source, so no native-detail claim. */
 .pet-character .pet-art.pet-unified .pet-art-image{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0251c1');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0251c2');
   background-size:400% 1500%;background-repeat:no-repeat;transform:none;
 }
 .pet-character .pet-unified.pet-art-front .pet-art-image{background-position-x:0.000000%}
@@ -692,7 +692,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
    960x360 source = 3 cells of 320x360, rendered at 160x180.
    The other 59 sprite variants stay exactly as in candidate.28. */
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c2');
   background-size:300% 100%;
   background-position:0% 0%;
   animation:pet26-blink-frames 2.8s steps(1,end) infinite;
@@ -724,7 +724,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.28: yokai baby gaze, whole aligned frames; no closed eye. */
 .pet-stage .pet-character .pet-unified.pet-art-yokai.pet-art-baby.pet-art-front > .pet-art-image:first-child{
- background-image:url('./assets/pet-gaze-yokai-baby.svg?v=0251c1');
+ background-image:url('./assets/pet-gaze-yokai-baby.svg?v=0251c2');
  background-size:300% 100%;
  background-position:0% 0%;
  animation:pet28-gaze-frames 3s steps(1,end) infinite;
@@ -743,13 +743,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* candidate.29: real three-frame blink for animal, dinosaur and fairy babies; room/front only. */
 .pet-stage .pet-character .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-animal-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-animal-baby.webp?v=0251c2');
 }
 .pet-stage .pet-character .pet-unified.pet-art-dino.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c2');
 }
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c2');
 }
 .pet-stage .pet-character .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-dino.pet-art-baby.pet-art-front > .pet-art-image:first-child,
@@ -785,7 +785,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 
 /* v0.2.47: whole aligned frames, one small ear twitch, no overlay. */
 .pet-stage .pet-character .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c1');
+  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c2');
   background-size:500% 100%;
   background-position:0% 0%;
   animation:pet247-animal-blink-ear 2.8s steps(1,end) infinite;
@@ -810,7 +810,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character .pet-unified.pet-art-animal.pet-art-baby.pet-art-right > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-dino.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-dino.pet-art-baby.pet-art-right > .pet-art-image:first-child{
-  background-image:url('./assets/pet-baby-tail-sides.webp?v=0251c1');
+  background-image:url('./assets/pet-baby-tail-sides.webp?v=0251c2');
   background-size:300% 400%;
   background-position-x:0%;
   animation:pet247-tail-sway 2.4s steps(1,end) infinite;
@@ -840,8 +840,8 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-right > .pet-art-image:first-child{
-  --pet-wing-strip:url('./assets/pet-fantasy-baby-wings.webp?v=0251c1');
-  --pet-blink-strip:url('./assets/pet-blink-fantasy-baby.webp?v=0251c1');
+  --pet-wing-strip:url('./assets/pet-fantasy-baby-wings.webp?v=0251c2');
+  --pet-blink-strip:url('./assets/pet-blink-fantasy-baby.webp?v=0251c2');
 }
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
@@ -876,8 +876,8 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-right > .pet-art-image:first-child{
-  --pet-wing-strip:url('./assets/pet-fairy-baby-wings.webp?v=0251c1');
-  --pet-blink-strip:url('./assets/pet-blink-fairy-baby.webp?v=0251c1');
+  --pet-wing-strip:url('./assets/pet-fairy-baby-wings.webp?v=0251c2');
+  --pet-blink-strip:url('./assets/pet-blink-fairy-baby.webp?v=0251c2');
 }
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
@@ -930,7 +930,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
-.pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-wing-strip:url('./assets/pet-fairy-baby-wing-fold.webp?v=0251c1');}
+.pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-wing-strip:url('./assets/pet-fairy-baby-wing-fold.webp?v=0251c2');}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child{animation:pet247-fairy-fold-blink 2.8s steps(1,end) infinite;}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
@@ -959,7 +959,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
-.pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-wing-strip:url('./assets/pet-fairy-baby-wing-axis.webp?v=0251c1');}
+.pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-wing-strip:url('./assets/pet-fairy-baby-wing-axis.webp?v=0251c2');}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child{animation:pet247-fairy-axis-blink 2.8s steps(1,end) infinite;}
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character .pet-unified.pet-art-fairy.pet-art-baby.pet-art-back > .pet-art-image:first-child,
@@ -986,8 +986,8 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-front > .pet-art-image:first-child,
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-back > .pet-art-image:first-child,
-.pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-yokai-tail:url('./assets/pet-yokai-baby-tail-swing-fixed.webp?v=0251c1');}
-.pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-front > .pet-art-image:first-child{--pet-yokai-gaze:url('./assets/pet-gaze-yokai-baby.svg?v=0251c1');animation:pet247-yokai-swing-gaze 3s steps(1,end) infinite;}
+.pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-right > .pet-art-image:first-child{--pet-yokai-tail:url('./assets/pet-yokai-baby-tail-swing-fixed.webp?v=0251c2');}
+.pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-front > .pet-art-image:first-child{--pet-yokai-gaze:url('./assets/pet-gaze-yokai-baby.svg?v=0251c2');animation:pet247-yokai-swing-gaze 3s steps(1,end) infinite;}
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-left > .pet-art-image:first-child,
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-back > .pet-art-image:first-child,
 .pet-stage .pet-character.pet-mood-idle .pet-unified.pet-art-yokai.pet-art-baby.pet-art-right > .pet-art-image:first-child{background-image:var(--pet-yokai-tail);background-size:500% 400%;background-position-x:0%;animation:pet247-yokai-swing-side 2.4s steps(1,end) infinite;}
@@ -1038,28 +1038,28 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   80%{rotate:0deg;translate:0 0}
 }
 .pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-animal.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c1');
+  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c2');
   background-size:500% 100%;
   background-position:0% 0%;
   --care-half:25%;--care-closed:50%;
   animation:pet247-care-pet-eyes 1.55s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-fantasy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c2');
   background-size:300% 100%;
   background-position:0% 0%;
   --care-half:50%;--care-closed:100%;
   animation:pet247-care-pet-eyes 1.55s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-dino.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c2');
   background-size:300% 100%;
   background-position:0% 0%;
   --care-half:50%;--care-closed:100%;
   animation:pet247-care-pet-eyes 1.55s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-fairy.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c2');
   background-size:300% 100%;
   background-position:0% 0%;
   /* Skip the previously rejected half-open fairy frame, even in care. */
@@ -1073,7 +1073,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   90%{background-position-x:0%}
 }
 .pet-stage .pet-character.pet-mood-pet .pet-unified.pet-art-yokai.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-yokai-baby-tail-swing-fixed.webp?v=0251c1');
+  background-image:url('./assets/pet-yokai-baby-tail-swing-fixed.webp?v=0251c2');
   background-size:500% 400%;
   background-position:0% 0%;
   animation:pet247-care-pet-yokai 1.55s steps(1,end) both;
@@ -1117,13 +1117,13 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   --food-row:85.714286%;--chew-row:-88px;--prop-row:-88px;--chew-y:75px;--food-y:73.5px;
 }
 .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-art-front > .pet-art-image:first-child{
-  background-image:url('./assets/pet-unified-atlas.webp?v=0251c1');
+  background-image:url('./assets/pet-unified-atlas.webp?v=0251c2');
   background-size:400% 1500%;background-position:0% var(--food-row);
   animation:none!important;
 }
 .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-art-front .pet-care-chew{
   display:block;position:absolute;left:var(--chew-x);top:var(--chew-y);width:30px;height:22px;
-  background:url('./assets/pet-baby-chew-closed-q95.webp?v=0251c1') no-repeat 0 var(--chew-row)/60px 110px;
+  background:url('./assets/pet-baby-chew-closed-q95.webp?v=0251c2') no-repeat 0 var(--chew-row)/60px 110px;
   -webkit-mask-image:linear-gradient(to right,transparent,#000 1px,#000 calc(100% - 1px),transparent),linear-gradient(to bottom,transparent,#000 1px,#000 calc(100% - 1px),transparent);
   -webkit-mask-composite:source-in;
   mask-image:linear-gradient(to right,transparent,#000 1px,#000 calc(100% - 1px),transparent),linear-gradient(to bottom,transparent,#000 1px,#000 calc(100% - 1px),transparent);
@@ -1132,7 +1132,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-unified.pet-art-baby.pet-art-front .pet-care-food{
   display:block;position:absolute;left:var(--food-x);top:var(--food-y);width:22px;height:22px;
-  background:url('./assets/pet-baby-food-types.svg?v=0251c1') no-repeat 0 var(--prop-row)/22px 110px;
+  background:url('./assets/pet-baby-food-types.svg?v=0251c2') no-repeat 0 var(--prop-row)/22px 110px;
   z-index:2;opacity:1;animation:pet247-care-food-offer .48s ease-in-out both;
 }
 .pet-stage .pet-character.pet-mood-food[data-growth="baby"] .pet-art-emote{display:none;}
@@ -1178,22 +1178,22 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   48%{translate:0 -1px}
 }
 .pet-stage .pet-character.pet-mood-calm .pet-unified.pet-art-baby.pet-art-front.pet-art-animal > .pet-art-image:first-child{
-  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c1');
+  background-image:url('./assets/pet-animal-baby-blink-ear.webp?v=0251c2');
   background-size:500% 100%;background-position:0% 0%;--rest-half:25%;--rest-closed:50%;
   animation:pet247-care-calm-eyes 3.05s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-calm .pet-unified.pet-art-baby.pet-art-front.pet-art-fantasy > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fantasy-baby.webp?v=0251c2');
   background-size:300% 100%;background-position:0% 0%;--rest-half:50%;--rest-closed:100%;
   animation:pet247-care-calm-eyes 3.05s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-calm .pet-unified.pet-art-baby.pet-art-front.pet-art-dino > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-dino-baby.webp?v=0251c2');
   background-size:300% 100%;background-position:0% 0%;--rest-half:50%;--rest-closed:100%;
   animation:pet247-care-calm-eyes 3.05s steps(1,end) both;
 }
 .pet-stage .pet-character.pet-mood-calm .pet-unified.pet-art-baby.pet-art-front.pet-art-fairy > .pet-art-image:first-child{
-  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c1');
+  background-image:url('./assets/pet-blink-fairy-baby.webp?v=0251c2');
   background-size:300% 100%;background-position:0% 0%;--rest-half:0%;--rest-closed:100%;
   animation:pet247-care-calm-eyes 3.05s steps(1,end) both;
 }
@@ -1206,7 +1206,7 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
 }
 /* Yokai has no accepted closed-eye art. Keep its gaze and quiet the tail. */
 .pet-stage .pet-character.pet-mood-calm .pet-unified.pet-art-baby.pet-art-front.pet-art-yokai > .pet-art-image:first-child{
-  background-image:url('./assets/pet-gaze-yokai-baby.svg?v=0251c1');
+  background-image:url('./assets/pet-gaze-yokai-baby.svg?v=0251c2');
   background-size:300% 100%;background-position:0% 0%;animation:none!important;
 }
 .pet-stage .pet-character.pet-mood-calm[data-growth="baby"] .pet-art-emote{
@@ -1232,11 +1232,11 @@ body.app-locked .pet-visitor,body:has(dialog[open]) .pet-visitor{display:none}
   background-color:#e1e9dc;background-size:100% 100%;background-position:center;
   background-repeat:no-repeat;
 }
-.pet-room[data-room-type="animal"]{background-image:url('./assets/pet-room-animal.svg?v=0251c1');}
-.pet-room[data-room-type="fantasy"]{background-image:url('./assets/pet-room-fantasy.svg?v=0251c1');}
-.pet-room[data-room-type="fairy"]{background-image:url('./assets/pet-room-fairy.svg?v=0251c1');}
-.pet-room[data-room-type="yokai"]{background-image:url('./assets/pet-room-yokai.svg?v=0251c1');}
-.pet-room[data-room-type="dino"]{background-image:url('./assets/pet-room-dino.svg?v=0251c1');}
+.pet-room[data-room-type="animal"]{background-image:url('./assets/pet-room-animal.svg?v=0251c2');}
+.pet-room[data-room-type="fantasy"]{background-image:url('./assets/pet-room-fantasy.svg?v=0251c2');}
+.pet-room[data-room-type="fairy"]{background-image:url('./assets/pet-room-fairy.svg?v=0251c2');}
+.pet-room[data-room-type="yokai"]{background-image:url('./assets/pet-room-yokai.svg?v=0251c2');}
+.pet-room[data-room-type="dino"]{background-image:url('./assets/pet-room-dino.svg?v=0251c2');}
 .pet-room[data-room-type]:not([data-room-type=""])::after,
 .pet-room[data-room-type]:not([data-room-type=""]):not(.pet-room-decorated)::before{display:none;}
 /* Preserve the already-earned decoration independently of the habitat. */
