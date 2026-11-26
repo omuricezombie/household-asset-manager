@@ -1,3 +1,8 @@
+### v0.2.50-candidate.4 — 幼体5種族のボール遊び本体統合（Human QA未実施）
+
+- 合格済み比較r1のCSS/SVGを無変更で採用。4秒描画・4.1秒復帰。Lv2/gain3、保存形式・家計機能を維持。
+- お手入れcandidate.3の全5種族Human QAは合格済み。main/stable v0.2.49を維持。
+
 ### v0.2.50-candidate.3 — 妖精のブラシを上部の横髪に限定（Human QA待ち）
 
 - candidate.2はユーザー「妖精以外OK」。他4種族のお手入れはHuman QA合格、再確認不要。

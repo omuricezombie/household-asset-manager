@@ -191,7 +191,7 @@
       '" data-trait="'+safeText(trait)+'" data-bond="'+tier+
       '" data-type="'+safeText(type)+'" data-growth="'+stage+
       '" data-action="'+(pet===active()?safeText(visualAction):'')+'" data-facing="'+safeText(direction)+'" role="img" aria-label="'+safeText(pet.name)+'">'+
-      art+'</span>';
+      art+(stage==='baby'?'<span class="pet-play-ball-shadow" aria-hidden="true"></span><span class="pet-play-ball" aria-hidden="true"></span>':'')+'</span>';
   }
   function moodMessage(){
     if(mood==='pet')return 'もっとなでてほしそう。';
@@ -209,7 +209,7 @@
     if(container&&pet){
       const existing=container.querySelector('.pet-character');
       const stage=petStage(pet);
-      const caringBaby=stage==='baby'&&['pet','food','calm'].includes(mood);
+      const caringBaby=stage==='baby'&&(['pet','food','calm'].includes(mood)||visualAction==='ball');
       if(caringBaby)faceStep=0;
       // Keep the node (and its running wander animation) when an action changes mood.
       // Replacing innerHTML restarts the 15s wander at the center on every tap.
@@ -238,14 +238,16 @@
     }
   }
   function restartBabyCare(kind){
-    if(!['pet','food','calm'].includes(kind))return;
-    const art=$('petAvatar')?.querySelector('.pet-character.pet-mood-'+kind+'[data-growth="baby"] .pet-illustration');
-    if(!art||!art.getAnimations||prefersReducedMotion())return;
-    // Restart only care animations on repeat taps, never the parent wander.
-    for(const animation of art.getAnimations({subtree:true})){
-      if(String(animation.animationName||'').startsWith('pet247-care-'+kind+'-')||String(animation.animationName||'').startsWith('brush250-')){
-        animation.currentTime=0;animation.play();
-      }
+    const ch=$('petAvatar')?.querySelector('.pet-character[data-growth="baby"]');
+    if(!ch||!ch.getAnimations)return;
+    // Flush CSS before restarting; canceled animations must not be revived.
+    for(const el of ch.querySelectorAll('span'))void getComputedStyle(el).animationName;
+    for(const animation of ch.getAnimations({subtree:true})){
+      const name=String(animation.animationName||'');
+      if(!/^(pet247-care-|brush250-|ball250-|pet24-play)/.test(name))continue;
+      const names=getComputedStyle(animation.effect.target).animationName.split(',').map(n=>n.trim());
+      if(!names.includes(name)){animation.cancel();continue;}
+      if(!prefersReducedMotion()){animation.currentTime=0;animation.play();}
     }
   }
   function speak(text){
@@ -267,17 +269,17 @@
       p.daily.traitsUsed++;
     }
     p.lastAction=DB.now();clearTimeout(actionTimer);mood=item.type;
-    visualAction=id==='brush'&&petStage()==='baby'?'brush':'';
+    visualAction=['brush','ball'].includes(id)&&petStage()==='baby'?id:'';
     const sequence=++actionSequence;
     await persist();
     if(epoch!==dataEpoch||sequence!==actionSequence)return;
     paintCharacter();
     if(item.type===mood)restartBabyCare(item.type);
-    const reply=visualAction==='brush'?HAM.PetIllustration.careReply(p.type):item.reply;
+    const reply=visualAction==='brush'?HAM.PetIllustration.careReply(p.type):visualAction==='ball'?HAM.PetIllustration.ballReply(p.type):item.reply;
     speak(reply+(gained?' 愛情度 +'+gained:''));
     renderStats();
     clearTimeout(actionTimer);
-    const duration=visualAction==='brush'?2700:mood==='calm'&&petStage()==='baby'?3200:1700;
+    const duration=visualAction==='ball'?4100:visualAction==='brush'?2700:mood==='calm'&&petStage()==='baby'?3200:1700;
     actionTimer=setTimeout(()=>{mood='idle';visualAction='';actionSequence++;paintCharacter();speak(moodMessage());},duration);
   }
   // Pointer events cover a tap or a sliding finger gesture on the character.
@@ -647,6 +649,7 @@
     if(!homeCompanion)visitTimer=setTimeout(hideVisitor,6500);
   }
   function onScreen(name){
+    if(name!==current&&visualAction==='ball'){clearTimeout(actionTimer);mood='idle';visualAction='';actionSequence++;paintCharacter();}
     current=name;
     if(name==='pet'){hideVisitor();void render();}
     else maybeVisit(name);

@@ -1,3 +1,9 @@
+v0.2.50-candidate.4 ボール遊び本体統合 — AI QA合格後にHuman QA
+本番v0.2.49は変更しない。全5種族の比較Human QA、お手入れHuman QAは合格済み。
+統合確認は代表1種族のボール、連打・途中でお手入れ/ごはんに切替、待機復帰、部屋退出/再入室。
+本番データ削除・PWA再インストール不要。
+
+--- 以下は過去のQA履歴 ---
 v0.2.50-candidate.3 妖精の髪ブラシ位置修正 Human QA待ち
 確認ファイル：pet_brushing_5_babies_v0250c3.html（保存なし、Chromeで開く）。
 最新candidate：https://github.com/omuricezombie/household-asset-manager/tree/candidate

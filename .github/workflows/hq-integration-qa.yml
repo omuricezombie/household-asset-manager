@@ -1,4 +1,4 @@
-name: Baby care and HQ regression QA
+name: Baby care, ball and HQ regression QA
 on:
   push:
     branches: ['candidate', 'main']
@@ -24,12 +24,13 @@ jobs:
       - run: python tests/build_brush_standalone.py
       - run: python tests/brush_browser_qa.py
       - run: python tests/fairy_face_qa.py
+      - run: python tests/ball_browser_qa.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: brushing-v0250c3-qa
+          name: care-ball-v0250c4-qa
           path: |
-            AI_QA_0250c3*.json
+            AI_QA_0250c4*.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
             artifacts/fairy-hair-only-*.png

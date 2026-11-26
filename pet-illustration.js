@@ -18,12 +18,13 @@
     const classes=['pet-art','pet-illustration','pet-unified','pet-art-'+type,'pet-art-'+stage,'pet-art-'+pos];
     if(stage==='baby')classes.push('pet-hq');
     else{classes.push('pet-hq-growth');if(stage==='adult'&&['dino','yokai'].includes(type))classes.push('pet-hq-extended');}
-    const hqStyle=stage==='baby'?' style="'+['base','face','motion','food'].map(k=>'--hq-'+k+':url(assets/hq-baby/'+type+'-'+k+'.webp?v=0250c3)').join(';')+';--hq-face-cols:'+(type==='animal'?'500%':'300%')+';--hq-motion-rows:'+(['animal','dino'].includes(type)?'200%':'400%')+';--hq-left-row:'+(['animal','dino'].includes(type)?'0%':'33.333333%')+'"':' style="--hq-growth:url(assets/hq-growth/'+type+'-'+stage+'.webp?v=0250c3)"';
+    const hqStyle=stage==='baby'?' style="'+['base','face','motion','food'].map(k=>'--hq-'+k+':url(assets/hq-baby/'+type+'-'+k+'.webp?v=0250c4)').join(';')+';--hq-face-cols:'+(type==='animal'?'500%':'300%')+';--hq-motion-rows:'+(['animal','dino'].includes(type)?'200%':'400%')+';--hq-left-row:'+(['animal','dino'].includes(type)?'0%':'33.333333%')+'"':' style="--hq-growth:url(assets/hq-growth/'+type+'-'+stage+'.webp?v=0250c4)"';
     // Right is an independent sprite in the unified atlas, not a flipped left view.
     const bond=Number(affection)>=70?'bonded':Number(affection)>=30?'friendly':'shy';
     return '<span class="'+classes.join(' ')+'" data-art-stage="'+stage+'" data-art-facing="'+direction+'" data-art-bond="'+bond+
       '"'+hqStyle+' aria-hidden="true"><span class="pet-art-image"></span><span class="pet-art-image pet-part-wing pet-part-wing-left"></span><span class="pet-art-image pet-part-wing pet-part-wing-right"></span><span class="pet-art-image pet-part-ear"></span><span class="pet-art-image pet-part-tail"></span><span class="pet-care-chew" aria-hidden="true"></span><span class="pet-care-food" aria-hidden="true"></span><span class="pet-care-brush" aria-hidden="true"></span><span class="pet-art-emote" aria-hidden="true"></span></span>';
   }
   function careReply(type){return ({animal:'毛並みがふわふわになった！',fantasy:'毛並みがふわふわになった！',fairy:'髪をとかしてもらって、うれしそう。',yokai:'ほっぺをふいてもらって、ごきげん。',dino:'やさしくふいてもらって、気持ちよさそう。'})[type]||'きれいにお手入れできた！';}
-  HAM.PetIllustration={draw,careReply,types:species.slice(),stages:stages.slice()};
+  function ballReply(type){return ({animal:'ボールをくわえて戻ってきた！',fantasy:'弾むボールをくわえて戻ってきた！',fairy:'小さなボールを浮かせて運んだ！',yokai:'不思議な力でボールを返した！',dino:'鼻先でボールを弾いて返した！'})[type]||'ボールを追いかけて跳ね回った！';}
+  HAM.PetIllustration={draw,careReply,ballReply,types:species.slice(),stages:stages.slice()};
 })(window);
