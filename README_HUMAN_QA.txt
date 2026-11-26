@@ -1,3 +1,9 @@
+v0.2.51 正式版 本番確認
+candidate.2代表Human QA合格（2026-11-26）。版表示・既存データ・ホームの放置睡眠とタップ起床を代表確認。
+https://omuricezombie.github.io/household-asset-manager/?v=0251
+サイトデータ削除・再インストール不要。rollback v0.2.50。Lv2未到達ならお手入れ・ボールの本番確認は保留。
+
+--- 以下は過去のQA履歴 ---
 v0.2.51-candidate.2 ホーム睡眠・状態共有の代表Human QA
 ホーム放置→睡眠、部屋へ移動→睡眠継続、ホームへ戻る→タップ起床、通常タップで部屋へ、ドラッグ。候補版の独立確認HTMLで実施。main stable v0.2.50維持。
 

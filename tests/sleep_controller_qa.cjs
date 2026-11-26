@@ -13,4 +13,4 @@ check('reset clears pending actions',()=>{const h=harness();h.ctrl.forceSleep();
 check('mode reset restarts correct normal timeout',()=>{const h=harness();h.ctrl.forceSleep();h.ctrl.setMode('normal');assert.equal(h.state(),'idle');assert.equal(h.ctrl.snapshot().remaining,90000)});
 check('dispose cancels and prevents pending work',()=>{const h=harness();h.ctrl.forceSleep();h.ctrl.dispose();assert.equal(h.queue.size,0);h.tick(999999);assert.equal(h.state(),'drowsy');h.ctrl.act('ball');assert.equal(h.state(),'drowsy')});
 check('repeat action restarts timer, no duplicate timers',()=>{const h=harness();h.ctrl.act('ball');h.tick(4000);h.ctrl.act('ball');assert.equal(h.queue.size,1);h.tick(100);assert.equal(h.state(),'ball');h.tick(4000);assert.equal(h.state(),'idle')});
-fs.writeFileSync('AI_QA_0251c2_sleep_controller.json',JSON.stringify({state_machine_pass:results.length,checks:results},null,2));console.log('STATE QA PASS',results.length)
+fs.writeFileSync('AI_QA_0251_sleep_controller.json',JSON.stringify({state_machine_pass:results.length,checks:results},null,2));console.log('STATE QA PASS',results.length)

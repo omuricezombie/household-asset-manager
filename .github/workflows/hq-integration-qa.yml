@@ -31,9 +31,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sleep-v0251c2-qa
+          name: sleep-v0251-qa
           path: |
-            AI_QA_0251c2*.json
+            AI_QA_0251*.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
             artifacts/fairy-hair-only-*.png

@@ -36,6 +36,6 @@ async function test(){
  }
  await reset('animal');game.onScreen('home');await tick(90000);await tick(3600);let v=nodes.petVisitor;const event=(x,y,type)=>({pointerId:1,clientX:x,clientY:y,type,isPrimary:true,button:0,pointerType:'touch',cancelable:true,preventDefault(){},stopImmediatePropagation(){}});v.events.pointerdown(event(20,20,'pointerdown'));ck('drag hold pauses',snap().paused);v.events.pointermove(event(80,80,'pointermove'));v.events.pointerup(event(80,80,'pointerup'));ck('drag wakes and relocates',state()==='wake'&&v.style.left==='70px'&&v.style.top==='70px');let prevented=false;v.events['click:capture']({...event(80,80,'click'),stopImmediatePropagation(){prevented=true}});ck('drag suppresses click',prevented);await tick(750);ck('home drag stays home',!!nodes.petVisitor&&state()==='idle');
  await reset('dino',450);ck('older home no controller',!snap());await tick(500000);ck('older home remains unchanged',!snap());
- console.log('INTEGRATION DOM/DB MOCK PASS',checks.length);fs.writeFileSync('AI_QA_0251c2_sleep_integration_mock.json',JSON.stringify({count:checks.length,checks},null,2));
+ console.log('INTEGRATION DOM/DB MOCK PASS',checks.length);fs.writeFileSync('AI_QA_0251_sleep_integration_mock.json',JSON.stringify({count:checks.length,checks},null,2));
 }
 test().catch(e=>{console.error(e);process.exitCode=1});
