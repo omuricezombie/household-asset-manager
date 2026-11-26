@@ -1,3 +1,47 @@
+v0.2.50 正式版 本番確認
+候補版Human QA合格（2026-11-26）。本番で版表示・既存記録・解放済みボール／お手入れを代表確認。
+https://omuricezombie.github.io/household-asset-manager/?v=0250
+サイトデータ削除・再インストール不要。rollback v0.2.49。
+
+--- 以下は過去のQA履歴 ---
+v0.2.50-candidate.4 ボール遊び本体統合 — AI QA合格後にHuman QA
+本番v0.2.49は変更しない。全5種族の比較Human QA、お手入れHuman QAは合格済み。
+統合確認は代表1種族のボール、連打・途中でお手入れ/ごはんに切替、待機復帰、部屋退出/再入室。
+本番データ削除・PWA再インストール不要。
+
+--- 以下は過去のQA履歴 ---
+v0.2.50-candidate.3 妖精の髪ブラシ位置修正 Human QA待ち
+確認ファイル：pet_brushing_5_babies_v0250c3.html（保存なし、Chromeで開く）。
+最新candidate：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+妖精だけ確認：ブラシが顔・頬に触れず、上部の横髪だけを2回とかすか。
+他4種族はユーザーHuman QA合格。再確認不要。
+main/stable/rollback基点はv0.2.49維持。正式版昇格・ボール遊び追加なし。
+
+--- 以下は過去のQA履歴 ---
+v0.2.50-candidate.2 幼体「お手入れ」Human QA待ち
+開発正本candidate、本番main/stable v0.2.49、rollback基点v0.2.49。
+最新候補コード：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+確認ファイル：pet_brushing_5_babies_v0250c2.html（保存なし、Chromeで開く）。
+確認対象：妖精＝髪用ブラシで髪、妖怪＝布で頬、恐竜＝スポンジで頬から首元。
+各種族で道具・当てる位置・2回の動き・反応が自然か確認。
+どれか1種族で途中切替と待機復帰を代表確認。
+動物風/架空の生き物は既存の合格した動きを維持。再確認不要。
+本番データ変更・PWA再インストール・サイトデータ削除不要。
+今回は正式版への昇格、ボール遊び専用動作を実装しない。
+
+--- 以下は過去のQA履歴 ---
+v0.2.50-candidate.1 幼体ブラッシング Human QA待ち
+現行開発正本：candidate。main/stable v0.2.49を維持。rollback基点：v0.2.49。
+確認対象：pet_brushing_5_babies_v0250c1.html（保存なし・単体HTML）。
+最新版コード：https://github.com/omuricezombie/household-asset-manager/tree/candidate
+本番PWAは今回のcandidateを配信していない。確認用HTMLをChromeで開く。
+架空・妖精・妖怪・恐竜：ブラシの出現/2回の動き/反応/待機復帰/他操作への切替が自然か確認。
+妖怪は閉眼せず、既存しっぽの反応が仕様。妖精は半目なし。
+動物風：合格済みr1の回帰代表1回だけ。
+本番データ・サイトデータ削除・PWA再インストールは不要。
+この作業では正式版への昇格、ボール遊び専用動作の実装は行わない。
+
+--- 以下は過去のQA履歴 ---
 v0.2.49 正式版準備
 比較r2・統合版candidate.1の表示Human QA合格（2026-11-26）。
 合格範囲：恐竜/妖怪成体4方向の上部/位置/大きさ、および中間体切り替え表示。

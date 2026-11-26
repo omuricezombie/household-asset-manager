@@ -1,4 +1,4 @@
-name: Growth HQ integration QA
+name: Baby care, ball and HQ regression QA
 on:
   push:
     branches: ['candidate', 'main']
@@ -17,42 +17,58 @@ jobs:
         with:
           python-version: '3.11'
       - run: python tests/hq_static_qa.py
+      - run: python tests/brush_static_qa.py
       - run: python tests/build_growth_standalone.py
-      - run: python -m pip install playwright && python -m playwright install --with-deps chromium
+      - run: python -m pip install playwright pillow && python -m playwright install --with-deps chromium
       - run: python tests/hq_browser_qa.py
-      - name: Package candidate code and QA
-        run: |
-          git archive --format=zip --prefix=household-asset-manager/ --output=artifacts/household_v0_2_49_stable.zip HEAD
-          python - <<'PY'
-          import zipfile
-          with zipfile.ZipFile('artifacts/household_v0_2_49_stable.zip','a',zipfile.ZIP_DEFLATED) as z:
-            for name in ['AI_QA_0249.json','AI_QA_0249_static.json']:
-              z.write(name,'household-asset-manager/'+name)
-          PY
-      - name: Check candidate delivery hosts
-        if: success()
-        continue-on-error: true
-        run: |
-          python - <<'PY'
-          import urllib.request,json,hashlib,os
-          from pathlib import Path
-          sha=os.environ['GITHUB_SHA'];base='omuricezombie/household-asset-manager/'+sha+'/'
-          results=[]
-          for host in ['raw.githack.com','rawcdn.githack.com']:
-            url='https://'+host+'/'+base+'hq-integration-qa.html?v=0249'
-            try:
-              r=urllib.request.urlopen(url,timeout=20);b=r.read();ok=r.status==200 and 'text/html' in r.headers.get('Content-Type','') and b==Path('hq-integration-qa.html').read_bytes()
-              results.append({'url':url,'status':r.status,'exact_html':ok})
-            except Exception as e:results.append({'url':url,'error':str(e)})
-          Path('artifacts/delivery-hosts.json').write_text(json.dumps(results,indent=2));print(json.dumps(results))
-          PY
+      - run: python tests/build_brush_standalone.py
+      - run: python tests/brush_browser_qa.py
+      - run: python tests/fairy_face_qa.py
+      - run: python tests/ball_browser_qa.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: household-v0249-growth-qa
+          name: care-ball-v0250-qa
           path: |
-            AI_QA_0249*.json
-            hq-growth-manifest.json
+            AI_QA_0250*.json
+            artifacts/brush-contact-internal.png
+            artifacts/brush-fairy-*.png
+            artifacts/fairy-hair-only-*.png
+            artifacts/brush-yokai-*.png
+            artifacts/brush-dino-*.png
             hq-baby-manifest.json
-            artifacts/
+            hq-growth-manifest.json
           retention-days: 30
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: care-ball-v0250-qa
+          path: release-qa
+      - name: Archive and publish v0.2.50
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          grep -F "const APP_VERSION='0.2.50';" db.js
+          if gh release view v0.2.50 >/dev/null 2>&1; then
+            echo 'Release already exists; refusing to replace it.'
+            exit 0
+          fi
+          if git show-ref --verify --quiet refs/tags/v0.2.50; then
+            test "$(git rev-list -n 1 v0.2.50)" = "$GITHUB_SHA"
+          fi
+          mkdir -p release-out
+          git archive --format=zip --prefix=household-asset-manager/ --output=release-out/household_v0_2_50_stable.zip HEAD
+          python -m zipfile -t release-out/household_v0_2_50_stable.zip
+          sha256sum release-out/household_v0_2_50_stable.zip
+          gh release create v0.2.50 --target "$GITHUB_SHA" --title 'v0.2.50' --notes-file RELEASE_v0.2.50.md release-out/household_v0_2_50_stable.zip release-qa/AI_QA_0250*.json
