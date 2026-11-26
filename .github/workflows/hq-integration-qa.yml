@@ -1,4 +1,4 @@
-name: Baby care, ball and HQ regression QA
+name: Baby sleep and existing care / ball / HQ regression QA
 on:
   push:
     branches: ['candidate', 'main']
@@ -25,12 +25,15 @@ jobs:
       - run: python tests/brush_browser_qa.py
       - run: python tests/fairy_face_qa.py
       - run: python tests/ball_browser_qa.py
+      - run: node tests/sleep_controller_qa.cjs
+      - run: node tests/sleep_integration_qa.cjs
+      - run: python tests/sleep_browser_qa.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: care-ball-v0250-qa
+          name: sleep-v0251-qa
           path: |
-            AI_QA_0250*.json
+            AI_QA_0251*.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
             artifacts/fairy-hair-only-*.png
@@ -39,36 +42,3 @@ jobs:
             hq-baby-manifest.json
             hq-growth-manifest.json
           retention-days: 30
-  release:
-    if: github.ref == 'refs/heads/main'
-    needs: qa
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/download-artifact@v4
-        with:
-          name: care-ball-v0250-qa
-          path: release-qa
-      - name: Archive and publish v0.2.50
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          grep -F "const APP_VERSION='0.2.50';" db.js
-          if gh release view v0.2.50 >/dev/null 2>&1; then
-            echo 'Release already exists; refusing to replace it.'
-            exit 0
-          fi
-          if git show-ref --verify --quiet refs/tags/v0.2.50; then
-            test "$(git rev-list -n 1 v0.2.50)" = "$GITHUB_SHA"
-          fi
-          mkdir -p release-out
-          git archive --format=zip --prefix=household-asset-manager/ --output=release-out/household_v0_2_50_stable.zip HEAD
-          python -m zipfile -t release-out/household_v0_2_50_stable.zip
-          sha256sum release-out/household_v0_2_50_stable.zip
-          gh release create v0.2.50 --target "$GITHUB_SHA" --title 'v0.2.50' --notes-file RELEASE_v0.2.50.md release-out/household_v0_2_50_stable.zip release-qa/AI_QA_0250*.json

@@ -14,5 +14,5 @@ html=re.sub(r'<p><a href="index.html[^<]+</a></p>','<p>保存なしの統合確�
 embedded=json.loads(html.split('const embeddedAssets=',1)[1].split(';const blobPaths',1)[0])
 for key,value in embedded.items():assert base64.b64decode(value['data'])==Path(key).read_bytes()
 for script in re.findall(r'<script>(.*?)</script>',html,re.S):subprocess.run(['node','--check'],input=script.encode(),check=True,capture_output=True)
-(out/'household_v0_2_50_candidate_1_growth_QA.html').write_text(html)
+(out/'household_v0_2_51_growth_QA.html').write_text(html)
 print('standalone bytes',len(html.encode()))
