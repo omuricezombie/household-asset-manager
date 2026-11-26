@@ -27,6 +27,42 @@
   let dataReplacing=false, dataEpoch=0;
   let visualAction='', actionSequence=0; // transient rendering only; never persisted
   let homePosition=null;
+  // Transient room-only sleep. Never part of saved state or rewards.
+  let sleepController=null,sleepOwner=null,sleepState='',sleepPaused=false,sleepQueued=null;
+  function sleepEligible(){return !dataReplacing&&state?.enabled&&active()&&petStage()==='baby'&&current==='pet';}
+  function clearSleep(){
+    sleepController?.dispose();sleepController=null;sleepOwner=null;sleepState='';sleepPaused=false;sleepQueued=null;
+    const ch=$('petAvatar')?.querySelector('.pet-character');
+    if(ch){delete ch.dataset.sleepState;delete ch.dataset.paused;}
+  }
+  function sleepBlocked(){return document.hidden||document.body.classList.contains('app-locked');}
+  function syncSleep(){
+    if(!sleepEligible()||mood!=='idle'){clearSleep();return;}
+    if(sleepOwner!==active().id)clearSleep();
+    if(!sleepController){
+      if(sleepBlocked())return;
+      sleepOwner=active().id;
+      sleepController=createSleepController({short:false,onChange:showSleep});
+    }
+    if(sleepBlocked())sleepController.pause();else sleepController.resume();
+  }
+  function showSleep(snapshot){
+    if(!sleepEligible()||mood!=='idle'){clearSleep();return;}
+    const previous=sleepState;
+    sleepState=['drowsy','sleep','wake'].includes(snapshot.state)?snapshot.state:'';
+    sleepPaused=snapshot.paused;
+    if(sleepState)faceStep=0;
+    if(previous!==sleepState||sleepState){paintCharacter();speak(moodMessage());}
+    if(previous==='wake'&&!sleepState&&sleepQueued){
+      const id=sleepQueued;sleepQueued=null;
+      // Existing interaction remains the only path to affection/traits/save.
+      if(!sleepBlocked())void interact(id);
+    }
+  }
+  function touchCompanion(){
+    if(sleepState){sleepQueued=null;sleepController?.wakeOnly();return;}
+    void interact('pet');
+  }
   const $=id=>document.getElementById(id);
   const safeText=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const thisDay=()=>DB.ymd();
@@ -122,7 +158,7 @@
   async function replaceStoredData(task){
     if(dataReplacing)throw new Error('育成データ更新中です。');
     dataReplacing=true;dataEpoch++;
-    hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';visualAction='';actionSequence++;
+    clearSleep();hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';visualAction='';actionSequence++;
     try{
       await flushPendingSave();
       await task();
@@ -155,12 +191,13 @@
     if(dataReplacing)return;
     const epoch=dataEpoch;
     state.enabled=!!flag;
+    if(!flag)clearSleep();
     // No companion is created just by switching the optional game ON.
     setVisible();
     await persist();
     if(epoch!==dataEpoch)return;
     if(!state.enabled){hideVisitor();stopFacing();if(current==='pet'&&navigate)void navigate('home');}
-    else{setFacingTimer();if(current==='home')maybeVisit('home');}
+    else{setFacingTimer();if(current==='home')maybeVisit('home');else syncSleep();}
   }
   function isEnabled(){return !!(state&&state.enabled);}
   function points(){return petPoints();}
@@ -191,9 +228,12 @@
       '" data-trait="'+safeText(trait)+'" data-bond="'+tier+
       '" data-type="'+safeText(type)+'" data-growth="'+stage+
       '" data-action="'+(pet===active()?safeText(visualAction):'')+'" data-facing="'+safeText(direction)+'" role="img" aria-label="'+safeText(pet.name)+'">'+
-      art+(stage==='baby'?'<span class="pet-play-ball-shadow" aria-hidden="true"></span><span class="pet-play-ball" aria-hidden="true"></span>':'')+'</span>';
+      art+(stage==='baby'?'<span class="pet-play-ball-shadow" aria-hidden="true"></span><span class="pet-play-ball" aria-hidden="true"></span>'+(!small&&pet===active()?'<span class="pet-sleep-zzz" aria-hidden="true">Zzz</span>':''):'')+'</span>';
   }
   function moodMessage(){
+    if(sleepState==='drowsy')return '眠くなってきたみたい。';
+    if(sleepState==='sleep')return 'すやすや眠っている。';
+    if(sleepState==='wake')return '目を覚ましたみたい。';
     if(mood==='pet')return 'もっとなでてほしそう。';
     if(mood==='food')return 'おいしいものが大好き！';
     if(mood==='play')return 'まだまだ遊べそう！';
@@ -209,7 +249,7 @@
     if(container&&pet){
       const existing=container.querySelector('.pet-character');
       const stage=petStage(pet);
-      const caringBaby=stage==='baby'&&(['pet','food','calm'].includes(mood)||visualAction==='ball');
+      const caringBaby=stage==='baby'&&(['pet','food','calm'].includes(mood)||visualAction==='ball'||!!sleepState);
       if(caringBaby)faceStep=0;
       // Keep the node (and its running wander animation) when an action changes mood.
       // Replacing innerHTML restarts the 15s wander at the center on every tap.
@@ -229,6 +269,11 @@
         }
         if(art)art.dataset.artBond=bond;
       }else container.innerHTML=characterHtml();
+      const ch=container.querySelector('.pet-character');
+      if(ch){
+        if(stage==='baby'&&sleepState){ch.dataset.sleepState=sleepState;ch.dataset.paused=String(sleepPaused);}
+        else{delete ch.dataset.sleepState;delete ch.dataset.paused;}
+      }
     }
     const room=$('petRoom');
     if(room){
@@ -259,6 +304,11 @@
     const epoch=dataEpoch;
     const item=ACTIONS.find(x=>x.id===id);
     if(!item||!actionAvailable(item))return;
+    if(sleepState){
+      if(sleepBlocked())return;
+      sleepQueued=id;sleepController?.wakeOnly();return;
+    }
+    clearSleep();
     todayReset();
     const p=active();
     const gained=Math.min(item.gain,Math.max(0,DAILY_CAP-p.daily.used),Math.max(0,100-p.affection));
@@ -280,7 +330,7 @@
     renderStats();
     clearTimeout(actionTimer);
     const duration=visualAction==='ball'?4100:visualAction==='brush'?2700:mood==='calm'&&petStage()==='baby'?3200:1700;
-    actionTimer=setTimeout(()=>{mood='idle';visualAction='';actionSequence++;paintCharacter();speak(moodMessage());},duration);
+    actionTimer=setTimeout(()=>{mood='idle';visualAction='';actionSequence++;paintCharacter();speak(moodMessage());syncSleep();},duration);
   }
   // Pointer events cover a tap or a sliding finger gesture on the character.
   // One gesture triggers exactly one "pet" action; dragging does not farm affection.
@@ -298,7 +348,7 @@
       e.preventDefault();
       stage.classList.add('pet-stroking');
       try{stage.setPointerCapture(e.pointerId);}catch(err){/* capture may be unavailable */ }
-      void interact('pet');
+      touchCompanion();
     });
     const release=e=>{
       if(e.pointerId!==activePointer)return;
@@ -309,7 +359,7 @@
     stage.addEventListener('keydown',e=>{
       if(isEnabled()&&!e.repeat&&(e.key==='Enter'||e.key===' ')){
         e.preventDefault();
-        void interact('pet');
+        touchCompanion();
       }
     });
   }
@@ -423,7 +473,7 @@
   async function restartPet(){
     if(dataReplacing||!active())return;
     if(!confirm('育成中の相棒とお別れして、最初から育て直しますか？ この子の愛情度・個性は保存されません。過去の月次報酬や図鑑は残り、同じ月の報酬は再取得できません。'))return;
-    state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
+    clearSleep();state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
     hideVisitor();stopFacing();
     await persist();await render();
   }
@@ -433,7 +483,7 @@
     if(!confirm('成長した相棒を図鑑に保存して、新しい相棒を迎えられる状態にしますか？ 保存後はこの子との育成を続けられません。'))return;
     state.collection.push({...JSON.parse(JSON.stringify(p)),earnedPoints:petPoints(),
       finalLevel:level(),completedAt:DB.now(),finalPersonality:personality().name});
-    state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
+    clearSleep();state.activePet=null;faceStep=0;mood='idle';visualAction='';actionSequence++;
     hideVisitor();stopFacing();
     await persist();await render();
   }
@@ -480,7 +530,7 @@
     stopFacing();
     if(dataReplacing||!state?.enabled||!active()||!['home','pet','history'].includes(current)||document.hidden||document.body.classList.contains('app-locked')||prefersReducedMotion())return;
     facingTimer=setInterval(()=>{
-      if(mood!=='idle'||prefersReducedMotion()||document.querySelector('#petVisitor.pet-home-held'))return;
+      if(sleepState||mood!=='idle'||prefersReducedMotion()||document.querySelector('#petVisitor.pet-home-held'))return;
       faceStep=(faceStep+1)%FACING.length;
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
@@ -540,7 +590,9 @@
     try{
       await syncRewards();
       if(dataReplacing||epoch!==dataEpoch)return;
+      if(!sleepEligible()||sleepOwner!==active()?.id)clearSleep();
       paintCharacter();
+      syncSleep();
       renderStats();
       renderCompanionChoices();
       renderStarterGallery();
@@ -650,6 +702,7 @@
   }
   function onScreen(name){
     if(name!==current&&visualAction==='ball'){clearTimeout(actionTimer);mood='idle';visualAction='';actionSequence++;paintCharacter();}
+    if(name!==current)clearSleep();
     current=name;
     if(name==='pet'){hideVisitor();void render();}
     else maybeVisit(name);
@@ -685,10 +738,12 @@
     });
     if($('petRestart'))$('petRestart').onclick=()=>void restartPet();
     if($('petArchive'))$('petArchive').onclick=()=>void archivePet();
-    document.addEventListener('visibilitychange',()=>setFacingTimer());
+    document.addEventListener('visibilitychange',()=>{setFacingTimer();syncSleep();});
+    // The existing app lock toggles body class without navigating away.
+    if(typeof MutationObserver!=='undefined')new MutationObserver(()=>syncSleep()).observe(document.body,{attributes:true,attributeFilter:['class']});
     global.addEventListener('resize',restoreHomePosition);
     // Defaults are intentionally OFF; no extra persistent data is written until enabled.
   }
   HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,flushPendingSave,replaceStoredData,
-    _test:{prepareMonthlyRecords,createAward,level,normalize,newPet,petStage,petPoints,stageForLevel,petPersonality}};
+    _test:{prepareMonthlyRecords,createAward,level,normalize,newPet,petStage,petPoints,stageForLevel,petPersonality,sleepSnapshot:()=>sleepController?.snapshot()||null}};
 })(window);

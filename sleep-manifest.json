@@ -1,0 +1,30 @@
+{
+  "assets/animal-drowsy-mouth.webp": {
+    "bytes": 3834,
+    "sha256": "6b35846861e664cd7c50c3f25d963f2ae32f771a1358938b70ac861b6c14d39f"
+  },
+  "assets/animal-sleep.webp": {
+    "bytes": 161876,
+    "sha256": "b48d821ccdf3dbae101833e5d0bbafd5026e89a5ba8b4248b1ef63d10265936a"
+  },
+  "assets/dino-sleep-mouth.webp": {
+    "bytes": 3426,
+    "sha256": "86dd264e73431b259a79c99b24cc6aefd881a7c836d4a008e0f7968e987d60ad"
+  },
+  "assets/fairy-sleep-mouth.webp": {
+    "bytes": 5930,
+    "sha256": "c0e04e32133759948d604ea5fa625441b9a5c86eac95cd6bd3c3c786024e5479"
+  },
+  "assets/fairy-sleep.webp": {
+    "bytes": 216406,
+    "sha256": "c79ffa3f73417bc991280095f8be22c8f7aaad0a1056f04dce886e5b9e85312e"
+  },
+  "assets/fantasy-sleep-mouth.webp": {
+    "bytes": 3530,
+    "sha256": "cb36894ba68ddbc835cee834866baa8bce0167029ce8eeed615156ca64a61f3c"
+  },
+  "assets/yokai-sleep-face.webp": {
+    "bytes": 164772,
+    "sha256": "afc714594f1793a119d5d5a1c87f7db0dde19e6a11f8b865a6c90f7bf6488a7b"
+  }
+}

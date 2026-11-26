@@ -1,0 +1,29 @@
+/* Real PetGame + approved controller under deterministic DOM/DB/timer doubles; not a browser test. */
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const checks=[];const ck=(n,v)=>{assert.ok(v,n);checks.push(n)};
+const clone=x=>JSON.parse(JSON.stringify(x));
+async function test(){
+ let now=0,next=0,timers=new Map(),observer,docEvents={},writes=0,stored;
+ const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve()};
+ function timer(fn,ms,repeat=false){let id=++next;timers.set(id,{fn,at:now+ms,ms,repeat});return id}
+ async function tick(ms){const end=now+ms;while(true){const q=[...timers].filter(([k,v])=>v.at<=end).sort((a,b)=>a[1].at-b[1].at);if(!q.length)break;const[id,v]=q[0];now=v.at;if(v.repeat)v.at+=v.ms;else timers.delete(id);v.fn();await flush()}now=end;await flush()}
+ const classes=()=>{let s=new Set();return{contains:x=>s.has(x),add:x=>s.add(x),remove:x=>s.delete(x),toggle:(x,v)=>v?s.add(x):s.delete(x)}};
+ const el=()=>({dataset:{},classList:classes(),style:{},events:{},textContent:'',innerHTML:'',setAttribute(){},addEventListener(k,fn){this.events[k]=fn},querySelector(){return null}});
+ let char=null;const avatar=el();Object.defineProperty(avatar,'innerHTML',{set(html){char=html?el():null;if(char){for(const k of ['type','growth','facing','action'])char.dataset[k]=html.match(new RegExp('data-'+k+'="([^"]*)"'))?.[1]||'';let art=el();char.querySelector=()=>art;}},get(){return char?'character':''}});avatar.querySelector=()=>char;const nodes={petAvatar:avatar,petActions:el(),petSpeech:el(),petRoom:el()};const body=el();const doc={body,hidden:false,getElementById:k=>nodes[k]||null,querySelector:()=>null,querySelectorAll:()=>char?[char]:[],addEventListener:(k,fn)=>docEvents[k]=fn};
+ const DB={get:async()=>({value:clone(stored)}),getAll:async()=>[],put:async(_,{value})=>{stored=clone(value);writes++},ymd:()=> '2026-11-26',currentMonth:()=> '2026-11',now:()=> '2026-11-26T00:00:00Z',uid:()=> 'qa-id'};
+ const context={HAM:{DB,Analysis:{}},document:doc,console,performance:{now:()=>now},Math:Object.create(Math),setTimeout:(fn,d)=>timer(fn,d),clearTimeout:k=>timers.delete(k),setInterval:(fn,d)=>timer(fn,d,true),clearInterval:k=>timers.delete(k),matchMedia:()=>({matches:false}),addEventListener(){},MutationObserver:class{constructor(fn){observer=fn}observe(){}},confirm:()=>true};context.Math.random=()=>.5;context.window=context;vm.createContext(context);
+ for(const n of ['pet-illustration.js','sleep-controller.js','pet-game.js'])vm.runInContext(fs.readFileSync(n,'utf8'),context,{filename:n});const game=context.HAM.PetGame;
+ const seed=(type,pts=0)=>({version:2,enabled:true,startedMonth:'2026-11',activePet:{id:'qa-id',type,name:'QA',startedMonth:'2026-11',bornAt:DB.now(),affection:30,traits:{pet:0,food:0,play:0,calm:0},daily:{date:DB.ymd(),used:0,traitsUsed:0}},collection:[],awards:{'2026-11':{points:pts,bonus:0,items:[],petId:'qa-id'}}});
+ const snap=()=>game._test.sleepSnapshot();const state=()=>snap()?.state;const action=id=>nodes.petActions.events.click({target:{closest:()=>({dataset:{petAction:id}})}});const touch=()=>avatar.events.keydown({key:'Enter',repeat:false,preventDefault(){}});
+ stored=seed('animal');await game.init(()=>{});game.onScreen('pet');await flush();
+ async function reset(type,pts=0){await game.replaceStoredData(async()=>{stored=seed(type,pts)});await flush();}
+ async function sleep(){ck('idle timer present',state()==='idle');await tick(90000);ck('drowsy transition',state()==='drowsy'&&char.dataset.sleepState==='drowsy'&&char.dataset.facing==='front');await tick(3600);ck('sleep transition',state()==='sleep'&&char.dataset.sleepState==='sleep');}
+ for(const species of ['animal','fantasy','fairy','yokai','dino']){
+  await reset(species);const before=clone(stored),w=writes;await sleep();ck(species+' same species',char.dataset.type===species);ck(species+' no writes during sleep',writes===w);ck(species+' duration',snap().remaining===210000);
+  doc.hidden=true;docEvents.visibilitychange();const remaining=snap().remaining;await tick(500000);ck(species+' visibility paused',snap().paused&&snap().remaining===remaining&&state()==='sleep');doc.hidden=false;docEvents.visibilitychange();ck(species+' resumed',!snap().paused);
+  touch();ck(species+' touch wakes',state()==='wake');await tick(750);ck(species+' idle return',state()==='idle'&&!char.dataset.sleepState);ck(species+' no affection on wake',JSON.stringify(before)===JSON.stringify(stored)&&writes===w);
+ }
+ await reset('animal',100);await sleep();action('ball');action('feed');action('brush');ck('wake queues',state()==='wake');await tick(750);ck('latest action only',stored.activePet.daily.used===2&&char.dataset.action==='brush');await tick(2700);ck('action end new idle timer',state()==='idle');await sleep();action('ball');game.onScreen('settings');await tick(1000);ck('leave clears pending wake',!snap()&&stored.activePet.daily.used===2);game.onScreen('pet');await flush();ck('room reset',state()==='idle');await sleep();await tick(210000);ck('natural wake',state()==='wake');await tick(750);ck('natural idle',state()==='idle');await sleep();body.classList.add('app-locked');observer();let r=snap().remaining;await tick(300000);ck('app lock pauses',snap().paused&&snap().remaining===r);body.classList.remove('app-locked');observer();ck('app unlock resumes',!snap().paused);await reset('dino',450);ck('restore older clears sleep',!snap());await tick(500000);ck('older has no sleep',!snap());await reset('fairy');await sleep();await game.setEnabled(false);ck('disable clears sleep',!snap());
+ console.log('INTEGRATION DOM/DB MOCK PASS',checks.length);fs.writeFileSync('AI_QA_0251c1_sleep_integration_mock.json',JSON.stringify({count:checks.length,checks},null,2));
+}
+test().catch(e=>{console.error(e);process.exitCode=1});
