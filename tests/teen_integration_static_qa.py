@@ -13,14 +13,14 @@ for n in ['analysis.js','dcard-import.js','manifest.webmanifest','pet-hq.css','p
  ck(n+' stable bytes',Path(n).read_bytes()==prior(n))
 for n in ['pet-game.css','pet-sleep.css','pet-illustration.js']:
  ck(n+' query version only',Path(n).read_bytes().replace(b'0253',b'0251')==prior(n))
-ck('db version only',Path('db.js').read_bytes().replace(b'0.2.53-candidate.1',b'0.2.51')==prior('db.js'))
+ck('db version only',Path('db.js').read_bytes().replace(b'0.2.53',b'0.2.51')==prior('db.js'))
 old=prior('pet-game.js').decode();new=Path('pet-game.js').read_text()
 for start,end in [('const KEY=','let state='),('function fresh()','async function replaceStoredData'),('todayReset();\n    const p=active();','p.lastAction=DB.now()'),('function points()','function characterHtml'),('function createAward(','function startPet(')]:
  if start in old and end in old:
   ck('stable logic '+start,old.split(start,1)[1].split(end,1)[0]==new.split(start,1)[1].split(end,1)[0])
 for p in Path('assets').rglob('*'):
  if p.is_file() and 'hq-teen' not in p.parts:ck(str(p)+' stable bytes',p.read_bytes()==prior(str(p)))
-manifest=json.loads(Path('teen-art-manifest.json').read_text());sw=Path('service-worker.js').read_text();files=re.findall(r"'([^']+)'",sw.split('const FILES=')[1].split('];')[0]);ck('cache version',"household-asset-manager-v0.2.53-candidate.1" in sw);ck('no duplicate cache keys',len(files)==len(set(files)))
+manifest=json.loads(Path('teen-art-manifest.json').read_text());sw=Path('service-worker.js').read_text();files=re.findall(r"'([^']+)'",sw.split('const FILES=')[1].split('];')[0]);ck('cache version',"household-asset-manager-v0.2.53" in sw);ck('no duplicate cache keys',len(files)==len(set(files)))
 for n,meta in manifest.items():
  b=Path(n).read_bytes();ck(n+' approved bytes/hash',len(b)==meta['bytes'] and hashlib.sha256(b).hexdigest()==meta['sha256']);ck(n+' cached','./'+n+'?v=0253' in files)
 for n in files:ck('cache exists '+n,Path(n.split('?')[0]).exists())

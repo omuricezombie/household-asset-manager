@@ -25,7 +25,7 @@ with sync_playwright() as pw:
   p.locator('.qa-note').evaluate('e=>e.remove()') # match production geometry for touch coordinates
  else:
   p.goto(f'http://localhost:{server.server_port}/index.html?v=0253',wait_until='domcontentloaded')
- p.wait_for_function('!!window.HAM?.DB&&!document.body.classList.contains("app-booting")');ck('boot expected version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.53-candidate.1')
+ p.wait_for_function('!!window.HAM?.DB&&!document.body.classList.contains("app-booting")');ck('boot expected version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.53')
  if not standalone:
   p.add_script_tag(content=Path('tests/analysis_swipe_fixture.js').read_text());p.evaluate('seedAnalysisQA()')
   ck('isolated test IndexedDB schema',p.evaluate('HAM.DB.SCHEMA_VERSION')==2)

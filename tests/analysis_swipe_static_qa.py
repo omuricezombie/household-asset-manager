@@ -7,10 +7,11 @@ files=[n.removeprefix('household-asset-manager/') for n in z.namelist() if n.sta
 def before(n):return z.read('household-asset-manager/'+n) if z else subprocess.check_output(['git','show',base+':'+n])
 checks=[]
 def ck(n,v):assert v,n;checks.append(n)
-def version_normalized(b):return b.replace(b'0.2.53-candidate.1',b'0.2.52').replace(b'0253',b'0252')
+def version_normalized(b):return b.replace(b'0.2.53',b'0.2.52').replace(b'0253',b'0252')
 for n in files:
- if n.startswith(('tests/','.github/')) or n in ['app.js','index.html','styles.css','README.md','.gitignore']:continue
+ if n.startswith(('tests/','.github/')) or n in ['app.js','index.html','styles.css','README.md','README_HUMAN_QA.txt','.gitignore']:continue
  b=Path(n).read_bytes();ck(n+' runtime equal'+(' after version normalize' if n.endswith(('.js','.css','.html')) else ''),(version_normalized(b) if n.endswith(('.js','.css','.html')) else b)==before(n))
+ck('Human QA instructions retain old history',Path('README_HUMAN_QA.txt').read_bytes().startswith('v0.2.53 正式版 本番確認'.encode()) and Path('README_HUMAN_QA.txt').read_bytes().endswith(before('README_HUMAN_QA.txt')))
 # Full code equality outside the exact shared swipe binder.
 a=before('app.js').decode();b=Path('app.js').read_text();start='function bindMonthSwipe(){';end='\nfunction bind(){';ck('app.js outside swipe binder byte-identical',a.split(start)[0]==b.split(start)[0] and a.split(end,1)[1]==b.split(end,1)[1]);ck('reuses shared month transition','void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));' in b.split(start)[1].split(end)[0]);ck('analysis chart allowlist','[data-history-swipe]' in b and 'if(!inAnalysis&&target.closest(\'.bar-list\')' in b)
 old=before('styles.css');new=Path('styles.css').read_bytes();ck('CSS existing prefix exact',new.startswith(old));ck('CSS additions scope',new[len(old):].decode().strip()=='''/* Read-only month-relative analysis surfaces: keep native vertical scroll and pinch zoom. */
