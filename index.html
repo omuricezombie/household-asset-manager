@@ -6,19 +6,19 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0252">
-  <link rel="stylesheet" href="pet-game.css?v=0252">
-  <link rel="stylesheet" href="pet-hq.css?v=0252">
-  <link rel="stylesheet" href="pet-brush.css?v=0252">
-  <link rel="stylesheet" href="pet-ball.css?v=0252">
-  <link rel="stylesheet" href="pet-sleep.css?v=0252">
-  <link rel="stylesheet" href="pet-teen.css?v=0252">
+  <link rel="stylesheet" href="styles.css?v=0253">
+  <link rel="stylesheet" href="pet-game.css?v=0253">
+  <link rel="stylesheet" href="pet-hq.css?v=0253">
+  <link rel="stylesheet" href="pet-brush.css?v=0253">
+  <link rel="stylesheet" href="pet-ball.css?v=0253">
+  <link rel="stylesheet" href="pet-sleep.css?v=0253">
+  <link rel="stylesheet" href="pet-teen.css?v=0253">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.52</p>
+      <p class="sub">v0.2.53</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -189,13 +189,14 @@
     </section>
 
     <section class="screen" data-screen="history">
+      <p class="history-swipe-hint muted" data-history-swipe>グラフ・月次集計を左右にスワイプして月を切替</p>
       <div class="card">
         <h2>手入力の現金支出・日付修正</h2>
         <p class="muted">対象月の現金支出から日付だけを修正できます。変更後は該当月の収支を再集計します。金額・取引ID・確認済み資産残高は変更しません。</p>
         <div id="historyCashEditList"></div>
       </div>
       <div class="card">
-        <h2>月次推移</h2>
+        <h2 data-history-swipe>月次推移</h2>
         <div class="table-wrap"><table><thead><tr><th>月</th><th>収入</th><th>支出</th><th>収支</th><th>総資産</th></tr></thead><tbody id="historyMonthly"></tbody></table></div>
       </div>
       <div class="card" id="householdQualityCard">
@@ -210,16 +211,16 @@
         <div id="livingCostMetrics" class="metric-grid"></div>
         <div id="livingCostBreakdown"></div>
       </div>
-      <div class="card" id="historyBankDeltaCard"><h2>銀行預金の前月比（直近6か月）</h2><p class="muted">両月の銀行月末残高が確認済みの月だけ表示。資金移動がある場合、銀行増減と家計収支は一致しません。</p><div class="table-wrap"><table><thead><tr><th>月</th><th>銀行増減</th><th>家計収支</th></tr></thead><tbody id="historyBankDelta"></tbody></table></div></div>
-      <div class="card">
+      <div class="card" id="historyBankDeltaCard"><h2 data-history-swipe>銀行預金の前月比（直近6か月）</h2><p class="muted">両月の銀行月末残高が確認済みの月だけ表示。資金移動がある場合、銀行増減と家計収支は一致しません。</p><div class="table-wrap"><table><thead><tr><th>月</th><th>銀行増減</th><th>家計収支</th></tr></thead><tbody id="historyBankDelta"></tbody></table></div></div>
+      <div class="card" data-history-swipe>
         <h2>収入・支出の推移（6か月）</h2>
         <div id="historyCashflowChart"></div>
       </div>
-      <div class="card">
+      <div class="card" data-history-swipe>
         <h2>カテゴリ比較</h2>
         <div id="historyCategories"></div>
       </div>
-      <div class="card">
+      <div class="card" data-history-swipe>
         <h2>店舗</h2>
         <div id="historyMerchants"></div>
       </div>
@@ -238,11 +239,11 @@
           <div id="historyOtherExpenseList"></div>
         </details>
       </div>
-      <div class="card">
+      <div class="card" data-history-swipe>
         <h2>食費（朝・昼・夜）</h2>
         <div id="historyMeals"></div>
       </div>
-      <div class="card"><h2>株式評価額の前年同月比</h2><div id="historyStockYoY"></div><p class="muted">前年同月との差額です。入金・売買による増減を含み、運用利回りや確定利益ではありません。DCは含みません。</p></div>
+      <div class="card" data-history-swipe><h2>株式評価額の前年同月比</h2><div id="historyStockYoY"></div><p class="muted">前年同月との差額です。入金・売買による増減を含み、運用利回りや確定利益ではありません。DCは含みません。</p></div>
       <div class="card" id="annualExpenseCard">
         <h2 id="annualExpenseTitle">年間累計</h2>
         <p id="annualExpenseNote" class="muted"></p>
@@ -481,15 +482,15 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0252"></script>
-  <script src="dcard-import.js?v=0252"></script>
-  <script src="analysis.js?v=0252"></script>
-  <script src="pet-art.js?v=0252"></script>
-  <script src="pet-illustration.js?v=0252"></script>
-  <script src="sleep-controller.js?v=0252"></script>
-  <script src="teen-art-data.js?v=0252"></script>
-  <script src="pet-teen.js?v=0252"></script>
-  <script src="pet-game.js?v=0252"></script>
-  <script src="app.js?v=0252"></script>
+  <script src="db.js?v=0253"></script>
+  <script src="dcard-import.js?v=0253"></script>
+  <script src="analysis.js?v=0253"></script>
+  <script src="pet-art.js?v=0253"></script>
+  <script src="pet-illustration.js?v=0253"></script>
+  <script src="sleep-controller.js?v=0253"></script>
+  <script src="teen-art-data.js?v=0253"></script>
+  <script src="pet-teen.js?v=0253"></script>
+  <script src="pet-game.js?v=0253"></script>
+  <script src="app.js?v=0253"></script>
 </body>
 </html>

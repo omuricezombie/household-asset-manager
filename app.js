@@ -1574,19 +1574,28 @@ function bindMonthSwipe(){
     if(currentScreen!=='home'&&currentScreen!=='history')return;
     if(document.body.classList.contains('app-locked')||e.touches.length!==1)return;
     const target=e.target;
+    // Only read-only, month-relative analysis cards are gesture surfaces.
+    // Their bar charts are static (not horizontally scrollable).
+    const inAnalysis=currentScreen==='history';
+    if(inAnalysis&&!target.closest('[data-history-swipe]'))return;
+    if(inAnalysis&&document.activeElement?.closest('[data-screen="history"]')&&document.activeElement.matches('input,select,textarea,[contenteditable]'))return;
     // Asset cards are buttons, but a horizontal gesture on them must still
     // navigate months. Other controls remain excluded as before.
     const metric=target.closest('#homeAssetSummary button[data-asset-breakdown]');
-    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],.table-wrap,.bar-list,.month-picker')&&!metric)return;
+    if(target.closest('button,input,select,textarea,a,summary,dialog,[role="button"],[contenteditable],.table-wrap,.month-picker')&&!metric)return;
+    if(!inAnalysis&&target.closest('.bar-list')&&!metric)return;
     const touch=e.touches[0];
     if(touch.clientX<26||touch.clientX>window.innerWidth-26)return;
-    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now(),metric};
+    swipeTouchStart={x:touch.clientX,y:touch.clientY,time:Date.now(),metric,screen:currentScreen,id:touch.identifier};
   },{passive:true});
   main.addEventListener('touchend',e=>{
-    if(!swipeTouchStart||e.changedTouches.length!==1)return;
     const start=swipeTouchStart;swipeTouchStart=null;
-    if(currentScreen!=='home'&&currentScreen!=='history')return;
-    const touch=e.changedTouches[0],dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+    if(!start||e.changedTouches.length!==1||e.touches.length!==0)return;
+    if(currentScreen!==start.screen||document.body.classList.contains('app-locked'))return;
+    const touch=e.changedTouches[0];
+    if(touch.identifier!==start.id)return;
+    if(start.screen==='history'&&window.getSelection()?.toString())return;
+    const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
     if(Math.abs(dx)<90||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-start.time>1300)return;
     if(start.metric)swipeMetricClickGuard={metric:start.metric,time:Date.now()};
     void changeSelectedMonth(monthShift(selectedMonth,dx<0?1:-1));

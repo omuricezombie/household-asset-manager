@@ -1,3 +1,9 @@
+v0.2.53 正式版 本番確認
+分析スワイプ candidate.1 Human QA・CI 2162/2162合格（2026-11-28）。版表示、既存データ、履歴・分析の左右月移動、縦スクロール、横スクロール表を代表確認。
+https://omuricezombie.github.io/household-asset-manager/?v=0253
+サイトデータ削除・再インストール不要。rollback基点 v0.2.52。
+
+--- 以下は過去の確認履歴 ---
 v0.2.52 正式版 本番確認
 candidate.1代表Human QA全項目合格・正式反映承認（2026-11-27）。版表示、既存家計データ、ホーム・相棒の部屋の代表操作を確認。中間体未到達なら本番での中間体操作は保留。
 https://omuricezombie.github.io/household-asset-manager/?v=0252

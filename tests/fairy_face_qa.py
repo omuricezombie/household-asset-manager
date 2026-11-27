@@ -34,7 +34,7 @@ scan='''async reduced=>{
 }'''
 with sync_playwright()as pw:
  b=pw.chromium.launch(args=['--no-sandbox']);p=b.new_page(viewport={'width':390,'height':844},device_scale_factor=2.5);errors=[];p.on('pageerror',lambda e:errors.append(str(e)))
- p.goto(Path('artifacts/pet_brushing_5_babies_v0252.html').resolve().as_uri());p.select_option('#species','fairy')
+ p.goto(Path('artifacts/pet_brushing_5_babies_v0253.html').resolve().as_uri());p.select_option('#species','fairy')
  p.evaluate('s=>{style.textContent=mapUrls(s)}',css_at('8a4245db7ca70d56bcef9e4558237d00f0805192'));p.click('#brushBtn');old=p.evaluate(scan,False);ck('c2 cheek overlap reproduced',old['faceHitFrames']>0)
  p.evaluate('s=>{style.textContent=mapUrls(s)}',current_css);p.click('#brushBtn');new=p.evaluate(scan,False);print('face scan',json.dumps({'old':old,'new':new}),flush=True);ck('c3 all visible SVG pixels avoid face for 20ms samples',new['faceHitFrames']==0);ck('c3 two stroke start/end heads touch opaque hair',len(new['contacts'])==4 and all(n>0 for n in new['contacts'].values()))
  for t in [442,936,1430,1924]:
@@ -51,4 +51,4 @@ for name in ['stroke','lean','eyes','happy','cloth','sponge']:
    level+=(s[j]=='{')-(s[j]=='}');j+=1
   return s[x:j]
  ck('unchanged other reactions '+name,frames(prior)==frames(now))
-Path('AI_QA_0252_fairy_face.json').write_text(json.dumps({'count':len(checks),'checks':checks,'prior_c2':old,'candidate_c3':new,'reduced':reduced},indent=2));print('FAIRY FACE PASS',len(checks),json.dumps({'old':old,'new':new,'reduced':reduced}))
+Path('AI_QA_0253_fairy_face.json').write_text(json.dumps({'count':len(checks),'checks':checks,'prior_c2':old,'candidate_c3':new,'reduced':reduced},indent=2));print('FAIRY FACE PASS',len(checks),json.dumps({'old':old,'new':new,'reduced':reduced}))
