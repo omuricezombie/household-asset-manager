@@ -34,9 +34,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: teen-v0252c1-qa
+          name: teen-v0252-qa
           path: |
-            AI_QA_0252c1*.json
+            AI_QA_0252*.json
             teen-art-manifest.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
