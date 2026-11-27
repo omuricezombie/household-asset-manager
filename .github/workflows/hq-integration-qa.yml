@@ -1,4 +1,4 @@
-name: Baby sleep and existing care / ball / HQ regression QA
+name: Teen integration and existing baby / HQ regression QA
 on:
   push:
     branches: ['candidate', 'main']
@@ -7,7 +7,7 @@ permissions:
 jobs:
   qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: python tests/teen_integration_static_qa.py
       - run: python tests/hq_static_qa.py
       - run: python tests/brush_static_qa.py
       - run: python tests/build_growth_standalone.py
@@ -28,12 +29,15 @@ jobs:
       - run: node tests/sleep_controller_qa.cjs
       - run: node tests/sleep_integration_qa.cjs
       - run: python tests/sleep_browser_qa.py
+      - run: python tests/build_teen_standalone.py
+      - run: python tests/teen_live_browser_qa.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sleep-v0251-qa
+          name: teen-v0252c1-qa
           path: |
-            AI_QA_0251*.json
+            AI_QA_0252c1*.json
+            teen-art-manifest.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
             artifacts/fairy-hair-only-*.png

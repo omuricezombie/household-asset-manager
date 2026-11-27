@@ -1,0 +1,242 @@
+{
+  "assets/hq-teen/fantasy-front-motion.webp": {
+    "bytes": 223676,
+    "sha256": "1175da342235a03eb2fca794b2cc0d8660fd9a67702614646dabc8003bab3969",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-front-face.webp": {
+    "bytes": 32400,
+    "sha256": "ea2dea195b9a86cde691378bd1948e46a8a1e21f9982601715667d0695fdf560",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-left-motion.webp": {
+    "bytes": 72910,
+    "sha256": "d25502dc23bc089e39f50f4dc660856f65f55da187cda89ed8ec0fe38f7ceaa2",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-back-motion.webp": {
+    "bytes": 199764,
+    "sha256": "d2356b44dda8dfe2c28efe1d896e9d311067821d83059793bdd3f1c7cfdfb057",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-right-motion.webp": {
+    "bytes": 72078,
+    "sha256": "84bebef850a1007b24ba5cf594b5e3787f37feb63cdb07c0afd49947ca022737",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-food.svg": {
+    "bytes": 1474,
+    "sha256": "f8f38ba79f041105c1aeab24724dd763ef26134160bf3313b33499541a389501",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-closed.webp": {
+    "bytes": 5182,
+    "sha256": "83adf25174ee2972028d4086a24a2a6e5712c14cd31889339f22e13de6c45f8e",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fantasy-chew.webp": {
+    "bytes": 5138,
+    "sha256": "e762cb92e4612f8dce168577733235b45fe25a060b1cbad90662c9a53f2c8caa",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-front-motion.webp": {
+    "bytes": 283276,
+    "sha256": "7d8ff9c3987b248732bcdc3eb9007b50f8cc823daec03d14012f4240f68dbe6c",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-front-face.webp": {
+    "bytes": 44470,
+    "sha256": "48ea2052bbb879ba8512d219882ada2b2e8fd773afaf5cec141b48d00bfc53c4",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-left-motion.webp": {
+    "bytes": 127436,
+    "sha256": "7eb7badf8b76bc44ecbf6fedf1221d4f10c087951f88416de9c9c30ee1e011d3",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-back-motion.webp": {
+    "bytes": 275988,
+    "sha256": "c55b8d54871ed4e17e9865242a40e4672708037c846edcef516bf29ef11abdaf",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-right-motion.webp": {
+    "bytes": 113722,
+    "sha256": "5ffbc14d58fe5c18f6b6b85dc73658242f47c69fbc6eea29aa292d6b420f24fb",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-food.svg": {
+    "bytes": 1474,
+    "sha256": "63ea9b423ec39a43c099926a5e944f439b7d9ac12a23242d6c17727a40312fcb",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-closed.webp": {
+    "bytes": 5306,
+    "sha256": "7e87c04a6d9f4bb32ecd05a000a8beefae92f47b90f042b3314bb8d083527dca",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-chew.webp": {
+    "bytes": 5028,
+    "sha256": "6ba14d765010c9ddb7a2b2653c9283f7407fc22e5f5a56c2d672473ce76319a3",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/fairy-sleep.webp": {
+    "bytes": 259802,
+    "sha256": "c8734038df73339fb3d46fac7d1ec8820d48d6fd0e45d6258f5d93aff08c0e74",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-base.webp": {
+    "bytes": 1379030,
+    "sha256": "bf7c2171524aa27bf1b71755e93d69828a58e21686ebc78a19fcc92f86974502",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-front-motion.webp": {
+    "bytes": 92294,
+    "sha256": "dead6f9fa1adb2d83f7c63ec1d55959c1c00fa3bf90a6e6a6816e4643b13b447",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-front-face.webp": {
+    "bytes": 76246,
+    "sha256": "0ea8376c203b8e53b680f17a3bfd3d193cccfb5e84b5945dbc2e5254f519d11e",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-left-motion.webp": {
+    "bytes": 110384,
+    "sha256": "fd77a1ed075aea0f31ae16668ae4f2e7e3cde10dceefecda2ff69eb84d0cf40e",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-back-motion.webp": {
+    "bytes": 78746,
+    "sha256": "4612fa3265fed22613b6757e79ffe844a2c9d8f6b0e73323f1adf4fc27c9225b",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-right-motion.webp": {
+    "bytes": 101312,
+    "sha256": "f35906d4e58f54f3e43e830ffdb7c53955411aa33d29b3ec925329a939f428be",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-food.svg": {
+    "bytes": 1474,
+    "sha256": "e33297d593c18b1bca0f3cc504e995f2f3922cb0415ba2a93f27f38b15f6384d",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-closed.webp": {
+    "bytes": 2262,
+    "sha256": "7a92473f0b34a30a0be5e3510fa0e7881e1ffab597f3a949c1eba2f311956230",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-chew.webp": {
+    "bytes": 2132,
+    "sha256": "c9d786fcd9c5801ccfdb8b6e21d29ca39b40930423a449eed31e545dec5b837f",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-sleep-half.webp": {
+    "bytes": 19940,
+    "sha256": "9f509ca315f5bb41f1fbdaf1aea2e699f96248460826cbe2b6d394e55db50489",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/yokai-sleep-closed.webp": {
+    "bytes": 10130,
+    "sha256": "acf2ebf96622c0444e7cd0b17553dff0477d0475e0e7675c6d41ba2ff09ccba8",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-front-face.webp": {
+    "bytes": 33614,
+    "sha256": "86b5da4065f3890367ac3d972334d9b403194b56a2d02c212c47a6ea1ed22ad4",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-left-motion.webp": {
+    "bytes": 122568,
+    "sha256": "4104b4e4d5455ed4f6876cee3edcace6be42a11956ef48f301804b61c2a9e7fd",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-back-motion.webp": {
+    "bytes": 56336,
+    "sha256": "d4ed26e7c3e69a5ae63cdedc09be6387b1363c8e02ce31587f847c396410c8c6",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-right-motion.webp": {
+    "bytes": 122008,
+    "sha256": "69e936957d6324a7b8e5a4ee432db74e3b7dcd3983bb816dfe77b2d1ab95f8f7",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-food.svg": {
+    "bytes": 1474,
+    "sha256": "39fa3f2234c260c871b33b1fe2790ec2107bb96074b3557abdd330e5d870a2dd",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-closed.webp": {
+    "bytes": 7640,
+    "sha256": "90f44959d913e5ab0e3bdc9cae2932fdad9586bffe55fa2060018af800c26173",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/dino-chew.webp": {
+    "bytes": 7092,
+    "sha256": "9b797fb26505b788fcb7945cdc8be8954b984213680232bfc5d0c57ae180ba7a",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-front-ears.webp": {
+    "bytes": 217906,
+    "sha256": "471ea0a758b42b573bf4dab0c95a38a206ce31b83acbe15c5237a9095ddc1785",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-left-ears.webp": {
+    "bytes": 167762,
+    "sha256": "56b79a606fe124649012b2c4ba078d2826ae2cf571ff7941232da89fee73a184",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-left-tail.webp": {
+    "bytes": 220144,
+    "sha256": "7e41c42a62b80fd3455f7b15e3f3bf9bf78169f53ba732ed612e0281fcb98a56",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-back-ears.webp": {
+    "bytes": 140752,
+    "sha256": "977a465ebf9c4b5e245326d43238bb29534903d624f89710c6825b688e0eb818",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-back-tail.webp": {
+    "bytes": 307816,
+    "sha256": "57c6a2e143d9a4b94709d07db4684eb0157673c017fb6c5a280c2de932d45fed",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-right-ears.webp": {
+    "bytes": 169156,
+    "sha256": "8db2ed30a810c198730456a494dce5aa55399a868f95dcb16fc991991e6c3fe5",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-right-tail.webp": {
+    "bytes": 204450,
+    "sha256": "8994b23cb07d736ef6bee27c5e34167bd8a2759e9ee00bad1396f387037c3263",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-half.webp": {
+    "bytes": 8232,
+    "sha256": "b18dff8414ffdb05c001efa9e72a928c0c8fb0b5df2a0d8586a8ee19a8018dad",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-closed.webp": {
+    "bytes": 5150,
+    "sha256": "c8c7b5e29274da9d6739c14d3d594cbfc6f1dff88c323adb598484c267268bc2",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-mouthClosed.webp": {
+    "bytes": 7480,
+    "sha256": "0e3951168015ce7b8d99f073a23991ef9a7a031df57ee51b2391cfe752a5135d",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-mouthChew.webp": {
+    "bytes": 7318,
+    "sha256": "e47e556c0f57251712dcdf7ebefb71362894425b6e10529d97c8ecbdc19c5d8d",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-sleep.webp": {
+    "bytes": 194398,
+    "sha256": "dd01ebd6af17d864c91a96f8652ff070675993d80f81c4a1af49886509e4b20e",
+    "source": "approved ball r1 embedded asset"
+  },
+  "assets/hq-teen/animal-food.svg": {
+    "bytes": 1473,
+    "sha256": "92f35494fa11d9c5bb2773d97fa364036e5c574f2807fbe0876caf0e0459d286",
+    "source": "approved ball r1 embedded asset"
+  }
+}

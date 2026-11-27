@@ -1,3 +1,6 @@
+v0.2.52-candidate.1 中間体統合版（AI QA・代表Human QA後に採用判断）
+確認：中間体の待機、基本操作、お手入れ・ボール、短縮睡眠、ホーム・部屋の共有、他画面からの復帰、幼体の代表操作。家計データを入れない独立確認HTMLで実施。
+
 v0.2.51 正式版 本番確認
 candidate.2代表Human QA合格（2026-11-26）。版表示・既存データ・ホームの放置睡眠とタップ起床を代表確認。
 https://omuricezombie.github.io/household-asset-manager/?v=0251
