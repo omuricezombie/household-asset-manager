@@ -22,6 +22,7 @@ with sync_playwright() as pw:
  p=ctx.new_page();p.set_default_timeout(10000);p.on('pageerror',lambda e:errors.append(str(e)))
  if standalone:
   p.set_content(Path(os.environ.get('QA_HTML','artifacts/household_v0253_analysis_swipe_qa.html')).read_text(),wait_until='domcontentloaded')
+  p.locator('.qa-note').evaluate('e=>e.remove()') # match production geometry for touch coordinates
  else:
   p.goto(f'http://localhost:{server.server_port}/index.html?v=0253',wait_until='domcontentloaded')
  p.wait_for_function('!!window.HAM?.DB&&!document.body.classList.contains("app-booting")');ck('boot expected version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.53-candidate.1')
@@ -34,7 +35,10 @@ with sync_playwright() as pw:
  cdp=ctx.new_cdp_session(p)
  def place(sel):
   loc=p.locator(sel).first;loc.evaluate("e=>e.scrollIntoView({block:'center',inline:'nearest'})");p.wait_for_timeout(70);r=loc.bounding_box();assert r,sel
-  return loc,max(40,min(350,r['x']+r['width']/2)),max(110,min(740,r['y']+min(25,r['height']/2)))
+  x=max(40,min(350,r['x']+r['width']/2));header_bottom=p.locator('.app-header').bounding_box()['height']
+  y=max(header_bottom+4,min(740,r['y']+min(25,r['height']/2)))
+  assert loc.evaluate('(e,xy)=>e.contains(document.elementFromPoint(...xy))',[x,y]),f'Gesture starts outside target: {sel}, rect={r}, x={x}, y={y}'
+  return loc,x,y
  def gesture(sel,dx,dy,stop='touchEnd',edge=False):
   loc,x,y=place(sel)
   if edge:x=20
