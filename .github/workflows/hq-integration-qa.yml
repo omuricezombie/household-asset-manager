@@ -16,11 +16,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: python tests/analysis_swipe_static_qa.py
       - run: python tests/teen_integration_static_qa.py
       - run: python tests/hq_static_qa.py
       - run: python tests/brush_static_qa.py
       - run: python tests/build_growth_standalone.py
       - run: python -m pip install playwright pillow && python -m playwright install --with-deps chromium
+      - run: python tests/analysis_swipe_browser_qa.py
       - run: python tests/hq_browser_qa.py
       - run: python tests/build_brush_standalone.py
       - run: python tests/brush_browser_qa.py
@@ -34,9 +36,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: teen-v0252-qa
+          name: teen-v0253-qa
           path: |
-            AI_QA_0252*.json
+            AI_QA_0253*.json
             teen-art-manifest.json
             artifacts/brush-contact-internal.png
             artifacts/brush-fairy-*.png
