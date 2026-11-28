@@ -35,7 +35,7 @@
     const host=current==='pet'?$('petAvatar'):current==='home'?$('petVisitor'):null;
     const ch=host?.querySelector('.pet-character');
     if(dataReplacing||!state?.enabled||!active()||petStage()!=='teen'||ch?.dataset.growth!=='teen'||document.hidden||document.body.classList.contains('app-locked')){HAM.PetTeen.stop();return;}
-    HAM.PetTeen.update(ch,()=>({action:current==='pet'&&mood!=='idle'?teenAction:'',started:teenActionStarted,sequence:actionSequence,sleep:sleepState?sleepController?.snapshot():null,held:!!document.querySelector('#petVisitor.pet-home-held')}));
+    HAM.PetTeen.update(ch,()=>{const travelling=current==='pet'&&!!host.dataset.furnTravel;return {action:!travelling&&current==='pet'&&mood!=='idle'?teenAction:'',started:teenActionStarted,sequence:actionSequence,sleep:!travelling&&sleepState?sleepController?.snapshot():null,held:!!document.querySelector('#petVisitor.pet-home-held')};});
   }
   function sleepEligible(){return !dataReplacing&&state?.enabled&&active()&&animatedStage();}
   function sleepVisible(){return ['home','pet'].includes(current);}
@@ -56,7 +56,7 @@
     if(!sleepController){
       if(sleepBlocked()){refreshTeen();return;}
       sleepOwner=active().id;sleepStage=petStage();
-      sleepController=createSleepController({short:false,onChange:showSleep});
+      sleepController=createSleepController({short:false,onChange:showSleep,canBedSequence:()=>window.__furnCanBedSequence?.()===true,isBedMoving:()=>HAM.PetRoom?.moving()===true});
     }
     if(sleepBlocked())sleepController.pause();else sleepController.resume();
     refreshTeen();
@@ -64,10 +64,15 @@
   function showSleep(snapshot){
     if(!sleepEligible()||mood!=='idle'){clearSleep();return;}
     const previous=sleepState;
+    const roomChar=$('petAvatar')?.querySelector('.pet-character');
+    const phase=snapshot.bedPhase||'';
+    if(roomChar&&phase==='second'&&roomChar.dataset.furnSleepPhase!=='second'){delete roomChar.dataset.sleepState;void roomChar.offsetWidth;for(const node of roomChar.querySelectorAll('span'))void getComputedStyle(node).animationName;}
+    if(roomChar)roomChar.dataset.furnSleepPhase=phase;
     sleepState=['drowsy','sleep','wake'].includes(snapshot.state)?snapshot.state:'';
     sleepPaused=snapshot.paused;
     if(sleepState)faceStep=0;
     if(previous!==sleepState||sleepState){paintCharacter();paintHomeSleep();speak(moodMessage());}
+    window.__furnSleepChanged?.();
     if(previous==='wake'&&!sleepState&&sleepQueued){
       const id=sleepQueued;sleepQueued=null;
       // Existing interaction remains the only path to affection/traits/save.
@@ -168,11 +173,12 @@
     saveChain=saveChain.catch(()=>{}).then(()=>DB.put('settings',{key:KEY,value:snapshot}));
     return saveChain;
   }
-  async function flushPendingSave(){await saveChain;}
+  async function flushCompanionSave(){await saveChain;}
+  async function flushPendingSave(){await saveChain;await HAM.PetRoom?.flush();}
   // Restore/reset must not leave a pre-restore companion in memory or allow stale async reward reads to save it.
   async function replaceStoredData(task){
     if(dataReplacing)throw new Error('育成データ更新中です。');
-    dataReplacing=true;dataEpoch++;
+    dataReplacing=true;dataEpoch++;HAM.PetRoom?.suspend();
     clearSleep();HAM.PetTeen?.stop();hideVisitor();stopFacing();clearTimeout(actionTimer);mood='idle';visualAction='';teenAction='';actionSequence++;
     try{
       await flushPendingSave();
@@ -187,7 +193,7 @@
         saveChain=Promise.resolve();faceStep=0;starterPreviewFacing='front';
         if($('petAvatar'))$('petAvatar').innerHTML='';
         if($('petNameInput'))$('petNameInput').value='';
-        setVisible();dataReplacing=false;
+        setVisible();dataReplacing=false;HAM.PetRoom?.resume();
         if(current==='pet'&&!state.enabled&&navigate)await navigate('home');
         else onScreen(current);
       }
@@ -277,7 +283,7 @@
         existing.dataset.trait=trait;
         let art=existing.querySelector('.pet-illustration');
         // A care response looks toward the user without replacing the moving parent.
-        if(caringBaby&&art&&existing.dataset.facing!=='front'){
+        if(caringBaby&&!container.dataset.furnTravel&&art&&existing.dataset.facing!=='front'){
           if(stage==='teen'&&HAM.PetTeen)changeTeenFacing(art,'front');else art.outerHTML=HAM.PetIllustration.draw({type:pet.type,stage,direction:'front',mood,affection:pet.affection,trait});
           existing.dataset.facing='front';
           art=existing.querySelector('.pet-illustration');
@@ -347,6 +353,10 @@
       sleepQueued=id;sleepController?.wakeOnly();return;
     }
     clearSleep();
+    const approachPet=active().id;
+    if(current==='pet'&&window.__furnBeforeAction){
+      if(!await window.__furnBeforeAction(id,item.type)||epoch!==dataEpoch||current!=='pet'||!isEnabled()||active()?.id!==approachPet||sleepBlocked())return;
+    }
     todayReset();
     const p=active();
     const gained=Math.min(item.gain,Math.max(0,DAILY_CAP-p.daily.used),Math.max(0,100-p.affection));
@@ -565,6 +575,20 @@
   }
   function prefersReducedMotion(){return typeof window.matchMedia==='function'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
   function changeTeenFacing(art,dir){for(const d of ['front','left','back','right'])art.classList.toggle('pet-art-'+d,d===dir);art.dataset.artFacing=dir;}
+  // Independent furniture trial: reuse the same direction artwork as the ordinary turn timer.
+  window.__furnPose=function(dir){
+    if(current!=='pet'||!state?.enabled||!active())return;
+    if(!dir){paintCharacter();return;}
+    const ch=$('petAvatar')?.querySelector('.pet-character'),art=ch?.querySelector('.pet-illustration');
+    if(!ch||!art)return;
+    if(ch.dataset.facing!==dir){
+      if(ch.dataset.growth==='teen'&&HAM.PetTeen)changeTeenFacing(art,dir);
+      else art.outerHTML=HAM.PetIllustration.draw({type:active().type,stage:petStage(),direction:dir,mood:'idle',affection:active().affection,trait:personality().id});
+      ch.dataset.facing=dir;
+    }
+    refreshTeen();
+  };
+
   function stopFacing(){if(facingTimer){clearInterval(facingTimer);facingTimer=null;}}
   function setFacingTimer(){
     stopFacing();
@@ -574,6 +598,7 @@
       faceStep=(faceStep+1)%FACING.length;
       document.querySelectorAll('#petAvatar .pet-character,#petVisitor .pet-character')
         .forEach(el=>{
+          if(el.closest?.('#petAvatar[data-furn-travel]'))return;
           el.dataset.facing=facing();
           // Animate only the new illustration layer, not saved pet state.
           const oldArt=el.querySelector('.pet-art');
@@ -595,7 +620,9 @@
       refreshTeen();
     },3500);
   }
+  window.__furnEligibility=()=>({id:!dataReplacing&&state?.enabled?active()?.id||null:null,affection:active()?.affection||0,lv:level(),food:activeRewardFor(['食費']),daily:activeRewardFor(['日用品']),hobby:activeRewardFor(['趣味費','漫画・本','娯楽費']),awards:JSON.parse(JSON.stringify(state?.awards||{}))});
   function renderStats(){
+    window.__furnRefreshState?.();
     const p=active(),total=points(),lv=level(total),next=LEVEL_THRESHOLDS[lv]||null;
     if($('petLevel'))$('petLevel').textContent='Lv. '+lv;
     if($('petScore'))$('petScore').textContent=total.toLocaleString('ja-JP')+' pt';
@@ -605,7 +632,7 @@
     if($('petProgressText'))$('petProgressText').textContent=next?'次のLvまで '+(next-total)+' pt':'成体まで成長しました。';
     if($('petPersonality'))$('petPersonality').textContent=personality().name;
     todayReset();
-    if($('petDailyCap'))$('petDailyCap').textContent='愛情度（今日の加算） '+(p?.daily.used||0)+'/'+DAILY_CAP+'。上限後も自由に遊べます。';
+    if($('petDailyCap'))$('petDailyCap').textContent='今日の愛情 +'+(p?.daily.used||0)+'/'+DAILY_CAP;
     if($('petActions'))$('petActions').innerHTML=ACTIONS.map(a=>{
       const unlocked=actionAvailable(a);
       const detail=a.categories?'（'+a.categories.join('・')+'の節約報酬）':('（Lv.'+a.level+'）');
@@ -757,6 +784,7 @@
     // Navigation is not a touch. Preserve the same controller and remaining time.
     if(name!==current&&current==='pet')sleepQueued=null;
     current=name;
+    HAM.PetRoom?.onScreen(name);
     if(name==='pet'){hideVisitor();paintCharacter();void render();}
     else maybeVisit(name);
     syncSleep();
@@ -798,6 +826,6 @@
     global.addEventListener('resize',restoreHomePosition);
     // Defaults are intentionally OFF; no extra persistent data is written until enabled.
   }
-  HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,flushPendingSave,replaceStoredData,
+  HAM.PetGame={init,onScreen,render,isEnabled,setEnabled,flushPendingSave,flushCompanionSave,replaceStoredData,normalizeLegacyForRoom:value=>normalize(value),sleepSnapshot:()=>sleepController?.snapshot()||null,
     _test:{prepareMonthlyRecords,createAward,level,normalize,newPet,petStage,petPoints,stageForLevel,petPersonality,sleepSnapshot:()=>sleepController?.snapshot()||null}};
 })(window);

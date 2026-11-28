@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   const HAM=global.HAM=global.HAM||{};
-  const APP_VERSION='0.2.53';
+  const APP_VERSION='0.2.54-candidate.1';
   const SCHEMA_VERSION=2;
   const DB_NAME='householdAssetManagerDB_v2';
   const DB_VERSION=1;
@@ -104,6 +104,9 @@
     for(const s of STORES) if(Number(p.counts?.[s])!==p.stores[s].length) throw new Error(`${s} の件数が一致しません。`);
     const hash=await sha256Text(stableStringify(p.stores));
     if(hash!==p.integrity?.dataHash) throw new Error('バックアップの整合性確認に失敗しました。');
+    const roomRows=p.stores.settings.filter(row=>row?.key==='petRoomRewardsV1');
+    if(roomRows.length>1)throw new Error('家具設定が重複しています。');
+    if(roomRows.length&&global.PetRoomStore)global.PetRoomStore.validateSetting(roomRows[0]);
     return true;
   }
   async function replaceAllStores(storesData){

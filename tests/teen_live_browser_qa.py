@@ -6,7 +6,7 @@ checks=[];errors=[];warnings=[]
 def ck(n,v):
  if not v:raise AssertionError(n)
  checks.append(n); print('PASS',n,flush=True)
-html=Path(sys.argv[1] if len(sys.argv)>1 else 'artifacts/household_v0253_teen_human_qa.html').read_text()
+html=Path(sys.argv[1] if len(sys.argv)>1 else 'artifacts/household_v0254c1_teen_human_qa.html').read_text()
 with sync_playwright() as pw:
  b=pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,args=['--no-sandbox']);p=b.new_page(viewport={'width':390,'height':844});p.on('pageerror',lambda e:errors.append(str(e)));p.on('console',lambda m:warnings.append(m.text) if m.type in ['error','warning'] else None)
  p.clock.install();p.set_content(html,wait_until='domcontentloaded',timeout=30000);p.wait_for_function('window.__qaReady===true');
@@ -24,7 +24,7 @@ with sync_playwright() as pw:
  def nav(n):p.evaluate('__qa.nav('+json.dumps(n)+')')
  for k in ['animal','fantasy','fairy','dino','yokai']:
   seed(k);c=p.locator('#petAvatar .teen-live canvas');ch=p.locator('#petAvatar .pet-character');layer=ch.locator('.teen-live');before=save()
-  ck(k+' Lv3 teen',ch.get_attribute('data-growth')=='teen' and p.locator('#petLevel').inner_text()=='Lv. 3');ck(k+' adopted room size',120<=c.bounding_box()['width']<=138);ck(k+' nonempty canvas',c.evaluate('c=>c.getContext("2d").getImageData(0,0,640,720).data.some((v,i)=>i%4===3&&v>0)'))
+  ck(k+' Lv3 teen',ch.get_attribute('data-growth')=='teen' and p.locator('#petLevel').inner_text()=='Lv. 3');ck(k+' adopted room size',ch.evaluate('e=>getComputedStyle(e).scale')=='0.7' and 105<=c.bounding_box()['width']<=121);ck(k+' nonempty canvas',c.evaluate('c=>c.getContext("2d").getImageData(0,0,640,720).data.some((v,i)=>i%4===3&&v>0)'))
   ck(k+' locked later action',p.locator('[data-pet-action=feast]').is_disabled());ck(k+' brush ball unlocked',p.locator('[data-pet-action=brush]').is_enabled() and p.locator('[data-pet-action=ball]').is_enabled());
   for a,d in [('pet',1700),('feed',1700),('rest',3200),('brush',2700),('ball',4100)]:
    action(a);ck(k+' '+a+' active',layer.get_attribute('data-action')==a);ck(k+' '+a+' parent paused',ch.evaluate('e=>getComputedStyle(e).animationPlayState')=='paused');
@@ -46,4 +46,4 @@ with sync_playwright() as pw:
  seed('animal',100);ck('baby renderer unchanged',p.locator('#petAvatar .pet-character').get_attribute('data-growth')=='baby' and not p.locator('#petAvatar .teen-live').count() and snap()['state']=='idle');click('ball');ck('baby ball class',p.locator('#petAvatar .pet-character').get_attribute('data-action')=='ball');advance(4100);state('idle')
  ck('no JS errors',not errors);ck('no console errors/warnings',not warnings);b.close()
 report={'count':len(checks),'checks':checks,'errors':errors,'warnings':warnings,'scope':'real Chromium; actual candidate PetGame + CSS + asset bytes, in-memory synthetic DB, accelerated clocks; no real IndexedDB/SW/URL'}
-Path('AI_QA_0253_teen_live_browser.json').write_text(json.dumps(report,indent=2,ensure_ascii=False));print('TEEN LIVE BROWSER PASS',len(checks))
+Path('AI_QA_0254c1_teen_live_browser.json').write_text(json.dumps(report,indent=2,ensure_ascii=False));print('TEEN LIVE BROWSER PASS',len(checks))

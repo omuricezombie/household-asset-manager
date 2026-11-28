@@ -1,0 +1,29 @@
+{
+  "base_commit": "e0907a4502d78375610df88d8c66626a772876f8",
+  "source_zip_sha256": "cec8230a6df163c3da1e2c5d74c520840490050a352a6b8f77454d79145b9f2a",
+  "approved_runtime_delta": {
+    "app.js": "595f5765284913d53417f8d61c1d140e57d622014c9804486b249083d05e67d6",
+    "db.js": "59cbd8d3db9f49338d1dfc4a9963ea32f05a8fbaea6fd575c67fc6ea06c22d14",
+    "index.html": "a8acfeb367e6c08c1033092f92fb36c5ff8269ad5342901c09d47b6312055547",
+    "pet-game.css": "b1d40369a0cbe7c547b2683fea1ac77484dc8eb8d7bcf9a929b6b821819810cb",
+    "pet-game.js": "dcc91afa97b4340b27e4e8d4fc4ebfec642f1c463e098c2e7ce706ea8210e006",
+    "pet-illustration.js": "1860d315ce6dac5f4df3b926328131aa904117bdb9f070791b82483799b55063",
+    "pet-sleep.css": "8e46a3470e33cbb1b3fb311bb2a245f647c00d7c3fe6593ff3df4379779943a2",
+    "pet-teen.css": "975ec6467526fbcf0461c44242caeecb2808c2d340ab195946d3b1af4c3291c2",
+    "pet-teen.js": "baea9862679efa27938ca2e282ac0cd98c77ddaaad08d97d6c55777755d3acea",
+    "service-worker.js": "524e8bc4cf9755a94bec3457159ec99c8df654bdd6b5e6092df90877163d939c",
+    "sleep-controller.js": "20b07fc0170fc29ea45aaeb0cc190115ede137d0fc28ffd675716fc5b1a0be96",
+    "pet-room.js": "7a235a83b790b049c0b2c7baa5e219d18ec49bb5c821aa6f718804e492335573",
+    "pet-room-store.js": "171effe68db983bcab81ac74093b8eff58add8af461a3ebaaded62b99f7ac57f",
+    "pet-room.css": "c0ca002458057ec9891f3244d1d013522898d491be1b836d4a163fca78554d30",
+    "assets/habitats/fairy.webp": "9294a7b689bcd1c59a51f9a214af075ab25e49153cf5ac22fd90a7ad868a87f0",
+    "assets/habitats/yokai.webp": "a5349abdc5f64811b7fe3809707095f991a1b39e8d85c9fef3912e3cb7473415",
+    "assets/habitats/dino.webp": "5349f41a0d4d6bfe6dff0756c59eaa3e74e3e7562dda33eb135b22768589a4df",
+    "assets/habitats/lake.webp": "3b424a7e764ba93a6ebb1daa99c7132e7ea774933f29bbe922db1eb68761e8eb",
+    "assets/habitats/dusk.webp": "23eac486a113d899d3bc51e834b30bba6b5bd2688d1ffc2c6d977cdf177037cd",
+    "assets/habitats/stars.webp": "4ef98c5ff8c172ac99c09edbcc7d0f5eb18ce4ae0e4a52019b92618ebf9234e5",
+    "assets/habitats/animal.webp": "0fc517b2ba57cc81f228d582a2f5d349720e2c47c2b3e8f0cde06f5c0826085a",
+    "assets/habitats/fantasy.webp": "8744626d0d77f6bb41932883824fe55c81b9df562c4db0ec3c206a85a6201416"
+  },
+  "qa_fixture_sha256": "41628e65535fe666b4fa366ddbefd7196bdc39b61be9ecfc4480baf1a09b8dfb"
+}

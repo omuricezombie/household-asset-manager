@@ -36,3 +36,6 @@ Thumbs.db
 /AI_QA_0252*.json
 
 /AI_QA_0253*.json
+
+/AI_QA_0254*.json
+/tests/__pycache__/

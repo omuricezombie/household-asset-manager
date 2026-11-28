@@ -6,19 +6,20 @@
   <meta name="theme-color" content="#111827">
   <title>家計・資産管理</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=0253">
-  <link rel="stylesheet" href="pet-game.css?v=0253">
-  <link rel="stylesheet" href="pet-hq.css?v=0253">
-  <link rel="stylesheet" href="pet-brush.css?v=0253">
-  <link rel="stylesheet" href="pet-ball.css?v=0253">
-  <link rel="stylesheet" href="pet-sleep.css?v=0253">
-  <link rel="stylesheet" href="pet-teen.css?v=0253">
+  <link rel="stylesheet" href="styles.css?v=0254c1">
+  <link rel="stylesheet" href="pet-game.css?v=0254c1">
+  <link rel="stylesheet" href="pet-hq.css?v=0254c1">
+  <link rel="stylesheet" href="pet-brush.css?v=0254c1">
+  <link rel="stylesheet" href="pet-ball.css?v=0254c1">
+  <link rel="stylesheet" href="pet-sleep.css?v=0254c1">
+  <link rel="stylesheet" href="pet-teen.css?v=0254c1">
+  <link rel="stylesheet" href="pet-room.css?v=0254c1">
 </head>
 <body class="app-booting">
   <header class="app-header">
     <div>
       <h1>家計・資産管理</h1>
-      <p class="sub">v0.2.53</p>
+      <p class="sub">v0.2.54-candidate.1</p>
     </div>
     <label class="month-picker">対象月
       <input id="globalMonth" type="month">
@@ -368,7 +369,7 @@
         <div class="section-title-row">
           <h2>相棒の部屋</h2><button type="button" class="text-btn" data-go="home">ホームへ</button>
         </div>
-        <p class="muted pet-game-intro">家計の月次成果で新しい遊びや表情を解放。愛情度は毎日の触れ合いで育ち、放置しても下がりません。</p>
+        
         <div id="petChooser" class="hidden">
           <h3>最初の相棒を選ぶ</h3>
           <p class="muted">5タイプから1匹を選びます。途中でタイプを変更したいときは育成をやり直します。過去の月次報酬は再取得できません。</p>
@@ -377,15 +378,14 @@
         </div>
         <div id="petActiveArea" class="hidden">
         <p id="petCurrentType" class="pet-current-type"></p>
-        <div class="pet-game-dashboard">
+        <div class="pet-care-zone"><div class="pet-game-dashboard">
           <div class="pet-score-card"><span>家計の成長</span><strong id="petLevel">Lv. 1</strong><div class="pet-meter"><i id="petProgressBar"></i></div><span id="petScore">0 pt</span> <span id="petProgressText"></span></div>
           <div class="pet-score-card"><span>愛情度</span><strong id="petAffection">0/100</strong><div class="pet-meter pet-heart"><i id="petAffectionBar"></i></div><span>性格：<b id="petPersonality">まだ探検中</b></span></div>
         </div>
         <div class="pet-room" id="petRoom"><div class="pet-stage" id="petAvatar" aria-live="off"></div><p class="pet-speech" id="petSpeech" aria-live="polite">のんびり過ごしている。</p></div>
-        <h3>一緒に過ごす</h3>
-        <p class="muted">キャラクターを直接タップ・指でなでても反応します。</p>
-        <p id="petDailyCap" class="muted">触れ合いは何度でもできます。</p>
-        <div id="petActions" class="pet-actions"></div>
+        <div id="petCareHeading"><h3>一緒に過ごす</h3><p id="petDailyCap" class="muted">今日の愛情 +0/10</p></div>
+        <div id="petActions" class="pet-actions"></div></div><details id="petHelp"><summary>お世話・育成について</summary><p class="muted pet-game-intro">家計の月次成果で新しい遊びや表情を解放。愛情度は毎日の触れ合いで育ち、放置しても下がりません。</p><p>相棒を直接タップ・指でなでても反応します。愛情度の1日の加算上限に達しても自由に遊べます。</p></details><details id="furnitureQa"><summary>家具・背景を変更</summary><p class="furn-note">愛情度・レベルで解放した特典や、ショップで獲得した家具・背景を選択できます。配置は相棒ごと、購入品は歴代の相棒で共有して保存します。</p><div class="furn-grid"><label>休憩家具<select id="furnRest"><option value="none">置かない</option><option value="cushion">クッション</option><option value="bed">寝床</option></select></label><label>小物家具<select id="furnItem"><option value="none">置かない</option><option value="bowl">食器</option><option value="plant">鉢植え</option><option value="box">おもちゃ箱</option></select></label><label>背景<select id="furnBg"><option value="normal">種族の初期背景</option><option value="dusk">夕焼けの湖畔の家</option><option value="lake">花咲く庭の住処</option><option value="stars">星降る森の隠れ家</option></select></label><div class="furn-field"><span id="furnEditLabel">位置調整</span><button type="button" aria-describedby="furnEditLabel" id="furnEdit" aria-pressed="false">家具を移動</button></div><button type="button" id="furnResetPos">位置を戻す</button><button type="button" id="furnClear">家具を外す</button></div><details id="furnShop" class="card" style="margin:10px 0;padding:12px"><summary><strong>相棒のショップ</strong> ・ <span id="furnCoins">0 コイン</span></summary><p class="furn-note" id="furnWalletDetail"></p><p id="furnLatestCoins" class="furn-note"></p><p class="furn-note">いつもの家計管理で貯まります。月末更新と必要な明細の取込・分類が完了すると、節約や黒字の成果に応じてコインを獲得します。</p><p id="furnNextGoal" class="furn-note"></p><div id="furnGoods" class="furn-grid"></div><p id="furnShopStatus" class="furn-note" role="status"></p><p class="furn-note">コインの計算や家計訂正時の扱いは下記で確認できます。</p><details id="furnCoinGuide"><summary>コインの獲得条件・計算例</summary><p>実収支が黒字：150 pt → 30コイン。対象費目の節約・節約水準の維持：100 pt → 20コイン（さらに改善した場合150 pt → 30コイン）。条件に合う成果のみ対象です。</p><p>新規節約：比較可能な過去3か月の対象費目平均から8%以上・500円以上減少（比較条件あり）。維持：前月の達成基準額の105%以内。詳細な家計判定は既存の月次報酬に従います。</p><p>例：黒字と1費目の節約で合計250 pt → 50コイン。月次報酬の合計5 ptにつき1コイン、月最大100コイン。成長ポイントは消費しません。</p><p>購入品は歴代の相棒で共有。訂正で獲得額が減った場合も家具は保持し、不足分は将来の獲得額と相殺します。未確定月の見込みは表示しません。</p></details></details><p id="furnSaveStatus" class="furn-note" role="status"></p><button id="furnReload" type="button">家具・背景を再読込</button><p id="furnUnlockStatus" class="furn-note" aria-live="polite"></p><p class="furn-note" id="furnLinkStatus" aria-live="polite">寝床・食器・クッションと動作が連動します。</p><p class="furn-note">寝床＝睡眠、食器＝食事、クッション＝見守る・休息。睡眠の専用絵や食事動作は既存のままです。</p></details>
+        
         <div class="pet-life-actions">
           <button type="button" id="petArchive" class="primary hidden">成長した相棒を図鑑へ保存する</button>
           <button type="button" id="petRestart" class="danger hidden">この相棒の育成をやり直す</button>
@@ -482,15 +482,17 @@
   </section>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="db.js?v=0253"></script>
-  <script src="dcard-import.js?v=0253"></script>
-  <script src="analysis.js?v=0253"></script>
-  <script src="pet-art.js?v=0253"></script>
-  <script src="pet-illustration.js?v=0253"></script>
-  <script src="sleep-controller.js?v=0253"></script>
-  <script src="teen-art-data.js?v=0253"></script>
-  <script src="pet-teen.js?v=0253"></script>
-  <script src="pet-game.js?v=0253"></script>
-  <script src="app.js?v=0253"></script>
+  <script src="db.js?v=0254c1"></script>
+  <script src="dcard-import.js?v=0254c1"></script>
+  <script src="analysis.js?v=0254c1"></script>
+  <script src="pet-art.js?v=0254c1"></script>
+  <script src="pet-illustration.js?v=0254c1"></script>
+  <script src="sleep-controller.js?v=0254c1"></script>
+  <script src="teen-art-data.js?v=0254c1"></script>
+  <script src="pet-teen.js?v=0254c1"></script>
+  <script src="pet-game.js?v=0254c1"></script>
+  <script src="pet-room-store.js?v=0254c1"></script>
+  <script src="pet-room.js?v=0254c1"></script>
+  <script src="app.js?v=0254c1"></script>
 </body>
 </html>
