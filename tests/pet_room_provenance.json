@@ -3,17 +3,17 @@
   "source_zip_sha256": "cec8230a6df163c3da1e2c5d74c520840490050a352a6b8f77454d79145b9f2a",
   "approved_runtime_delta": {
     "app.js": "595f5765284913d53417f8d61c1d140e57d622014c9804486b249083d05e67d6",
-    "db.js": "59cbd8d3db9f49338d1dfc4a9963ea32f05a8fbaea6fd575c67fc6ea06c22d14",
-    "index.html": "a8acfeb367e6c08c1033092f92fb36c5ff8269ad5342901c09d47b6312055547",
-    "pet-game.css": "b1d40369a0cbe7c547b2683fea1ac77484dc8eb8d7bcf9a929b6b821819810cb",
+    "db.js": "d5b3a27a458d4d3143364e98a97d182234616c2fbcdfe2519a2d3c5cde809604",
+    "index.html": "475b41f65e4255596388d6262c9c7b91ea2d117a3d92e1481ad9f8dd547edd18",
+    "pet-game.css": "21a9d1f647bd7e9df1898c746a5e34e103dd7b6e5b79b39cf7a01949782db2a6",
     "pet-game.js": "dcc91afa97b4340b27e4e8d4fc4ebfec642f1c463e098c2e7ce706ea8210e006",
-    "pet-illustration.js": "1860d315ce6dac5f4df3b926328131aa904117bdb9f070791b82483799b55063",
-    "pet-sleep.css": "8e46a3470e33cbb1b3fb311bb2a245f647c00d7c3fe6593ff3df4379779943a2",
-    "pet-teen.css": "975ec6467526fbcf0461c44242caeecb2808c2d340ab195946d3b1af4c3291c2",
-    "pet-teen.js": "baea9862679efa27938ca2e282ac0cd98c77ddaaad08d97d6c55777755d3acea",
-    "service-worker.js": "524e8bc4cf9755a94bec3457159ec99c8df654bdd6b5e6092df90877163d939c",
+    "pet-illustration.js": "f3a4821ba472f2ab63447ed806dc793eae65d10ba6a4a7a899f1b6bdd7a1e65f",
+    "pet-sleep.css": "89a268a0ac9c65af31796f1c5a45171aa37d2c8f222a47541f3217543ac8a270",
+    "pet-teen.css": "17e726cd600a418c816f7ead53f6a8c8fd31895db52409cfc2920ed240b635cb",
+    "pet-teen.js": "8f943271d521bb1396307a813aade198289293980139fa9547c79c1b71f8a362",
+    "service-worker.js": "0dbe2d2bf44d77e57054b009d1c83c73cf6e0555fd91c7eca503c6302a8544cd",
     "sleep-controller.js": "20b07fc0170fc29ea45aaeb0cc190115ede137d0fc28ffd675716fc5b1a0be96",
-    "pet-room.js": "7a235a83b790b049c0b2c7baa5e219d18ec49bb5c821aa6f718804e492335573",
+    "pet-room.js": "472abd0ad2214951024458f53065193ab33b07c22121125a0582cc4962850bcc",
     "pet-room-store.js": "171effe68db983bcab81ac74093b8eff58add8af461a3ebaaded62b99f7ac57f",
     "pet-room.css": "c0ca002458057ec9891f3244d1d013522898d491be1b836d4a163fca78554d30",
     "assets/habitats/fairy.webp": "9294a7b689bcd1c59a51f9a214af075ab25e49153cf5ac22fd90a7ad868a87f0",
@@ -25,5 +25,6 @@
     "assets/habitats/animal.webp": "0fc517b2ba57cc81f228d582a2f5d349720e2c47c2b3e8f0cde06f5c0826085a",
     "assets/habitats/fantasy.webp": "8744626d0d77f6bb41932883824fe55c81b9df562c4db0ec3c206a85a6201416"
   },
-  "qa_fixture_sha256": "41628e65535fe666b4fa366ddbefd7196bdc39b61be9ecfc4480baf1a09b8dfb"
+  "qa_fixture_sha256": "c04d3b47732cbecd5a19cd6dea90619e403159f5dcecfc73f0d3b144851c8d55",
+  "placement_fix_base_commit": "5460a05222ead73090f382b4ace29233c4046176"
 }

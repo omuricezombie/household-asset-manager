@@ -11,7 +11,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 server=http.server.ThreadingHTTPServer(('127.0.0.1',8766),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
 with sync_playwright() as pw:
  b=pw.chromium.launch(args=['--no-sandbox']);ctx=b.new_context(viewport={'width':390,'height':844},device_scale_factor=2.5);p=ctx.new_page();p.on('pageerror',lambda e:errors.append(str(e)));p.on('response',lambda r:bad.append([r.url,r.status])if r.status>=400 else None)
- p.goto(Path('artifacts/pet_brushing_5_babies_v0254c1.html').resolve().as_uri());p.wait_for_timeout(150)
+ p.goto(Path('artifacts/pet_brushing_5_babies_v0254c2.html').resolve().as_uri());p.wait_for_timeout(150)
  ck('care action label',p.locator('#brushBtn').inner_text()=='お手入れ')
  ck('all offline assets decode',p.evaluate('''async()=>{for(const u of Object.values(urls)){let i=new Image();i.src=u;await i.decode()}return true}'''))
  for s in ['fantasy','fairy','yokai','dino','animal']:
@@ -57,10 +57,10 @@ with sync_playwright() as pw:
  seed('dino',450);p.wait_for_function('document.querySelector("#petAvatar .pet-illustration")?.dataset.teenLive==="true"');p.click('[data-pet-action=brush]');p.wait_for_function('document.querySelector("#petAvatar .teen-live")?.dataset.action==="brush"');ck('teen dedicated brush',p.locator('#petAvatar .pet-character').get_attribute('data-action')=='brush' and p.locator('#petAvatar .pet-character').get_attribute('data-growth')=='teen')
  seed('fairy');p.wait_for_timeout(50);p.click('[data-pet-action=brush]');p.click('[data-nav=home]');p.click('[data-nav=pet]');p.wait_for_timeout(2850);ck('navigation returns idle',p.locator('#petAvatar .pet-mood-idle').count()==1)
  p.evaluate('async()=>{await navigator.serviceWorker.ready}');p.wait_for_function('navigator.serviceWorker.controller')
- cache=p.evaluate("async()=>{let c=await caches.open('household-asset-manager-v0.2.54-candidate.1');return(await c.keys()).map(x=>x.url)}")
- ck('SW brush CSS and SVG cached',all(any(n in u for u in cache)for n in ['pet-brush.css?v=0254c1','pet-care-brush.svg','pet-care-hairbrush.svg','pet-care-cloth.svg','pet-care-sponge.svg']))
+ cache=p.evaluate("async()=>{let c=await caches.open('household-asset-manager-v0.2.54-candidate.2');return(await c.keys()).map(x=>x.url)}")
+ ck('SW brush CSS and SVG cached',all(any(n in u for u in cache)for n in ['pet-brush.css?v=0254c2','pet-care-brush.svg','pet-care-hairbrush.svg','pet-care-cloth.svg','pet-care-sponge.svg']))
  ck('all30 HQ cached',sum('/hq-baby/'in u or'/hq-growth/'in u for u in cache)==30)
- ck('app version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.54-candidate.1')
+ ck('app version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.54-candidate.2')
  ck('no JS errors',not errors);ck('no missing requests',not bad)
  b.close()
 server.shutdown()
@@ -70,4 +70,4 @@ for row,s in enumerate(['animal','fantasy','fairy','yokai','dino']):
  for col,t in enumerate([430,870,1450,1870,2260]):
   im=Image.open(f'artifacts/brush-{s}-{t}.png').convert('RGB');im.thumbnail((298,225));x=col*300;y=row*250;canvas.paste(im,(x,y+20));d.text((x+4,y+3),f'{s} {t}ms',fill='white')
 canvas.save('artifacts/brush-contact-internal.png')
-Path('AI_QA_0254c1_brush.json').write_text(json.dumps({'count':len(checks),'checks':checks,'errors':errors,'bad':bad},indent=2));print('BRUSH PASS',len(checks))
+Path('AI_QA_0254c2_brush.json').write_text(json.dumps({'count':len(checks),'checks':checks,'errors':errors,'bad':bad},indent=2));print('BRUSH PASS',len(checks))

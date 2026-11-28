@@ -45,7 +45,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: room-v0254c1-qa
+          name: room-v0254c2-qa
           path: |
             AI_QA_0253*.json
             AI_QA_0254*.json

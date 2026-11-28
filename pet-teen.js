@@ -4,7 +4,7 @@
 const HAM=global.HAM, DATA=HAM.TeenArtData, dirs=['front','left','back','right'];
 const cache=new Map(); let target=null, layer=null, read=null, timer=0, generation=0, last='', phaseStart=0,nextBlink=0,blinkAt=-1,actionKey='',loaded=null;
 const media=global.matchMedia('(prefers-reduced-motion: reduce)');
-function load(url){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error(url));im.src=url+'?v=0254c1';});}
+function load(url){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error(url));im.src=url+'?v=0254c2';});}
 function sources(d){const result=new Set();function walk(v){if(typeof v==='string'&&v.startsWith('assets/'))result.add(v);else if(v&&typeof v==='object')Object.values(v).forEach(walk);}walk(d);return [...result];}
 function loadSpecies(k){for(const key of cache.keys())if(key!==k)cache.delete(key);if(!cache.has(k)){const promise=Promise.all(sources(DATA[k]).map(async p=>[p,await load(p)])).then(Object.fromEntries);cache.set(k,promise);promise.catch(()=>cache.delete(k));}return cache.get(k);}
 function halt(){clearTimeout(timer);timer=0;}

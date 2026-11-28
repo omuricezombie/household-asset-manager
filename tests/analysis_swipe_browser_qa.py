@@ -21,11 +21,11 @@ with sync_playwright() as pw:
  b=pw.chromium.launch(**launch);ctx=b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True,device_scale_factor=1)
  p=ctx.new_page();p.set_default_timeout(10000);p.on('pageerror',lambda e:errors.append(str(e)))
  if standalone:
-  p.set_content(Path(os.environ.get('QA_HTML','artifacts/household_v0254c1_analysis_swipe_qa.html')).read_text(),wait_until='domcontentloaded')
+  p.set_content(Path(os.environ.get('QA_HTML','artifacts/household_v0254c2_analysis_swipe_qa.html')).read_text(),wait_until='domcontentloaded')
   p.locator('.qa-note').evaluate('e=>e.remove()') # match production geometry for touch coordinates
  else:
-  p.goto(f'http://localhost:{server.server_port}/index.html?v=0254c1',wait_until='domcontentloaded')
- p.wait_for_function('!!window.HAM?.DB&&!document.body.classList.contains("app-booting")');ck('boot expected version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.54-candidate.1')
+  p.goto(f'http://localhost:{server.server_port}/index.html?v=0254c2',wait_until='domcontentloaded')
+ p.wait_for_function('!!window.HAM?.DB&&!document.body.classList.contains("app-booting")');ck('boot expected version',p.evaluate('HAM.DB.APP_VERSION')=='0.2.54-candidate.2')
  if not standalone:
   p.add_script_tag(content=Path('tests/analysis_swipe_fixture.js').read_text());p.evaluate('seedAnalysisQA()')
   ck('isolated test IndexedDB schema',p.evaluate('HAM.DB.SCHEMA_VERSION')==2)
@@ -83,4 +83,4 @@ with sync_playwright() as pw:
  ck('no browser page errors',not errors)
  b.close()
 if server:server.shutdown()
-Path('AI_QA_0254c1_analysis_swipe.json').write_text(json.dumps({'mode':'standalone memory DB' if standalone else 'actual localhost IndexedDB','count':len(checks),'checks':checks,'errors':errors},ensure_ascii=False,indent=2));print('ANALYSIS SWIPE PASS',len(checks))
+Path('AI_QA_0254c2_analysis_swipe.json').write_text(json.dumps({'mode':'standalone memory DB' if standalone else 'actual localhost IndexedDB','count':len(checks),'checks':checks,'errors':errors},ensure_ascii=False,indent=2));print('ANALYSIS SWIPE PASS',len(checks))

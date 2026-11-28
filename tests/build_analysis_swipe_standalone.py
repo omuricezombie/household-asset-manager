@@ -1,7 +1,7 @@
 """Standalone Human QA: candidate markup/styles/scripts; only DB I/O and boot seed replaced. No real DB or SW."""
 from pathlib import Path
 import re,sys
-out=Path(sys.argv[1]) if len(sys.argv)>1 else Path('artifacts/household_v0254c1_analysis_swipe_qa.html')
+out=Path(sys.argv[1]) if len(sys.argv)>1 else Path('artifacts/household_v0254c2_analysis_swipe_qa.html')
 out.parent.mkdir(parents=True,exist_ok=True)
 html=Path('index.html').read_text();css='\n'.join(Path(n).read_text() for n in re.findall(r'<link rel="stylesheet" href="([^?]+)\?[^\"]+">',html))
 # No production assets or real data needed for analysis-only confirmation.
